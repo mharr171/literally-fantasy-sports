@@ -116,18 +116,36 @@ Claude Code will tell you when the repo has a working app. Then:
 ### B1. Vercel (hosting)
 
 - [ ] Sign up at vercel.com with **Continue with GitHub** and choose the **Hobby** (free) plan.
-- [ ] **Add New → Project →** import `literally-fantasy-sports`. Claude Code will give you the root directory and build settings to enter.
-- [ ] **Settings → Environment Variables:** add the values Claude Code lists. Production uses `lfs-prod` values; Preview uses `lfs-dev` values.
+- [ ] **Add New → Project →** import `literally-fantasy-sports`. Build settings: **Root Directory** `apps/web` (leave "Include files outside the root directory" on). Framework preset: Next.js. Leave the build and install commands at their defaults.
+- [ ] **Settings → Environment Variables:** add these two variables twice, once for **Production** and once for **Preview** (both are public values, not secrets):
+
+| Name | Production (`lfs-prod`) | Preview (`lfs-dev`) |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://nyplzwdxffuchnbsewhy.supabase.co` | `https://wpgolvexlcpjmzoentnk.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | `sb_publishable_nU2CkyNMqlFm6OX3Bk5BKw_U6iW-ty6` | `sb_publishable_eIMxzJMr9q1gqGSRfYAzNg_EYollaBM` |
+
 - [ ] **Settings → Domains:** add `www.literallyfantasysports.com`, then add `literallyfantasysports.com` and set it to **redirect to www**.
 - [ ] Vercel shows the DNS records to create (usually an **A** record for the root domain and a **CNAME** for `www`). Add them in Squarespace under **Custom records**. If Squarespace has default records for the same hosts (`@` or `www`), remove those first.
 - [ ] Wait until Vercel shows both domains as **Valid**.
 
-### B2. Supabase sign-in URLs
+### B2. Supabase sign-in URLs and emails
 
-- [ ] In `lfs-prod`: **Authentication → URL Configuration**
-  - Site URL: `https://www.literallyfantasysports.com`
-- [ ] In `lfs-dev`: **Authentication → URL Configuration**
-  - Add the redirect URL pattern for Vercel preview deploys that Claude Code gives you.
+Supabase only sends people back to addresses on its allow list, so set these in each project under **Authentication → URL Configuration**:
+
+- [ ] `lfs-prod`: **Site URL** `https://www.literallyfantasysports.com`. **Redirect URLs → Add URL:** `https://www.literallyfantasysports.com/auth/callback`
+- [ ] `lfs-dev`: **Site URL** `http://localhost:3000`. **Redirect URLs → Add URL** for each of:
+  - `http://localhost:3000/auth/callback`
+  - `https://literally-fantasy-sports-*-<your-vercel-team>.vercel.app/auth/callback` (copy the part after the last `-` from any preview link Vercel gives you, e.g. `…-gary-projects.vercel.app`)
+
+So that email sign-in links work even when opened in a different browser or on another device (e.g. requested on the PC, opened on the phone), change two email templates in **both** projects under **Authentication → Emails → Templates**:
+
+- [ ] **Magic Link** and **Confirm signup**: in the message body, replace `{{ .ConfirmationURL }}` with:
+
+```
+{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=email
+```
+
+  Save each one. The rest of the template text can stay as it is.
 
 ### B3. GitHub settings
 
