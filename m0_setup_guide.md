@@ -1,0 +1,166 @@
+# M0 Setup Guide
+
+LiterallyFantasySports · for @Gary · Nov 3, 2026
+
+This guide lists the setup only you can do: creating accounts, approving access, and changing settings that need your login. Claude Code does everything else (code, configuration files, CI, database migrations) and will point back to this guide when it needs one of these steps finished.
+
+**How to use it:** work through Part A now. Part B happens after Claude Code has created the first code in the repo (it will tell you when). Part C is for later milestones. Check boxes as you go.
+
+**Before you start**
+
+- Use a password manager (Bitwarden is free) for the passwords and keys in this guide.
+- Never paste a key marked **secret** into a chat, issue or file. Secret keys go only into the GitHub, Vercel or Supabase settings named below.
+- Button and menu names can shift slightly as these services update. If something doesn't match, ask Claude and describe what you see.
+
+## Part A: Before the first code (about 1–2 hours)
+
+### A1. Claude Code
+
+- [ ] Confirm your Claude plan includes Claude Code (Pro or Max).
+- [ ] Open Claude Code from the **Code** tab in the Claude desktop app, or at claude.ai/code.
+- [ ] When asked, connect your GitHub account (after step A2).
+
+### A2. GitHub
+
+- [ ] Sign in to github.com and turn on two-factor authentication (**Settings → Password and authentication**) if it isn't already on.
+- [ ] Create the main repo: **New repository**
+  - Name: `literally-fantasy-sports`
+  - Visibility: **Public**
+  - Add a README: yes · License: **MIT** · .gitignore: none (Claude Code adds it)
+- [ ] Create the backup repo: **New repository**
+  - Name: `lfs-backups`
+  - Visibility: **Private**
+  - Add a README: yes
+- [ ] In `literally-fantasy-sports`, open **Settings → Code security** and make sure **Secret scanning** and **Push protection** are on.
+
+### A3. Supabase (two projects)
+
+- [ ] Sign up at supabase.com using **Continue with GitHub**.
+- [ ] Turn on two-factor authentication for your Supabase account (**Account → Security**).
+- [ ] Create project **`lfs-prod`**: choose a US West region and generate a strong database password. Save the password in your password manager.
+- [ ] Create project **`lfs-dev`** the same way, with its own password.
+- [ ] **Don't connect either project to GitHub or Vercel.** Skip any "Connect GitHub repository", "Branching" or Vercel integration options in Supabase. Signing up with GitHub only uses it as your login. Database changes reach Supabase through GitHub Actions (D28, D69), and Supabase Branching isn't part of the free plan.
+- [ ] For each project, note these values from **Project Settings** (Claude Code will ask for them):
+
+| Value | Where | Secret? |
+| --- | --- | --- |
+| Project URL and project reference | Project Settings → General / API | No |
+| Publishable (anon) key | Project Settings → API Keys | No |
+| Secret (service role) key | Project Settings → API Keys | **Yes** |
+| Database connection string | Connect button → connection string | **Yes** (contains the password) |
+
+### A4. Google sign-in
+
+This lets players use "Continue with Google".
+
+- [ ] Go to console.cloud.google.com and create a project named `LiterallyFantasySports`.
+- [ ] Check that the project picker (top left) shows `LiterallyFantasySports`.
+- [ ] Open **console.cloud.google.com/auth/overview** and click **Get started**:
+  - App information: app name `LiterallyFantasySports`, user support email = your email
+  - Audience: **External**
+  - Contact information: your email
+  - Finish: agree to the policy → **Create**
+- [ ] Left menu → **Branding**. Fill in and **Save**:
+  - Application home page: `https://www.literallyfantasysports.com`
+  - Application privacy policy link: `https://www.literallyfantasysports.com/privacy-policy`
+  - Application terms of service link: `https://www.literallyfantasysports.com/terms-of-service`
+  - Authorized domains → **Add domain**: `literallyfantasysports.com`
+  - These pages go live in Part B. Google only checks them if it reviews the app, so it's fine to enter them now.
+- [ ] Create credentials: **Clients → Create client**, type **Web application**, name `LFS Web`.
+  - Authorized JavaScript origins: `https://www.literallyfantasysports.com`
+  - Authorized redirect URIs (one for each Supabase project). Copy each from Supabase: **Authentication → Sign In / Providers → Google → Callback URL**. They look like:
+    - `https://<lfs-prod project reference>.supabase.co/auth/v1/callback`
+    - `https://<lfs-dev project reference>.supabase.co/auth/v1/callback`
+- [ ] Copy the **Client ID** and **Client secret** (secret).
+- [ ] In **both** Supabase projects: **Authentication → Sign In / Providers → Google**, turn it on and paste the Client ID and Client secret.
+- [ ] Publish the app (**Audience → Publish app**) so anyone can sign in, not just test users.
+
+### A4b. Privacy policy and terms of service
+
+Drafts are in the `legal/` folder next to this guide (`privacy_policy.md`, `terms_of_service.md`).
+
+- [ ] Fill in the remaining placeholders: `[STATE]` (terms only) and `[EFFECTIVE DATE]` (the day the pages go live). The contact email is already set to `admin@literallyfantasysports.com`.
+- [ ] Upload both files to the repo's `docs/legal/` folder. Claude Code will publish them at `/privacy-policy` and `/terms-of-service`, linked from the site footer and the sign-in page.
+- [ ] Optional: have them looked over by someone with legal knowledge. They are plain starting points, not legal advice.
+
+### A4c. Contact email (forwarding + reply)
+
+- [ ] Squarespace → **Domains** → `literallyfantasysports.com` → **Email** → **Email forwarding** → add `admin` → forward to your personal email. Squarespace adds the MX records itself.
+- [ ] Confirm forwarding works by sending a test from another account.
+- [ ] After Resend is verified (A5): create a second Resend API key named `gmail-send-as`, then in Gmail **Settings → Accounts → Send mail as → Add another email address**: `admin@literallyfantasysports.com`, leave "Treat as an alias" ticked; SMTP server `smtp.resend.com`, port `465`, username `resend`, password = that API key, SSL. Confirm with the code Gmail sends.
+- [ ] In Gmail, choose **Reply from the same address the message was sent to**.
+
+### A5. Resend (sign-in emails)
+
+- [ ] Sign up at resend.com.
+- [ ] **Domains → Add domain:** `literallyfantasysports.com`. Resend shows several DNS records (TXT and MX). Keep that page open.
+- [ ] Add those records in Squarespace (step A6), then click **Verify** in Resend. Verification can take from a few minutes to a few hours.
+- [ ] **API Keys → Create API key** with "Sending access" (secret).
+- [ ] In **both** Supabase projects: **Authentication → Emails → SMTP Settings**, turn on custom SMTP:
+  - Sender email: `noreply@literallyfantasysports.com` · Sender name: `LiterallyFantasySports`
+  - Host: `smtp.resend.com` · Port: `465`
+  - Username: `resend` · Password: your Resend API key
+
+### A6. Squarespace DNS (email records)
+
+- [ ] Sign in at account.squarespace.com → **Domains** → `literallyfantasysports.com` → **DNS** (DNS Settings).
+- [ ] Under **Custom records**, add each record Resend showed, copying the type, host and value exactly.
+- [ ] Don't delete existing records yet. If the domain already has email (MX records) for another service, tell Claude before adding Resend's records, so the two don't conflict.
+
+**Part A is done when:** both Supabase projects exist, Google sign-in is configured in both, and Resend shows the domain as verified. Tell Claude Code you've finished Part A.
+
+## Part B: After the first code (about 30–60 minutes)
+
+Claude Code will tell you when the repo has a working app. Then:
+
+### B1. Vercel (hosting)
+
+- [ ] Sign up at vercel.com with **Continue with GitHub** and choose the **Hobby** (free) plan.
+- [ ] **Add New → Project →** import `literally-fantasy-sports`. Claude Code will give you the root directory and build settings to enter.
+- [ ] **Settings → Environment Variables:** add the values Claude Code lists. Production uses `lfs-prod` values; Preview uses `lfs-dev` values.
+- [ ] **Settings → Domains:** add `www.literallyfantasysports.com`, then add `literallyfantasysports.com` and set it to **redirect to www**.
+- [ ] Vercel shows the DNS records to create (usually an **A** record for the root domain and a **CNAME** for `www`). Add them in Squarespace under **Custom records**. If Squarespace has default records for the same hosts (`@` or `www`), remove those first.
+- [ ] Wait until Vercel shows both domains as **Valid**.
+
+### B2. Supabase sign-in URLs
+
+- [ ] In `lfs-prod`: **Authentication → URL Configuration**
+  - Site URL: `https://www.literallyfantasysports.com`
+- [ ] In `lfs-dev`: **Authentication → URL Configuration**
+  - Add the redirect URL pattern for Vercel preview deploys that Claude Code gives you.
+
+### B3. GitHub settings
+
+Claude Code will try to do these itself and only ask you for the ones it can't.
+
+- [ ] **Production approval:** in the main repo, **Settings → Environments → New environment** named `production`. Under **Required reviewers**, add yourself. This makes production database changes wait for your click.
+- [ ] **Protect `main`:** **Settings → Rules → Rulesets** (or **Branches**). Block direct pushes and require the CI checks Claude Code names.
+- [ ] **Repository secrets:** **Settings → Secrets and variables → Actions**. Add the secrets Claude Code lists (for example the `lfs-prod` and `lfs-dev` database connection strings).
+- [ ] **Backup access token:** on GitHub, open **Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token**.
+  - Repository access: **Only `lfs-backups`**
+  - Permissions: **Contents: Read and write**
+  - Expiration: 1 year (set a calendar reminder to renew it)
+  - Save it as a repository secret in `literally-fantasy-sports` under the name Claude Code gives (for example `BACKUP_REPO_TOKEN`).
+
+**Part B is done when:** you can open www.literallyfantasysports.com, see the privacy policy and terms pages, sign in with Google or an email link, and the first PR shows green CI and a preview link. That completes M0 (`v0.1`).
+
+## Part C: Later milestones
+
+- [ ] **M1:** after the admin flag exists, Claude Code gives you one command or click to mark your account as admin.
+- [ ] **M3 (friends alpha):** invite a few friends and share the link.
+- [ ] **M5:** turn on two-factor (authenticator app) on your game account. The admin panel will require it.
+- [ ] **M6:** sign up at sentry.io (free Developer plan) and connect it to Vercel; turn on **Web Analytics** in the Vercel project. Claude Code adds the code.
+- [ ] **Every year:** renew the domain at Squarespace and the backup access token.
+
+## Accounts summary
+
+| Service | Plan | Used for |
+| --- | --- | --- |
+| Claude | Your current plan | Claude Code builds everything |
+| GitHub | Free | Code, CI, project board, backups repo |
+| Supabase | Free (2 projects) | Database and sign-in (`lfs-prod`, `lfs-dev`) |
+| Google Cloud | Free | "Continue with Google" sign-in |
+| Resend | Free | Sign-in emails |
+| Vercel | Hobby (free) | Hosting and preview deploys |
+| Squarespace | Existing domain | DNS for the site and email |
+| Sentry | Free (from M6) | Error tracking |

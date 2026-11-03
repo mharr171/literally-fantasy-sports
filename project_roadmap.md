@@ -1,0 +1,393 @@
+# LiterallyFantasySports — Project Roadmap
+
+Nov 2, 2026 · @Gary · Last updated: Nov 3, 2026 (D75)
+
+## Review progress
+
+The roadmap review is complete: all 8 steps are agreed. New decisions are added to the decision log as they are made. **Next:** the M0 setup guide (`m0_setup_guide.md`).
+
+- [x] **Step 1: Vision & goals** (agreed Nov 2, 2026)
+- [x] **Step 2: Scope decisions** (agreed Nov 2, 2026)
+- [x] **Step 3: Tech stack & architecture** (agreed Nov 2, 2026)
+- [x] **Step 4: Match engine & data model** (agreed Nov 3, 2026)
+- [x] **Step 5: Milestones** (agreed Nov 3, 2026)
+- [x] **Step 6: Post-MVP backlog** (agreed Nov 3, 2026)
+- [x] **Step 7: Engineering practices** (agreed Nov 3, 2026)
+- [x] **Step 8: Risks & open questions** (agreed Nov 3, 2026)
+
+Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
+
+## Decision log
+
+| # | Date | Decision | Step |
+| --- | --- | --- | --- |
+| D1 | Nov 2, 2026 | Goal priority: real project > portfolio > friends | 1 |
+| D2 | Nov 2, 2026 | No fixed dates; work at own pace. Build order is what matters | 1 |
+| D3 | Nov 2, 2026 | Multi-sport framework. Planned sports: soccer, baseball, football, basketball, hockey, paintball (speedball, 5-player) | 1 |
+| D4 | Nov 2, 2026 | v1 is soccer only; baseball is sport #2 | 1 |
+| D5 | Nov 2, 2026 | One account manages at most one team per sport | 1 |
+| D6 | Nov 2, 2026 | Progress in each sport can grant small bonuses that apply to every sport | 1 |
+| D7 | Nov 2, 2026 | Every sport visualizes players with heatmaps; each sport sets its own grid size (soccer stays 17×25) | 1 |
+| D8 | Nov 2, 2026 | Opponents are AI teams scaled to the player's Elo at season start, plus "ghost" teams saved from other players' finished seasons | 1 |
+| D9 | Nov 2, 2026 | Admin panel to adjust game settings live; season length varies by sport and league size | 1 |
+| D10 | Nov 2, 2026 | Generated player names are random but styled by nationality | 1 |
+| D11 | Nov 2, 2026 | Brand: LiterallyFantasySports at www.literallyfantasysports.com, one section per sport (e.g. `/soccer`) | 1 |
+| D12 | Nov 2, 2026 | GitHub for code, public repo (MIT) | 1 |
+| D13 | Nov 2, 2026 | $0 hosting: Vercel Hobby + Supabase free tier. Any paid service needs an ADR | 1 |
+| D14 | Nov 2, 2026 | Funds in v1: fixed amount per match played, plus bonuses for wins, playoff placement and championships | 2 |
+| D15 | Nov 2, 2026 | Soccer roster: 30 max; matchday squad of 22 (11 starters + 11 subs) | 2 |
+| D16 | Nov 2, 2026 | Soccer league: 8 teams, double round-robin (14 match weeks), then playoffs | 2 |
+| D17 | Nov 2, 2026 | 1 energy = 1 game week (your next scheduled match). Default 1 energy per 2 hours, max 3; adjustable in admin | 2 |
+| D18 | Nov 2, 2026 | Seasons mark in-game time (one in-game year). Roster and Elo carry over; nothing resets | 2 |
+| D19 | Nov 2, 2026 | Per-sport leaderboard of saved season-end entries, ranked by Elo, then by that season's stats | 2 |
+| D20 | Nov 2, 2026 | Sign-in: "Continue with Google" plus passwordless email magic link. No passwords to manage | 2 |
+| D21 | Nov 2, 2026 | Admin is Gary only: an `is_admin` flag on his account, set by hand. Works from any computer by signing in; admin requires two-factor (TOTP) | 2 |
+| D22 | Nov 2, 2026 | Desktop-first design, always mobile-friendly | 2 |
+| D23 | Nov 2, 2026 | All code is written by AI (Claude Code). Gary directs, reviews and approves; he knows coding concepts but not this stack | 3 |
+| D24 | Nov 2, 2026 | Domain is registered at Squarespace (formerly Google Domains); DNS records point to Vercel, and `literallyfantasysports.com` redirects to `www` | 3 |
+| D25 | Nov 2, 2026 | Sign-in emails are sent through Resend (free tier) from the project's own domain | 3 |
+| D26 | Nov 2, 2026 | Biome for linting and formatting | 3 |
+| D27 | Nov 2, 2026 | Sentry (free) for error tracking and Vercel Web Analytics (free) for page views, both added in M6 before launch | 3 |
+| D28 | Nov 2, 2026 | Two Supabase cloud projects: `lfs-prod` (live site) and `lfs-dev` (development and preview deploys). No Docker on Gary's PC. CI creates a throwaway database on each PR to test migrations | 3 |
+| D29 | Nov 2, 2026 | All sports share one database (rows carry a `sport` column). A new sport is built on a Git branch as a new `packages/sport-*` folder, tested against `lfs-dev`; no extra Supabase project needed | 3 |
+| D30 | Nov 3, 2026 | Playoffs: top 4 of 8, single-match ties; draws go to extra time, then penalties | 4 |
+| D31 | Nov 3, 2026 | New teams start with 22 players; packs grow the roster toward 30 | 4 |
+| D32 | Nov 3, 2026 | AI teams in a league are spread above and below the manager's Elo at season start | 4 |
+| D33 | Nov 3, 2026 | At most 1 ghost per manager in a league. A manager's own ghost may appear in their own league under a disguised name | 4 |
+| D34 | Nov 3, 2026 | Players have several attributes per sport; an overall rating is calculated from them | 4 |
+| D35 | Nov 3, 2026 | Players age at season end: young players grow toward potential, older players decline and eventually retire | 4 |
+| D36 | Nov 3, 2026 | The bench matters: automatic substitutions for fatigue and injuries, plus other squad mechanics (see Step 4 questions) | 4 |
+| D37 | Nov 3, 2026 | Chemistry: about n/3 colors per sport, where n = players on the field. Majority-color players get a gameday boost (originally 3 colors, +25%). Details pending | 4 |
+| D38 | Nov 3, 2026 | Nationalities: as diverse as possible; weights set per sport in config | 4 |
+| D39 | Nov 3, 2026 | Default payouts: 1,000 per match, +500 win, +200 draw, playoff and championship bonuses; basic pack 5,000. All adjustable in admin | 4 |
+| D40 | Nov 3, 2026 | Elo works the same for every match: AI, ghost, regular season and playoffs | 4 |
+| D41 | Nov 3, 2026 | Heatmap templates are designed from scratch with a visual template editor (admin tool) instead of being ported from the 2018 code | 4 |
+| D42 | Nov 3, 2026 | Chemistry colors per sport = (n ÷ 3) + 1, minimum 3, where n = players on the field. Each player's color is permanent and random at creation | 4 |
+| D43 | Nov 3, 2026 | Chemistry boost goes to the largest color group on the field at that moment (it changes with subs). A tie for largest gives each tied group a smaller boost (e.g. 25% alone, 15% tied). Sports with 4+ colors also give a minor boost to the second-largest group; ties cascade the same way (details pending) | 4 |
+| D44 | Nov 3, 2026 | Chemistry boosts are flat percentages per rank, set per sport in the admin panel | 4 |
+| D45 | Nov 3, 2026 | Squad mechanics in v1: match fitness across game weeks, in-match fatigue and auto-subs, injuries, sub plans, form, cards and suspensions, morale | 4 |
+| D46 | Nov 3, 2026 | Youth intake every season: the team chooses which prospects to take. After that, packs are the only way to find players (packs act as scouting) | 4 |
+| D47 | Nov 3, 2026 | Packs: 5 players each, tiers with published odds of player skill, plus position-focused packs | 4 |
+| D48 | Nov 3, 2026 | Potential is shown as a rough range. Later, staff or facilities make the range more accurate | 4 |
+| D49 | Nov 3, 2026 | Each player from a pack is either added to the roster or resold at a fixed "bulk" price. Players can be released for free; sales and trades may come later | 4 |
+| D50 | Nov 3, 2026 | No wages or contracts in v1 | 4 |
+| D51 | Nov 3, 2026 | Color count rounds to the nearest whole number, minimum 3 (soccer = 5). Replaces the rounding in D42 | 4 |
+| D52 | Nov 3, 2026 | Chemistry ranking: a tie for first uses up first and second place (no second-place boost). Groups tied for second share a split second-place boost | 4 |
+| D53 | Nov 3, 2026 | Youth intake offers 2n rookies (n = players on the field; 22 for soccer). Any number can be taken for free | 4 |
+| D54 | Nov 3, 2026 | The roster may go over 30 temporarily (rookies, packs), but the next match is blocked until it is back to 30 or fewer. In v1 the only way down is free release or bulk resale | 4 |
+| D55 | Nov 3, 2026 | Every player has a calculated worth. Bulk resale pays a percentage of worth, set in admin and kept below what sales or trades would pay later | 4 |
+| D56 | Nov 3, 2026 | Milestone order: M0 Foundations, M1 Match engine, M2 Players and squads, M3 Seasons, M4 Energy and continuity, M5 Admin and visualization, M6 Polish and launch | 5 |
+| D57 | Nov 3, 2026 | Friends alpha after M3 | 5 |
+| D58 | Nov 3, 2026 | Each milestone is tagged as a version: `v0.1` (M0) to `v0.6` (M5), then `v1.0.0` | 5 |
+| D59 | Nov 3, 2026 | Ghost snapshots record the game version and the date the season was completed. M0 starts with a setup guide for Gary | 5 |
+| D60 | Nov 3, 2026 | Backlog order as listed in section 6, starting with baseball, then cross-sport bonuses | 6 |
+| D61 | Nov 3, 2026 | Energy is separate for each sport and is not affected by cross-sport bonuses. Cross-sport bonuses raise the ratings of rookies offered at youth intake | 6 |
+| D62 | Nov 3, 2026 | Sport order after baseball: paintball, football, basketball, hockey. Replaces the "order to be decided" in D3 | 6 |
+| D63 | Nov 3, 2026 | Private leagues removed from the backlog | 6 |
+| D64 | Nov 3, 2026 | Added to the backlog: season history, hall of fame, retirement tributes | 6 |
+| D65 | Nov 3, 2026 | Working principle: Claude Code does as much as possible, then gives Gary step-by-step instructions for what only he can do | 7 |
+| D66 | Nov 3, 2026 | A `CLAUDE.md` rules file in the repo for every Claude Code session | 7 |
+| D67 | Nov 3, 2026 | PR review by plain-English summary, test results and preview link, after a Claude Code self-review | 7 |
+| D68 | Nov 3, 2026 | Claude Code merges low-risk PRs on green CI; high-risk PRs (migrations, auth, security rules, balance defaults) wait for Gary | 7 |
+| D69 | Nov 3, 2026 | Protected `main` (no direct pushes, green CI required). Production database changes need Gary's one-click approval | 7 |
+| D70 | Nov 3, 2026 | Nightly backups of `lfs-prod` to a private GitHub repo (`lfs-backups`) | 7 |
+| D71 | Nov 3, 2026 | release-please for changelog and tags, plus a player-facing "What's new" message for each release, posted on GitHub and in-game | 7 |
+| D72 | Nov 3, 2026 | Confirmed: each sport has its own energy | 8 |
+| D73 | Nov 3, 2026 | Deferred on purpose: player worth formula and resale percentage (M2); cross-sport bonus size and cap (when built) | 8 |
+| D74 | Nov 3, 2026 | Simple privacy policy and terms of service, published at `/privacy-policy` and `/terms-of-service` (required for Google sign-in), linked from the footer and sign-in page. Source files in `docs/legal/` | M0 |
+| D75 | Nov 3, 2026 | One project email address: `admin@literallyfantasysports.com`, forwarded by Squarespace to Gary's personal inbox; replies sent from Gmail through Resend. Used as the contact address in the privacy policy and terms | M0 |
+
+## 1. Vision & goals
+
+LiterallyFantasySports is a browser-based sports management platform. You collect generated players, set lineups, and play seasons against AI teams and the saved teams of other managers. It starts with soccer and is built as a framework that later sports plug into.
+
+It is a spiritual successor to LiterallyFantasySports (Rails 5, 2018). It keeps that game's best ideas (positional heatmaps, chemistry colors, Elo, energy-gated matches) and fixes its main weakness: logic in hand-written, unrolled code in one 2,000-line controller.
+
+**Goals, in priority order**
+
+1. **Run like a real project:** milestones, issues, PRs and decision records, even with a team of one.
+2. **Portfolio piece:** clean architecture, a tested simulation engine, CI, docs and a polished public demo.
+3. **Fun with friends:** a game you and friends actually play.
+
+**Pace:** solo, at your own pace, with no fixed dates. Durations below are effort estimates (at about 8 hrs/week) used only to size work. The order of development is what matters.
+
+**Sports roadmap**
+
+| Order | Sport | Notes |
+| --- | --- | --- |
+| 1 (v1) | Soccer | 11 players, continuous possession phases, 17×25 grid |
+| 2 | Baseball | 9 + batting order + pitchers, turn-based at-bats; hardest test of the framework |
+| 3–6 | Paintball, football, basketball, hockey | In that order. Paintball = speedball, 5-player, tournament formats vary |
+
+## 2. Scope decisions
+
+*[x] Agreed in Step 2 (D14–D22).*
+
+v1 is a soccer web app with async play. You play seasons against a league of AI teams and ghost teams. There is no real-time multiplayer.
+
+| Decision | Choice | Why |
+| --- | --- | --- |
+| Platform | Web app, desktop-first, always mobile-friendly | Fastest to ship, easy to share a link |
+| Sign-in | Google or email magic link (Supabase Auth) | Least intrusive: no passwords |
+| Competition | Seasons vs AI teams (scaled to your Elo) and ghost teams (saved from finished seasons) | No scheduling or presence problems |
+| Stack | TypeScript full-stack | One language, strong portfolio signal |
+| Sim engine | Shared core + one module per sport; seeded and deterministic | Sports plug in; replays come free |
+| Budget | $0 beyond the domain | Vercel Hobby + Supabase free tier |
+
+**In the MVP**
+
+- **Core loop:** generated players, a roster of up to 30, buy packs, a 22-player matchday squad (11 starters + 11 subs) in a lineup builder, sim matches, Elo.
+- **Funds (light economy):** a fixed payment per match played, plus bonuses for wins, playoff placement and championships. Funds buy packs.
+- **Seasons:** each season is one in-game year. An 8-team league of AI and ghost opponents, double round-robin (14 match weeks), then playoffs. Roster and Elo carry over between seasons. Season end saves standings, a leaderboard entry and a ghost snapshot of your team.
+- **Energy:** 1 energy plays your next scheduled match (one game week). Default refill is 1 energy every 2 hours, max 3.
+- **Leaderboard:** per sport, built from saved season-end entries, ranked by Elo, then by that season's stats.
+- **Match visualization:** influence heatmaps on a pitch plus a play-by-play log.
+- **Admin panel (Gary only, two-factor):** adjust game settings (energy, payouts, league size, sim weights) without a deploy.
+
+**Not in v1 (moved to the backlog):** other sports, cross-sport bonuses, the full economy (attendance, ticket and pack pricing), staff, facilities, training, sales and trades, real-time PvP, a native mobile app, monetization.
+
+## 3. Tech stack & architecture
+
+*[x] Agreed in Step 3 (D23–D29).*
+
+The project is a pnpm + Turborepo monorepo. The engine is pure TypeScript with no database or framework code, so it can be tested on its own, run in the browser for previews, and run on the server for official results.
+
+| Layer | Choice | Notes |
+| --- | --- | --- |
+| Code host | GitHub (public, MIT) | Actions CI, Projects board, issues |
+| Web app | Next.js (App Router), React, Tailwind, shadcn/ui | Server actions for game commands |
+| Database + auth | Supabase (Postgres, Auth, row-level security) | Free tier: `lfs-prod` + `lfs-dev`; migrations kept in the repo |
+| ORM | Drizzle | Typed schema, SQL-first migrations |
+| Validation | Zod | Shared between forms and server actions |
+| Engine | `packages/core` + `packages/sport-*` | Seeded RNG, no I/O |
+| Visuals | SVG/Canvas, hand-rolled | Heatmap overlay per sport's field shape |
+| Hosting | Vercel Hobby (app) + Supabase (data) | Preview deploy for every PR; www.literallyfantasysports.com |
+| Domain + DNS | Squarespace Domains | Records for Vercel (site) and Resend (email) |
+| Auth email | Resend (free tier) | Sends magic-link emails from the project's domain |
+| Lint + format | Biome | One tool, fast, little config |
+| Monitoring | Sentry + Vercel Web Analytics (free) | Added in M6 |
+| Builder | Claude Code | AI writes the code; Gary reviews and approves PRs |
+| Scheduled work | Computed lazily from timestamps | Plus a daily GitHub Actions ping so the free Supabase project is not paused |
+
+**Repo layout**
+
+- `apps/web`: Next.js app (UI, server actions, auth, admin panel)
+- `packages/core`: sport-agnostic engine: seeded RNG, Elo, seasons and fixtures, energy, player generation from config, name pools by nationality, the `Sport` interface
+- `packages/sport-soccer`: positions, lineup rules, 17×25 influence templates, match sim, event types
+- `packages/db`: Drizzle schema, migrations, seed script
+- `packages/config`: shared tsconfig and lint config
+- `docs/`: architecture notes and decision records (ADRs)
+
+**The rules that keep this clean**
+
+- **Game rules live in the engine packages.** The web app only loads data, calls the engine, and saves results.
+- **`packages/core` never imports a sport.** Each sport implements the `Sport` interface: its grid size, lineup structure (units, lines, batting order), match loop and tiebreak rules. Core does not assume possession phases, 11 players, one lineup, or that draws exist.
+- **Abstract from real cases.** Build soccer cleanly; extract shared code into core when baseball proves it is shared.
+
+**Environments**
+
+| Environment | Code | Database | URL |
+| --- | --- | --- | --- |
+| Production | `main` branch | `lfs-prod` | www.literallyfantasysports.com |
+| Preview | Every PR branch | `lfs-dev` | Vercel preview URL per PR |
+| CI | Every PR | Throwaway Supabase in GitHub Actions | none |
+
+A new sport (for example baseball) is developed on a branch, adds `packages/sport-baseball` plus any migrations, and uses `lfs-dev` like any other feature. The `lfs-dev` data can be wiped and re-seeded at any time.
+
+## 4. Match engine design
+
+*[x] Agreed in Step 4 (D30–D55).*
+
+Each sport exports `simulate(participants, seed)`, which returns a result, an event list, and influence maps for the heatmap view. Because the same inputs and seed always give the same match, the app stores only the inputs and the seed, and a replay just runs the match again.
+
+**How a soccer match is simulated**
+
+1. **Effective skill:** each player on the field has several attributes. His rating is boosted when he plays his primary position (+25%) or secondary position (+10%). Chemistry is described below. Form, match fitness and morale also adjust effective skill. These values live in config and can be changed from the admin panel.
+2. **Influence map:** each position has a 17×25 template grid, drawn in the template editor. The team map is the sum of every on-field player's template multiplied by his effective skill.
+3. **Fatigue and the bench:** players tire during a match based on stamina and the match fitness they started with. The engine substitutes automatically for fatigue, injuries and red cards, following the manager's sub plan when one is set. Subs change the influence map and can change chemistry. Fitness, injuries, cards and form carry into later game weeks.
+
+**Chemistry rules**
+
+Colors per sport = (n ÷ 3) + 1, rounded to the nearest whole number, minimum 3 (n = players on the field). Each player's color is permanent and random.
+
+| Sport | On field | Colors |
+| --- | --- | --- |
+| Soccer, football | 11 | 5 |
+| Baseball | 9 | 4 |
+| Hockey | 6 | 3 |
+| Basketball, paintball | 5 | 3 |
+
+Color groups on the field are ranked by size, recalculated whenever a sub changes the lineup. Boosts are flat percentages set per sport in admin (defaults shown):
+
+| Situation | Boost |
+| --- | --- |
+| Largest group, alone | +25% |
+| Tied for largest | +15% each; no second-place boost is given |
+| Second-largest, alone (4+ colors only) | +10% |
+| Tied for second (4+ colors only) | Split second-place boost (default +5% each) |
+
+Examples (soccer): 5/3/2/1 → +25% and +10%. 4/4/2/1 → both 4s get +15%, the 2 gets nothing. 5/2/2/2 → +25%, and each 2 gets +5%.
+
+**Squad and recruitment rules (v1)**
+
+- **Roster:** up to 30; a 22-player matchday squad (11 + 11 bench); new teams start with 22.
+- **Youth intake:** each season, 2n rookies are offered (22 for soccer). Take as many as you like, free.
+- **Packs:** 5 players each, in tiers with published skill odds, plus position-focused packs. Each player is kept or bulk-resold.
+- **Roster limit:** the roster may go over 30 temporarily, but the next match is blocked until it is back to 30 or fewer.
+- **Worth:** every player has a calculated worth (from overall, potential and age). Bulk resale pays a percentage of it, set in admin.
+- **Potential:** shown as a rough range.
+- **Release:** free. No wages, contracts, sales or trades in v1.
+- **Between game weeks:** match fitness recovers, injuries and suspensions count down, form and morale update.
+4. **Phases:** the match runs as about 30 possession phases. In each one, compare the attacking team's influence in the final third with the defending team's influence there. That sets the odds of a chance, then a shot, then a goal (weighed against the keeper).
+5. **Randomness:** a seeded PRNG (for example mulberry32) produces every random roll, so upsets happen but can be replayed exactly.
+6. **Output:** final score, events (minute, type, zone, players involved, substitutions, injuries) and both influence maps.
+
+**Config versions and replays:** templates and tuning values can change from the admin panel, so every match records the config version it used. A replay loads that version, which keeps old replays exact after retuning.
+
+**Template editor (admin tool):** a page where Gary paints each position's influence grid on the sport's field (17×25 for soccer). Each sport supplies its own field shape and grid size. Saving creates a new config version; a preview runs sample matches with the draft templates before they go live.
+
+**Tuning harness:** a script that simulates 10,000+ matches and reports goals per match, the share of draws, and win rate by skill gap. Targets: about 2.5–2.8 goals per match and roughly 25% draws.
+
+**Opponents and seasons**
+
+- At season start, a league is built around your team: ghost teams from other managers' finished seasons, filled out with AI teams whose strength scales to your Elo at that moment.
+- When you finish a season, your roster, lineup and Elo are frozen into a ghost snapshot that can appear in other managers' leagues.
+
+**Core data model (draft)**
+
+| Table | Key fields |
+| --- | --- |
+| profiles | user\_id, display\_name, is\_admin |
+| teams | owner, sport (unique per owner), name, elo, funds, energy, energy\_updated\_at |
+| players | team\_id, sport, name, nationality, age, attributes (jsonb), overall, worth, potential (true value, hidden) + shown range, primary\_pos, secondary\_pos, chemistry color, fitness, form, morale, injury / suspension weeks |
+| packs | team\_id, sport, tier, position focus, seed, opened\_at, choices (keep or resell per player) |
+| youth\_intakes | team\_id, season\_id, prospects (jsonb), picks |
+| lineups | team\_id, sport, slots (jsonb) |
+| seasons | team\_id, sport, number, league\_size, start\_elo, status |
+| season\_opponents | season\_id, kind (ai or ghost), snapshot\_id or generated roster, elo |
+| fixtures | season\_id, week, opponent, match\_id |
+| matches | sport, seed, input snapshot (jsonb), result, elo change |
+| team\_snapshots | team\_id, sport, season\_id, roster + lineup (jsonb), elo, season stats (jsonb), game\_version, completed\_at. Serves as both ghost team and leaderboard entry |
+| game\_config | sport (or global), version, key, value (jsonb); edited in the admin panel. Includes position templates |
+
+Name pools are static data in the engine packages. Position templates and tuning values are stored as versioned config (edited in the admin panel) and passed into the engine, which stays free of database code. Each match stores its config version.
+
+## 5. Milestones
+
+*[x] Agreed in Step 5 (D56–D59). Durations are effort estimates, not dates.*
+
+The engine (M1) comes before any game UI because everything else depends on it. Mechanics that need game weeks (match fitness, suspensions, form, morale) come after seasons exist. Each milestone ends with a version tag and a working deploy.
+
+- [ ] **M0 Foundations (~2 wks) → `v0.1`:** setup guide for Gary (Vercel, Supabase, Resend, Sentry accounts; Squarespace DNS; Claude Code access; private `lfs-backups` repo), `CLAUDE.md`, branch protection, nightly backups, release-please, monorepo, Next.js, Supabase auth (Google + magic link), privacy policy and terms of service pages, `lfs-prod` + `lfs-dev`, CI, preview deploys, domain connected, keep-alive ping. *Done when:* you can sign in at www.literallyfantasysports.com, the privacy policy and terms pages are live, and CI is green.
+- [ ] **M1 Match engine (~4 wks) → `v0.2`:** `packages/core` (RNG, Elo, `Sport` interface, config types), `packages/sport-soccer` (attributes, effective skill, chemistry, influence maps, possession phases, in-match fatigue, auto-subs, in-match injuries and cards), name pools by nationality, versioned `game_config` table, template editor (admin-only page; the admin flag is added here), tuning harness, ADR for the sport interface. *Done when:* the sim is deterministic, harness metrics are on target, and engine coverage is about 90%.
+- [ ] **M2 Players and squads (~4 wks) → `v0.3`:** player generation with worth, team creation with a 22-player starting squad (one per sport per account), tiered and position-focused packs (keep or bulk-resell), free release, drag-and-drop matchday squad builder with sub plan. *Done when:* a new user gets a squad, opens a pack, and saves a valid matchday 22.
+- [ ] **M3 Seasons (~3 wks) → `v0.4`, friends alpha:** league building from AI and ghost teams, double round-robin fixtures, top-4 playoffs, Elo, payouts, standings, season end (aging, retirement, youth intake, roster limit check), ghost snapshot (tagged with game version and completion date) and leaderboard entry. *Done when:* a full season including playoffs can be played, the roster carries into the next season, its ghost appears in another league, and a few friends are invited to the alpha.
+- [ ] **M4 Energy and continuity (~3 wks) → `v0.5`:** energy refill, match fitness carried between game weeks, injury and suspension countdowns, form, morale. Includes fixes from alpha feedback. *Done when:* rotating the squad visibly matters over a season.
+- [ ] **M5 Admin and visualization (~4 wks) → `v0.6`:** full admin panel with two-factor sign-in, pitch heatmaps on result pages, play-by-play log, replay from the seed and stored config version. *Done when:* an admin changes a setting without a deploy, and every result page shows the replay.
+- [ ] **M6 Polish and launch (~2 wks) → `v1.0.0`:** onboarding, empty and error states, in-game "What's new" page, Sentry and Vercel Analytics, README with screenshots. *Done when:* a friend can sign up and play without help.
+
+Total: about 22 weeks of effort.
+
+## 6. Post-MVP backlog
+
+*[x] Agreed in Step 6 (D60–D64).*
+
+These wait until v1 is live. They are listed in build order; check each one off as it ships.
+
+| Done | # | Feature | What it adds | Size | Depends on |
+| --- | --- | --- | --- | --- | --- |
+| [ ] | 1 | Baseball (sport #2) | Second sport; proves the framework | L | v1 |
+| [ ] | 2 | Cross-sport bonuses | Progress in any sport raises the ratings of rookies offered at youth intake in every sport | M | Baseball |
+| [ ] | 3 | Full economy | Attendance, ticket pricing and pack pricing on top of v1's match payouts | M | v1 |
+| [ ] | 4 | Sales and trades | Sell players for funds; trade between managers | L | Full economy |
+| [ ] | 5 | Staff | Scouts and coaches; scouts make potential ranges more accurate | M | Full economy |
+| [ ] | 6 | Facilities | Upgrade tracks (skill floor/ceiling, roster limit, seating), driven by config | M | Full economy |
+| [ ] | 7 | Training | Train between matches to grow toward potential (aging is already in v1) | M | v1 |
+| [ ] | 8 | Tactics | Formation presets, mentality that shifts influence maps | M | Engine |
+| [ ] | 9 | Achievements & notifications | Goals to chase, "your energy is full" alerts | S | v1 |
+| [ ] | 10 | Season history | A page per past season: standings, results, top players | S | v1 |
+| [ ] | 11 | Hall of fame | The best ghost teams of all time, per sport | S | Season history |
+| [ ] | 12 | Retirement tributes | A career summary when a player retires | S | v1 |
+| [ ] | 13 | Paintball (sport #3) | Speedball, 5-player, varied tournament formats | L | Baseball |
+| [ ] | 14 | Football (sport #4) | Offense, defense and special-teams units; play-by-play downs | L | Baseball |
+| [ ] | 15 | Basketball (sport #5) | 5 players, rotations, many short possessions | L | Baseball |
+| [ ] | 16 | Hockey (sport #6) | 6 players, line changes | L | Baseball |
+| [ ] | 17 | Player portraits | Generated avatars | S | v1 |
+
+**Removed:** private leagues (D63).
+
+## 7. Engineering practices
+
+*[x] Agreed in Step 7 (D65–D71).*
+
+Work as if there were a team: every change goes through an issue, a branch, a PR and green CI. **Claude Code does as much of the work as possible, then gives Gary short, step-by-step instructions for anything only he can do** (account settings, approvals, secrets, DNS).
+
+**Roles**
+
+| Who | Does |
+| --- | --- |
+| Claude Code | Writes issues, code, tests, migrations and docs; opens PRs; runs a self-review; merges low-risk PRs; prepares releases |
+| Gary | Sets priorities, clicks through preview deploys, approves high-risk PRs and production database changes, follows setup instructions |
+
+**Workflow**
+
+- **Planning:** a GitHub Projects board, one GitHub milestone per roadmap milestone, one issue per Claude Code session or PR.
+- **`CLAUDE.md`:** a rules file in the repo that every Claude Code session reads first: architecture rules, conventions, how to run tests, and links to this roadmap and its decision log.
+- **Every PR includes:** a plain-English summary, test results, a preview link and what to click to check it. Claude Code runs a self-review before opening it.
+- **Merging:** Claude Code merges low-risk PRs (docs, tests, small fixes, UI copy) once CI is green. High-risk PRs (database migrations, auth, security rules, payouts or game balance defaults) wait for Gary, with a short checklist of what to look at.
+- **Protected `main`:** no direct pushes; green CI required before any merge. Claude Code configures this where it can and gives Gary instructions for the rest.
+- **Production database changes:** tested in CI and on `lfs-dev` first. Applying them to `lfs-prod` waits for Gary's one-click approval in GitHub (a protected "production" environment), with instructions in the PR.
+- **Backups:** a nightly GitHub Action saves a copy of `lfs-prod` to a separate **private** repo (`lfs-backups`). Setup instructions are part of the M0 guide.
+
+**Quality**
+
+- **Code:** TypeScript strict mode; Biome; a pre-commit hook with lint-staged.
+- **Testing:** Vitest for the engine packages (about 90% coverage); Playwright smoke tests for sign up → build a squad → play a match.
+- **CI:** GitHub Actions runs lint, typecheck, tests, build and a throwaway-database migration test on every PR. Vercel preview deploys on every PR.
+- **Database:** migrations committed to the repo, row-level security on every table, a seed script for `lfs-dev`.
+- **Docs:** a README with screenshots, an architecture overview, setup steps and an `.env.example`; short ADRs for key decisions (stack, sim model, async play, sport interface, free-tier hosting).
+
+**Releases**
+
+- **Conventional Commits** in every PR title.
+- **release-please** (free GitHub Action) builds the changelog and the version tags (`v0.1` … `v1.0.0`) from those commits.
+- **Player-facing release notes:** each release also gets a PR-style "What's new" message written for players, explaining the changes in plain language (new features, balance changes, fixes). It is posted with the GitHub release and on an in-game "What's new" page.
+
+## 8. Risks & open questions
+
+*[x] Agreed in Step 8 (D72–D73).*
+
+| Risk | Mitigation |
+| --- | --- |
+| v1 scope has grown (7 squad mechanics, template editor, admin) and could take long to become fun | Friends alpha after M3; mechanics tuned in admin rather than perfected up front |
+| Sim balance with many interacting systems (chemistry, fitness, form, morale) | Tuning harness from M1; every value adjustable in admin |
+| AI-written code that Gary can't easily review | ~90% engine test coverage, `CLAUDE.md` rules, self-review, CI gates, ADRs explaining design choices |
+| Claude plan usage limits slow progress | Small issues (one per session); progress tracked on the board and in this roadmap |
+| Secrets leaking in a public repo | Keys only in Vercel and GitHub secrets; GitHub secret scanning and push protection on |
+| Cheating (faked results) | Matches simulated only on the server; database rules block direct writes |
+| Framework over-designed before baseball | Build soccer cleanly; extract shared code when baseball needs it |
+| Scope creep | Backlog is locked until v1 ships |
+| Too few ghosts at launch | AI teams fill empty league slots |
+| Free-tier limits (Supabase pausing, Vercel non-commercial, Resend email cap) | Keep-alive ping, no monetization, check usage before any public promotion |
+| Next.js conventions keep changing | Engine and database stay framework-free and portable |
+
+**Open questions**
+
+- [x] Name and branding → LiterallyFantasySports (D11)
+- [x] Grid resolution → 17×25 for soccer; each sport sets its own (D7)
+- [x] Ghost opponents → season leagues of AI + ghost teams (D8)
+- [x] Energy → separate per sport, 1 per 2 hours, max 3, adjustable in admin (D9, D17, D61, D72)
+- [x] Public or private repo → public (D12)
+- [x] Soccer league size and season length → 8 teams, double round-robin + playoffs (D16)
+- [x] Playoff format → top 4, single-match ties (D30)
+- [x] Starting squad size → 22 (D31)
+- [x] AI team strength → spread above and below Elo (D32)
+- [x] Ghost selection → 1 per manager per league (D33)
+- [x] Do subs matter in the sim → yes (D36)
+- [x] Do players age → yes (D35)
+- [x] Payout amounts and pack price → defaults in D39
+- [x] Chemistry details → D51, D52
+- [x] Squad mechanics → D45
+- [x] Packs, recruitment and roster → D46–D50, D53–D55
+- [ ] Player worth formula and bulk resale percentage → decide while building M2 (D73)
+- [ ] Cross-sport bonus size and cap → decide when the feature is built (D73)
