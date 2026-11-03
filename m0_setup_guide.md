@@ -77,10 +77,10 @@ This lets players use "Continue with Google".
 
 ### A4b. Privacy policy and terms of service
 
-Drafts are in the `legal/` folder next to this guide (`privacy_policy.md`, `terms_of_service.md`).
+The policy and terms are in `docs/legal/` (`privacy_policy.md`, `terms_of_service.md`), with placeholders filled in (governing law: California; effective date: November 1, 2026). The site publishes them at `/privacy-policy` and `/terms-of-service`, linked from the footer (and from the sign-in page once it exists).
 
-- [ ] Fill in the remaining placeholders: `[STATE]` (terms only) and `[EFFECTIVE DATE]` (the day the pages go live). The contact email is already set to `admin@literallyfantasysports.com`.
-- [ ] Upload both files to the repo's `docs/legal/` folder. Claude Code will publish them at `/privacy-policy` and `/terms-of-service`, linked from the site footer and the sign-in page.
+- [x] Fill in the placeholders and add the files to `docs/legal/`.
+- [ ] If the pages go live after November 1, 2026, update the effective date in both files to the go-live day.
 - [ ] Optional: have them looked over by someone with legal knowledge. They are plain starting points, not legal advice.
 
 ### A4c. Contact email (forwarding + reply)
