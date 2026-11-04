@@ -132,10 +132,10 @@ Claude Code will tell you when the repo has a working app. Then:
 
 Supabase only sends people back to addresses on its allow list, so set these in each project under **Authentication → URL Configuration**:
 
-- [ ] `lfs-prod`: **Site URL** `https://www.literallyfantasysports.com`. **Redirect URLs → Add URL:** `https://www.literallyfantasysports.com/auth/callback`
+- [ ] `lfs-prod`: **Site URL** `https://www.literallyfantasysports.com`. **Redirect URLs → Add URL:** `https://www.literallyfantasysports.com/**`
 - [ ] `lfs-dev`: **Site URL** `http://localhost:3000`. **Redirect URLs → Add URL** for each of:
-  - `http://localhost:3000/auth/callback`
-  - `https://literally-fantasy-sports-*-<your-vercel-team>.vercel.app/auth/callback` (copy the part after the last `-` from any preview link Vercel gives you, e.g. `…-gary-projects.vercel.app`)
+  - `http://localhost:3000/**`
+  - `https://literally-fantasy-sports-*-<your-vercel-team>.vercel.app/**` (your team slug is the part of a preview link just before `.vercel.app`, e.g. `…-gary-projects.vercel.app`)
 
 So that email sign-in links work even when opened in a different browser or on another device (e.g. requested on the PC, opened on the phone), change two email templates in **both** projects under **Authentication → Emails → Templates**:
 
