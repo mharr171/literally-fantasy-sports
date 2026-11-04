@@ -29,6 +29,12 @@ import {
   generateAiTeam,
 } from "./ai-team";
 import {
+  DEFAULT_GHOST_SETTINGS,
+  type GhostCandidate,
+  type GhostSettings,
+  pickGhosts,
+} from "./ghosts";
+import {
   type SoccerConfig,
   type SoccerEvent,
   type SoccerTeam,
@@ -45,9 +51,11 @@ export type SeasonStatus = "regular" | "playoffs" | "finished";
 export interface LeagueSlot {
   slot: number;
   name: string;
-  kind: "manager" | "ai";
+  kind: "manager" | "ai" | "ghost";
   /** Rating at season start; AI squads are built from it. */
   startRating: number;
+  /** For a ghost: the snapshot it plays as (D8, D33). */
+  ghostId?: string | null;
 }
 
 export interface NewFixture {
@@ -57,13 +65,39 @@ export interface NewFixture {
   awaySlot: number;
 }
 
-/** The AI side of a new league (D8, D32): names and ratings, plus the schedule. */
+/**
+ * A new league around the manager (D8, D32, D33): up to a few ghosts of
+ * finished seasons near the manager's Elo, AI clubs for the other places,
+ * and the schedule. Each ghost takes the AI place closest to its rating.
+ * The manager's own ghost may appear, under a made-up name.
+ */
 export function newLeague(
   seed: string,
-  manager: { name: string; elo: number },
+  manager: { name: string; elo: number; teamId?: string },
+  ghosts: readonly GhostCandidate[] = [],
+  ghostSettings: GhostSettings = DEFAULT_GHOST_SETTINGS,
   settings: AiTeamSettings = DEFAULT_AI_TEAM_SETTINGS,
 ): { slots: LeagueSlot[]; fixtures: NewFixture[] } {
   const ratings = aiOpponentRatings(manager.elo, LEAGUE_SIZE - 1);
+  // Ghost places: each picked ghost replaces the free AI place nearest its Elo.
+  const ghostAt = new Map<number, GhostCandidate>();
+  for (const g of pickGhosts(
+    createRng(seed).fork("ghosts"),
+    manager.elo,
+    ghosts,
+    ghostSettings,
+  )) {
+    let best = -1;
+    ratings.forEach((r, i) => {
+      if (ghostAt.has(i + 1)) return;
+      if (
+        best === -1 ||
+        Math.abs(r - g.elo) < Math.abs((ratings[best - 1] as number) - g.elo)
+      )
+        best = i + 1;
+    });
+    ghostAt.set(best, g);
+  }
   // No two clubs share a name or a place ("X City" and "X United").
   const place = (name: string) =>
     name.slice(0, Math.max(0, name.lastIndexOf(" "))).toLowerCase();
@@ -79,8 +113,31 @@ export function newLeague(
       startRating: manager.elo,
     },
   ];
+  // Ghosts keep their club's name (their own manager's is disguised).
+  for (const [slot, g] of [...ghostAt].sort((a, b) => a[0] - b[0])) {
+    let name =
+      g.teamId === manager.teamId
+        ? aiTeamName(createRng(seed).fork(`disguise-${slot}`))
+        : g.name;
+    for (let k = 0; clash(name); k++)
+      name = aiTeamName(createRng(seed).fork(`ghost-name-${slot}-${k}`));
+    used.add(name.toLowerCase());
+    places.add(place(name));
+    ghostAt.set(slot, { ...g, name });
+  }
   ratings.forEach((rating, i) => {
     const slot = i + 1;
+    const ghost = ghostAt.get(slot);
+    if (ghost) {
+      slots.push({
+        slot,
+        name: ghost.name,
+        kind: "ghost",
+        startRating: ghost.elo,
+        ghostId: ghost.id,
+      });
+      return;
+    }
     let name = aiTeam(seed, slot, rating, settings).name;
     for (let k = 0; clash(name); k++)
       name = aiTeamName(createRng(seed).fork(`name-${slot}-${k}`));
@@ -172,6 +229,11 @@ export interface ManagerSide {
   team: SoccerTeam;
   /** Player names by id, for match summaries. */
   names: ReadonlyMap<string, string>;
+  /** Ghost opponents by slot. A ghost whose snapshot is gone plays as an AI club. */
+  ghosts?: ReadonlyMap<
+    number,
+    { team: SoccerTeam; names: ReadonlyMap<string, string> }
+  >;
 }
 
 /**
@@ -203,6 +265,13 @@ export function playWeek(
     else {
       const info = state.slots.find((s) => s.slot === slot);
       if (!info) throw new Error(`No team in slot ${slot}.`);
+      const ghost =
+        info.kind === "ghost" ? manager.ghosts?.get(slot) : undefined;
+      if (ghost) {
+        for (const [id, n] of ghost.names) names.set(id, n);
+        teams.set(slot, ghost.team);
+        return ghost.team;
+      }
       const ai = aiTeam(state.seed, slot, info.startRating, aiSettings);
       for (const p of ai.players) names.set(p.id, p.displayName);
       team = squadToTeam(

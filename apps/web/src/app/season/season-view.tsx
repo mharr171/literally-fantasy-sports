@@ -150,7 +150,17 @@ export function SeasonView({
                     className={`border-t border-zinc-200 dark:border-zinc-800 ${slot === MANAGER_SLOT ? "bg-sky-50 font-semibold dark:bg-sky-950" : ""} ${i === 3 ? "border-b-2 border-b-zinc-400" : ""}`}
                   >
                     <td className="px-3 py-1.5">{i + 1}</td>
-                    <td className="px-3 py-1.5">{info?.name}</td>
+                    <td className="px-3 py-1.5">
+                      {info?.name}
+                      {info?.kind === "ghost" && (
+                        <span
+                          className="ml-1.5 rounded bg-violet-100 px-1 text-xs font-normal text-violet-800 dark:bg-violet-950 dark:text-violet-300"
+                          title="A ghost: another manager's team from a finished season"
+                        >
+                          ghost
+                        </span>
+                      )}
+                    </td>
                     {(
                       [
                         ["p", r.played],

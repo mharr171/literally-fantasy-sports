@@ -376,6 +376,41 @@ export const seasons = pgTable(
   ],
 ).enableRLS();
 
+/**
+ * A team frozen at the end of a season (D19, D59): plays as a ghost in other
+ * managers' leagues and is the season's leaderboard entry. Rosters stay
+ * server-side; the leaderboard is rendered on the server from the public
+ * fields.
+ */
+export const teamSnapshots = pgTable(
+  "team_snapshots",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    teamId: uuid()
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    seasonId: uuid()
+      .notNull()
+      .references(() => seasons.id, { onDelete: "cascade" }),
+    sport: text().notNull(),
+    teamName: text().notNull(),
+    seasonNumber: integer().notNull(),
+    elo: integer().notNull(),
+    /** Players as the match engine needs them (no hidden potential). */
+    players: jsonb().notNull(),
+    squad: jsonb().notNull(),
+    /** League record and playoff result. */
+    stats: jsonb().notNull(),
+    gameVersion: text().notNull(),
+    completedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("team_snapshots_season").on(t.seasonId),
+    index("team_snapshots_sport_elo").on(t.sport, t.elo),
+    check("team_snapshots_sport", sql`${t.sport} ${SPORT_CHECK}`),
+  ],
+).enableRLS();
+
 /** The teams in a season's league, by slot (0 = the manager's team). */
 export const seasonTeams = pgTable(
   "season_teams",
@@ -388,6 +423,10 @@ export const seasonTeams = pgTable(
     name: text().notNull(),
     startRating: integer().notNull(),
     elo: integer().notNull(),
+    /** For a ghost: the snapshot it plays as. If the snapshot goes, it plays as an AI club. */
+    snapshotId: uuid().references(() => teamSnapshots.id, {
+      onDelete: "set null",
+    }),
   },
   (t) => [
     primaryKey({ columns: [t.seasonId, t.slot] }),
