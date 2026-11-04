@@ -56,18 +56,32 @@ export function snapshotTeam(
   };
 }
 
-/** A ghost as the engine plays it, with names for match reports. */
+/**
+ * A ghost as the engine plays it, with names for match reports. Its players
+ * get ids of their own (prefixed with the ghost's id), so a manager can
+ * play their own ghost without the same player appearing on both sides.
+ */
 export function ghostTeam(
   id: string,
   snapshot: GhostSnapshot,
 ): { team: SoccerTeam; names: Map<string, string> } {
+  const key = (playerId: string) => `${id}:${playerId}`;
+  const players = new Map(
+    snapshot.players.map((p) => [key(p.id), { ...p, id: key(p.id) }]),
+  );
+  const squad: MatchdaySquad = {
+    ...snapshot.squad,
+    lineup: snapshot.squad.lineup.map(key),
+    bench: snapshot.squad.bench.map(key),
+    subPlan: snapshot.squad.subPlan.map((s) => ({
+      ...s,
+      outId: key(s.outId),
+      inId: key(s.inId),
+    })),
+  };
   return {
-    team: squadToTeam(
-      id,
-      snapshot.squad,
-      new Map(snapshot.players.map((p) => [p.id, p])),
-    ),
-    names: new Map(snapshot.players.map((p) => [p.id, p.displayName])),
+    team: squadToTeam(id, squad, players),
+    names: new Map([...players.values()].map((p) => [p.id, p.displayName])),
   };
 }
 
