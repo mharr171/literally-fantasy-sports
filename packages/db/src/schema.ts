@@ -3,6 +3,7 @@ import {
   boolean,
   check,
   foreignKey,
+  index,
   integer,
   jsonb,
   pgPolicy,
@@ -10,6 +11,7 @@ import {
   primaryKey,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { authenticatedRole, authUid, authUsers } from "drizzle-orm/supabase";
@@ -162,3 +164,141 @@ export const gameConfig = pgTable(
 
 export type GameConfigVersion = typeof gameConfigVersions.$inferSelect;
 export type GameConfigRow = typeof gameConfig.$inferSelect;
+
+const SPORT_CHECK = sql`in ('soccer', 'baseball', 'paintball', 'football', 'basketball', 'hockey')`;
+
+/**
+ * A manager's team in one sport: at most one per sport per account (D5).
+ * Players read their own team; every change goes through the server, which
+ * validates it and writes with the service role (no direct writes, Step 8).
+ */
+export const teams = pgTable(
+  "teams",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    ownerId: uuid()
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    sport: text().notNull(),
+    name: text().notNull(),
+    elo: integer().notNull().default(1500),
+    funds: integer().notNull().default(0),
+    energy: integer().notNull().default(3),
+    energyUpdatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("teams_owner_sport").on(t.ownerId, t.sport),
+    uniqueIndex("teams_sport_name").on(t.sport, sql`lower(${t.name})`),
+    check("teams_sport", sql`${t.sport} ${SPORT_CHECK}`),
+    check(
+      "teams_name_length",
+      sql`char_length(btrim(${t.name})) between 3 and 30`,
+    ),
+    check("teams_funds_nonnegative", sql`${t.funds} >= 0`),
+    check("teams_energy_nonnegative", sql`${t.energy} >= 0`),
+    pgPolicy("teams_select_own", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`${t.ownerId} = ${authUid}`,
+    }),
+  ],
+).enableRLS();
+
+/**
+ * Players on a team. `potential` is the hidden true potential (D48): no
+ * player can read that column, only the shown range.
+ */
+export const players = pgTable(
+  "players",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    teamId: uuid()
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    sport: text().notNull(),
+    firstName: text().notNull(),
+    lastName: text().notNull(),
+    displayName: text().notNull(),
+    nationality: text().notNull(),
+    age: integer().notNull(),
+    primaryPosition: text().notNull(),
+    secondaryPosition: text(),
+    attributes: jsonb().notNull(),
+    overall: integer().notNull(),
+    potential: integer().notNull(),
+    potentialLow: integer().notNull(),
+    potentialHigh: integer().notNull(),
+    worth: integer().notNull(),
+    chemistryColor: integer().notNull(),
+    templateVariant: text().notNull().default("default"),
+    /** Came from a free starter pack: can be released but not resold (D83). */
+    fromStarterPack: boolean().notNull().default(false),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("players_team").on(t.teamId),
+    check("players_sport", sql`${t.sport} ${SPORT_CHECK}`),
+    check(
+      "players_overall_range",
+      sql`${t.overall} between 1 and 99 and ${t.potential} between 1 and 99`,
+    ),
+    check(
+      "players_potential_range",
+      sql`${t.potentialLow} <= ${t.potentialHigh} and ${t.potentialHigh} <= 99`,
+    ),
+    check("players_age_range", sql`${t.age} between 14 and 50`),
+    check("players_worth_nonnegative", sql`${t.worth} >= 0`),
+    pgPolicy("players_select_own", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`exists (select 1 from public.teams tm where tm.id = ${t.teamId} and tm.owner_id = ${authUid})`,
+    }),
+  ],
+).enableRLS();
+
+/**
+ * Packs a team owns (D47, D83). The contents come from `seed`, so opening a
+ * pack always shows the same 5 players. `kept` records which of them (by
+ * index 0–4) the manager kept once the pack is resolved.
+ */
+export const packs = pgTable(
+  "packs",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    teamId: uuid()
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    sport: text().notNull(),
+    kind: text().notNull(),
+    focus: text().notNull(),
+    tier: text().notNull(),
+    seed: text().notNull(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    openedAt: timestamp({ withTimezone: true }),
+    resolvedAt: timestamp({ withTimezone: true }),
+    kept: jsonb(),
+  },
+  (t) => [
+    index("packs_team").on(t.teamId),
+    check("packs_sport", sql`${t.sport} ${SPORT_CHECK}`),
+    check("packs_kind", sql`${t.kind} in ('starter', 'bought')`),
+    check(
+      "packs_focus",
+      sql`${t.focus} in ('attack', 'midfield', 'defence', 'goal', 'any')`,
+    ),
+    check(
+      "packs_resolved_after_opened",
+      sql`${t.resolvedAt} is null or (${t.openedAt} is not null and ${t.resolvedAt} >= ${t.openedAt})`,
+    ),
+    pgPolicy("packs_select_own", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`exists (select 1 from public.teams tm where tm.id = ${t.teamId} and tm.owner_id = ${authUid})`,
+    }),
+  ],
+).enableRLS();
+
+export type Team = typeof teams.$inferSelect;
+export type Player = typeof players.$inferSelect;
+export type Pack = typeof packs.$inferSelect;

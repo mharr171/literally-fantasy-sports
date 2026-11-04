@@ -36,6 +36,20 @@
       "when": 1793762091735,
       "tag": "0004_game_config_freeze_and_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793765655266,
+      "tag": "0005_teams_players_packs",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793765656267,
+      "tag": "0006_teams_players_packs_grants",
+      "breakpoints": true
     }
   ]
 }
