@@ -1,4 +1,9 @@
-import { POSITIONS, rosterWarning, squadProblems } from "@lfs/sport-soccer";
+import {
+  formation,
+  type MatchdaySquad,
+  rosterWarning,
+  squadProblems,
+} from "@lfs/sport-soccer";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -20,7 +25,7 @@ import {
 } from "@/lib/team";
 import { CreateTeamForm } from "./create-team-form";
 import { OpenPack } from "./open-pack";
-import { RosterTable } from "./roster-table";
+import { RosterTable, type SquadRole } from "./roster-table";
 import { Scouting } from "./scouting";
 import { Shop } from "./shop";
 
@@ -114,7 +119,7 @@ async function TeamContent() {
           rosterSize={roster.length}
         />
       )}
-      <Roster players={roster} />
+      <Roster players={roster} squad={squadRoles(squad)} />
       <Shop
         funds={team.funds}
         hasOpenPack={openPack !== null}
@@ -135,25 +140,39 @@ function TeamHeading({ team }: { team: MyTeam }) {
   );
 }
 
-function Roster({ players }: { players: RosterPlayer[] }) {
-  const order = (p: RosterPlayer) => POSITIONS.indexOf(p.primaryPosition);
-  const sorted = [...players].sort(
-    (a, b) => order(a) - order(b) || b.overall - a.overall,
-  );
+/** Each player's place in the saved matchday squad (D109). */
+function squadRoles(squad: MatchdaySquad | null): Record<string, SquadRole> {
+  if (!squad) return {};
+  const slots = formation(squad.formation)?.slots ?? [];
+  const roles: Record<string, SquadRole> = {};
+  squad.lineup.forEach((id, i) => {
+    roles[id] = { kind: "starter", slot: slots[i]?.position ?? "?" };
+  });
+  for (const id of squad.bench) roles[id] = { kind: "bench" };
+  return roles;
+}
+
+function Roster({
+  players,
+  squad,
+}: {
+  players: RosterPlayer[];
+  squad: Record<string, SquadRole>;
+}) {
   const warning = rosterWarning(players.length);
   return (
     <div className="flex flex-col gap-3">
       <div>
         <h2 className="text-xl font-semibold">Roster</h2>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          {players.length} players (22–30 to play). Starter-pack players can be
-          released but not sold.
+          {players.length} players (22–30 to play). Click a column to sort.
+          Starter-pack players can be released but not sold.
         </p>
       </div>
       {warning && (
         <p className="text-sm text-amber-700 dark:text-amber-400">{warning}</p>
       )}
-      <RosterTable players={sorted} />
+      <RosterTable players={players} squad={squad} />
     </div>
   );
 }
