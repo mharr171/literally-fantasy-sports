@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/mharr171/literally-fantasy-sports/compare/v1.1.0...v1.2.0) (2026-11-04)
+
+
+### Features
+
+* left and right heatmaps for paired positions, plus 3 starting variants per position ([#66](https://github.com/mharr171/literally-fantasy-sports/issues/66)) ([c66fb57](https://github.com/mharr171/literally-fantasy-sports/commit/c66fb57c7efeaa61120160376fa00f5d95bc25ba))
+
 ## [1.1.0](https://github.com/mharr171/literally-fantasy-sports/compare/v1.0.0...v1.1.0) (2026-11-04)
 
 
