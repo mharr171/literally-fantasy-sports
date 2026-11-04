@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.5.0](https://github.com/mharr171/literally-fantasy-sports/compare/v0.4.0...v0.5.0) (2026-11-04)
+
+
+### Features
+
+* **admin:** testing tools to refill energy, add funds, heal a squad, play weeks ahead or delete a team ([#38](https://github.com/mharr171/literally-fantasy-sports/issues/38)) ([71a626a](https://github.com/mharr171/literally-fantasy-sports/commit/71a626add0e2a2113032fb974cbc9e42b76bc02b))
+* fitness, injuries and suspensions carry over between weeks, so rotating your squad matters ([#37](https://github.com/mharr171/literally-fantasy-sports/issues/37)) ([2b0b1cf](https://github.com/mharr171/literally-fantasy-sports/commit/2b0b1cf4806f917bdcd77cd11cd656cefdfcb6bf))
+* form and morale move results a little, and auto-pick skips injured and suspended players ([#39](https://github.com/mharr171/literally-fantasy-sports/issues/39)) ([d403b33](https://github.com/mharr171/literally-fantasy-sports/commit/d403b33de8bf4ed347cbb7e1db3444986d07fddd))
+* matches cost energy (1 back every 15 minutes, up to 3), and admins can switch it off per sport ([#35](https://github.com/mharr171/literally-fantasy-sports/issues/35)) ([aaa54d1](https://github.com/mharr171/literally-fantasy-sports/commit/aaa54d11b8ff0e0bc977fa9fafc49bf0843c5dea))
+
 ## [0.4.0](https://github.com/mharr171/literally-fantasy-sports/compare/v0.3.0...v0.4.0) (2026-11-04)
 
 
