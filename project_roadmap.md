@@ -126,6 +126,7 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D103 | Nov 4, 2026 | Admin two-factor sign-in goes on the back burner (Gary): this is mainly a personal project, not run for the public, so the admin flag plus Google or email sign-in is enough for now. A finished version (authenticator app, `is_admin()` requiring `aal2`) was built and closed unmerged in #47, ready to pick up again if the game opens to other players. M5 is done without it | M5 |
 | D104 | Nov 4, 2026 | Sentry error tracking and Vercel Web Analytics are skipped for now (Gary): with a personal project and a handful of players, Vercel's own logs and a message from a friend are enough. Either can be added later without other changes (D27) | M6 |
 | D105 | Nov 4, 2026 | M3 and M6 are done (Gary): onboarding checklist, error and empty pages, What's new and the README are in, so v1.0.0 can ship. Inviting friends (M3's alpha, M6's "a friend can sign up and play without help") is welcome but no longer a gate, since this is mainly a personal project. Next is the post-MVP backlog (section 6) | M6 |
+| D106 | Nov 4, 2026 | The end of M6 ships as `v1.0.0` (D76): release-please only bumps the minor version below 1.0, so the commit that closes M6 carries a `Release-As: 1.0.0` footer. After that, features bump the minor version and fixes the patch as usual | M6 |
 
 ## 1. Vision & goals
 
