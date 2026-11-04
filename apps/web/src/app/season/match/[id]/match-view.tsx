@@ -142,7 +142,7 @@ export function MatchView({
             {teams.away}
           </span>
         </div>
-        {summary && (
+        {summary?.possession && (
           <div className="grid grid-cols-[1fr_auto_1fr] gap-x-3 text-sm">
             <span className="text-right tabular-nums">
               {Math.round(summary.possession.home * 100)}%
