@@ -6,6 +6,7 @@ import {
 } from "@lfs/sport-soccer";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { EmptyState } from "@/components/empty-state";
 import { moraleLabel } from "@/components/form-label";
 import type { LoadedSeason } from "@/lib/season";
 import { type EnergyView, PlayWeekButton } from "./season-buttons";
@@ -207,6 +208,13 @@ export function SeasonView({
           The top 4 (above the line) reach the playoffs.
         </p>
       </div>
+
+      {weeks.length === 0 && (
+        <EmptyState title="No results yet.">
+          Play week 1 and the results fill in here. Each one opens a match page
+          with a heatmap, the play-by-play and a replay.
+        </EmptyState>
+      )}
 
       {weeks.length > 0 && (
         <div className="flex flex-col gap-2">
