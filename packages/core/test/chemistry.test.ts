@@ -62,8 +62,8 @@ describe("chemistryBoostsByColor (D43, D52)", () => {
   it("gives no second-place boost in sports with fewer than 4 colours", () => {
     // Basketball: 5 players, 3 colours, 3/2.
     expect(chemistryBoostsByColor(field(3, 2), 3)).toEqual([0.25, 0, 0]);
-    // A three-way tie for first still gets the tied boost.
-    expect(chemistryBoostsByColor([0, 1, 2], 3)).toEqual([0.15, 0.15, 0.15]);
+    // A tie for first still gets the tied boost.
+    expect(chemistryBoostsByColor(field(2, 2, 1), 3)).toEqual([0.15, 0.15, 0]);
   });
 
   it("handles one colour, an empty field, and colours in any order", () => {
@@ -74,12 +74,44 @@ describe("chemistryBoostsByColor (D43, D52)", () => {
     ]);
   });
 
+  it("ignores groups smaller than two players (D79)", () => {
+    // 10/1: the lone player gets no second-place boost.
+    expect(chemistryBoostsByColor(field(10, 1), 5)).toEqual([0.25, 0, 0, 0, 0]);
+    // 7/1/1/1/1: only the 7 ranks.
+    expect(chemistryBoostsByColor(field(7, 1, 1, 1, 1), 5)).toEqual([
+      0.25, 0, 0, 0, 0,
+    ]);
+    // 5/2/1/1/1 (two 1s can't tie for second): +25% and +10%.
+    expect(chemistryBoostsByColor(field(5, 2, 1, 1, 1), 5)).toEqual([
+      0.25, 0.1, 0, 0, 0,
+    ]);
+    // Five players in five colours: nobody qualifies.
+    expect(chemistryBoostsByColor([0, 1, 2, 3, 4], 5)).toEqual([0, 0, 0, 0, 0]);
+    // Basketball 2/2/1: the two pairs tie for first.
+    expect(chemistryBoostsByColor(field(2, 2, 1), 3)).toEqual([0.15, 0.15, 0]);
+  });
+
+  it("can allow single-player groups when a sport sets the minimum to 1", () => {
+    const loose = { ...DEFAULT_CHEMISTRY_BOOSTS, minGroupSize: 1 };
+    expect(chemistryBoostsByColor(field(10, 1), 5, loose)).toEqual([
+      0.25, 0.1, 0, 0, 0,
+    ]);
+    expect(chemistryBoostsByColor([0, 1, 2], 3, loose)).toEqual([
+      0.15, 0.15, 0.15,
+    ]);
+    // A minimum below 1 behaves like 1.
+    expect(
+      chemistryBoostsByColor([0, 1, 2], 3, { ...loose, minGroupSize: 0 }),
+    ).toEqual([0.15, 0.15, 0.15]);
+  });
+
   it("uses the sport's own boost settings", () => {
     const custom: ChemistryBoosts = {
       largestAlone: 0.3,
       largestTied: 0.2,
       secondAlone: 0.12,
       secondTied: 0.06,
+      minGroupSize: 2,
     };
     expect(chemistryBoostsByColor(field(5, 3, 2, 1), 5, custom)).toEqual([
       0.3, 0.12, 0, 0, 0,
@@ -105,6 +137,7 @@ describe("chemistryBoostsByColor (D43, D52)", () => {
       largestTied: 0.15,
       secondAlone: 0.1,
       secondTied: 0.05,
+      minGroupSize: 2,
     });
   });
 });
@@ -115,8 +148,12 @@ describe("chemistryBoostsByPlayer", () => {
     expect(chemistryBoostsByPlayer([0, 1, 0, 2, 1], 5)).toEqual([
       0.15, 0.15, 0.15, 0, 0.15,
     ]);
+    // 3/1/1: the single players don't qualify for second place (D79).
     expect(chemistryBoostsByPlayer([0, 0, 0, 2, 1], 5)).toEqual([
-      0.25, 0.25, 0.25, 0.05, 0.05,
+      0.25, 0.25, 0.25, 0, 0,
+    ]);
+    expect(chemistryBoostsByPlayer([0, 0, 0, 1, 1, 2], 5)).toEqual([
+      0.25, 0.25, 0.25, 0.1, 0.1, 0,
     ]);
   });
 });
