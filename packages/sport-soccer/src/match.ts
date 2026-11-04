@@ -43,7 +43,9 @@ import {
   flipMap,
   type PositionTemplates,
   placeholderTemplates,
+  type SlotSide,
   SOCCER_GRID,
+  sideMap,
 } from "./templates";
 
 export const PLAYERS_ON_FIELD = 11;
@@ -51,6 +53,8 @@ export const PLAYERS_ON_FIELD = 11;
 export interface LineupSlot {
   player: SoccerPlayer;
   slot: Position;
+  /** Left or right of a shared position, e.g. the left CB of two (D112). */
+  side?: SlotSide;
 }
 
 /** A planned substitution: from `minute` on, swap `outId` for `inId` (D45). */
@@ -320,6 +324,7 @@ function templateZones(templates: PositionTemplates, thirdRows: number) {
 interface OnField {
   player: SoccerPlayer;
   slot: Position;
+  side: SlotSide | undefined;
   /** Overall at this slot, and the position-fit bonus there. */
   base: number;
   fit: number;
@@ -380,6 +385,7 @@ function enterField(
   state: MatchState,
   player: SoccerPlayer,
   slot: Position,
+  side?: SlotSide,
 ): OnField {
   const base = overallAt(
     player.attributes,
@@ -393,13 +399,17 @@ function enterField(
     player.templateVariant && player.primaryPosition === slot
       ? state.config.variants?.[slot]?.[player.templateVariant]
       : undefined;
-  const template = variant ?? state.config.templates[slot];
+  // The left or right version only moves the heatmap sideways (D112); the
+  // thirds, and so the match, are worked out from the template as painted.
+  const painted = variant ?? state.config.templates[slot];
+  const template = sideMap(painted, side);
   const zones = variant
     ? variantZones(variant, state.tuning.thirdRows)
     : (state.zones[slot] as Zones);
   return {
     player,
     slot,
+    side,
     base,
     fit,
     skill: base,
@@ -443,14 +453,17 @@ function keeperOf(team: TeamState): OnField | undefined {
 }
 
 /** Takes a player off (sub, injury or red card); returns the slot they left. */
-function removeFromField(team: TeamState, id: string): Position {
+function removeFromField(
+  team: TeamState,
+  id: string,
+): { slot: Position; side: SlotSide | undefined } {
   const idx = team.onField.findIndex((p) => p.player.id === id);
   const [gone] = team.onField.splice(idx, 1) as [OnField];
   team.pastContributions.push({
     template: gone.template,
     skillTotal: gone.skillTotal,
   });
-  return gone.slot;
+  return { slot: gone.slot, side: gone.side };
 }
 
 /** The bench player who would rate highest in `slot`. */
@@ -494,9 +507,9 @@ function makeSub(
   reason: SubReason,
   windowOpen: { value: boolean },
 ): void {
-  const slot = removeFromField(team, outId);
+  const { slot, side } = removeFromField(team, outId);
   team.bench = team.bench.filter((p) => p.id !== inPlayer.id);
-  team.onField.push(enterField(state, inPlayer, slot));
+  team.onField.push(enterField(state, inPlayer, slot, side));
   team.subsUsed++;
   if (!windowOpen.value) {
     team.windowsUsed++;
@@ -865,8 +878,8 @@ function prepareTeam(
   const t: TeamState = {
     side,
     team,
-    onField: team.lineup.map(({ player, slot }) =>
-      enterField(state, player, slot),
+    onField: team.lineup.map(({ player, slot, side }) =>
+      enterField(state, player, slot, side),
     ),
     bench: [...(team.bench ?? [])],
     subsUsed: 0,

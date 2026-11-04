@@ -21,7 +21,12 @@ import {
 } from "./generation";
 import { defaultSoccerConfig, type SoccerConfig } from "./match";
 import { POSITIONS, type Position } from "./positions";
-import { placeholderTemplates, SOCCER_GRID } from "./templates";
+import {
+  placeholderTemplates,
+  type SlotSide,
+  SOCCER_GRID,
+  sideMap,
+} from "./templates";
 
 /** A template as stored: rows × cols of non-negative numbers. */
 export type TemplateGrid = number[][];
@@ -112,6 +117,15 @@ export function mapToGrid(map: InfluenceMap): TemplateGrid {
   return Array.from({ length: rows }, (_, r) =>
     Array.from(map.values.subarray(r * cols, (r + 1) * cols)),
   );
+}
+
+/** A grid's left or right version (D112), as the match draws it. */
+export function sideGrid(
+  grid: TemplateGrid,
+  side: SlotSide | undefined,
+): TemplateGrid {
+  if (!side) return grid;
+  return mapToGrid(sideMap(influenceMapFromRows(grid), side));
 }
 
 /** The built-in placeholder templates as grids, for the editor's starting point. */

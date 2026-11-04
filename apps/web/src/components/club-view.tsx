@@ -3,6 +3,7 @@ import {
   formation,
   POSITIONS,
   type Position,
+  slotLabel,
   squadScore,
 } from "@lfs/sport-soccer";
 import { ClubBadge } from "@/components/club-badge";
@@ -27,9 +28,16 @@ export function ClubViewPanel({ club }: { club: ClubView }) {
     ? (formation(club.squad.formation)?.slots ?? [])
     : [];
   const starters = (club.squad?.lineup ?? [])
-    .map((id, i) => ({ player: byId.get(id), slot: slots[i]?.position }))
+    .map((id, i) => {
+      const s = slots[i];
+      return {
+        player: byId.get(id),
+        slot: s?.position,
+        label: s ? slotLabel(s) : undefined,
+      };
+    })
     .filter(
-      (s): s is { player: ClubPlayer; slot: Position } =>
+      (s): s is { player: ClubPlayer; slot: Position; label: string } =>
         s.player !== undefined && s.slot !== undefined,
     );
   const bench = (club.squad?.bench ?? []).flatMap((id) => byId.get(id) ?? []);
@@ -84,7 +92,7 @@ export function ClubViewPanel({ club }: { club: ClubView }) {
       {starters.length > 0 && (
         <PlayerList
           title="Starting 11"
-          rows={starters.map((s) => ({ player: s.player, place: s.slot }))}
+          rows={starters.map((s) => ({ player: s.player, place: s.label }))}
         />
       )}
       {bench.length > 0 && (

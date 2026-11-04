@@ -20,3 +20,4 @@ export * from "./sport";
 export * from "./squad-score";
 export * from "./stored-config";
 export * from "./templates";
+export * from "./variant-presets";

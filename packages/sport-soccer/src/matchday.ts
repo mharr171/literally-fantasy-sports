@@ -19,12 +19,15 @@ import {
 } from "./match";
 import type { SoccerPlayer } from "./player";
 import type { Position } from "./positions";
+import type { SlotSide } from "./templates";
 
 /** A place in a formation. `x` runs 0 (left) to 100 (right), `y` 0 (own goal) to 100. */
 export interface FormationSlot {
   position: Position;
   x: number;
   y: number;
+  /** Left or right when the formation has several of this position (D112). */
+  side?: SlotSide;
 }
 
 export interface Formation {
@@ -46,93 +49,120 @@ const backFour = [
   slot("RB", 88, 26),
 ];
 
+/**
+ * Marks shared positions left and right (D112): of two or more slots in the
+ * same position, the leftmost is "left" and the rightmost "right"; a third
+ * in between (e.g. the middle of three CBs) keeps the template as painted.
+ */
+function withSides(f: Formation): Formation {
+  const slots = f.slots.map((s) => {
+    const same = f.slots.filter((o) => o.position === s.position);
+    if (same.length < 2) return { ...s };
+    const xs = same.map((o) => o.x);
+    if (s.x === Math.min(...xs)) return { ...s, side: "left" as const };
+    if (s.x === Math.max(...xs)) return { ...s, side: "right" as const };
+    return { ...s };
+  });
+  return { ...f, slots };
+}
+
+/** A slot's short name: "LCB" and "RCB" for a pair of centre-backs, else "CB". */
+export function slotLabel(
+  slot: Pick<FormationSlot, "position" | "side">,
+): string {
+  if (!slot.side) return slot.position;
+  return `${slot.side === "left" ? "L" : "R"}${slot.position}`;
+}
+
 /** Formation presets for the lineup (D88). Tactics and mentality come later. */
-export const FORMATIONS: readonly Formation[] = [
-  {
-    id: "4-4-2",
-    slots: [
-      GK,
-      ...backFour,
-      slot("LM", 12, 55),
-      slot("CM", 37, 50),
-      slot("CM", 63, 50),
-      slot("RM", 88, 55),
-      slot("ST", 37, 82),
-      slot("ST", 63, 82),
-    ],
-  },
-  {
-    id: "4-3-3",
-    slots: [
-      GK,
-      ...backFour,
-      slot("CM", 25, 50),
-      slot("DM", 50, 42),
-      slot("CM", 75, 50),
-      slot("LW", 15, 78),
-      slot("ST", 50, 85),
-      slot("RW", 85, 78),
-    ],
-  },
-  {
-    id: "4-2-3-1",
-    slots: [
-      GK,
-      ...backFour,
-      slot("DM", 37, 42),
-      slot("DM", 63, 42),
-      slot("LW", 15, 68),
-      slot("AM", 50, 65),
-      slot("RW", 85, 68),
-      slot("ST", 50, 86),
-    ],
-  },
-  {
-    id: "4-1-4-1",
-    slots: [
-      GK,
-      ...backFour,
-      slot("DM", 50, 38),
-      slot("LM", 12, 60),
-      slot("CM", 37, 55),
-      slot("CM", 63, 55),
-      slot("RM", 88, 60),
-      slot("ST", 50, 85),
-    ],
-  },
-  {
-    id: "3-5-2",
-    slots: [
-      GK,
-      slot("CB", 25, 22),
-      slot("CB", 50, 20),
-      slot("CB", 75, 22),
-      slot("LM", 10, 52),
-      slot("CM", 32, 50),
-      slot("DM", 50, 40),
-      slot("CM", 68, 50),
-      slot("RM", 90, 52),
-      slot("ST", 37, 82),
-      slot("ST", 63, 82),
-    ],
-  },
-  {
-    id: "5-3-2",
-    slots: [
-      GK,
-      slot("LB", 8, 32),
-      slot("CB", 30, 22),
-      slot("CB", 50, 20),
-      slot("CB", 70, 22),
-      slot("RB", 92, 32),
-      slot("CM", 28, 52),
-      slot("CM", 50, 48),
-      slot("CM", 72, 52),
-      slot("ST", 37, 80),
-      slot("ST", 63, 80),
-    ],
-  },
-];
+export const FORMATIONS: readonly Formation[] = (
+  [
+    {
+      id: "4-4-2",
+      slots: [
+        GK,
+        ...backFour,
+        slot("LM", 12, 55),
+        slot("CM", 37, 50),
+        slot("CM", 63, 50),
+        slot("RM", 88, 55),
+        slot("ST", 37, 82),
+        slot("ST", 63, 82),
+      ],
+    },
+    {
+      id: "4-3-3",
+      slots: [
+        GK,
+        ...backFour,
+        slot("CM", 25, 50),
+        slot("DM", 50, 42),
+        slot("CM", 75, 50),
+        slot("LW", 15, 78),
+        slot("ST", 50, 85),
+        slot("RW", 85, 78),
+      ],
+    },
+    {
+      id: "4-2-3-1",
+      slots: [
+        GK,
+        ...backFour,
+        slot("DM", 37, 42),
+        slot("DM", 63, 42),
+        slot("LW", 15, 68),
+        slot("AM", 50, 65),
+        slot("RW", 85, 68),
+        slot("ST", 50, 86),
+      ],
+    },
+    {
+      id: "4-1-4-1",
+      slots: [
+        GK,
+        ...backFour,
+        slot("DM", 50, 38),
+        slot("LM", 12, 60),
+        slot("CM", 37, 55),
+        slot("CM", 63, 55),
+        slot("RM", 88, 60),
+        slot("ST", 50, 85),
+      ],
+    },
+    {
+      id: "3-5-2",
+      slots: [
+        GK,
+        slot("CB", 25, 22),
+        slot("CB", 50, 20),
+        slot("CB", 75, 22),
+        slot("LM", 10, 52),
+        slot("CM", 32, 50),
+        slot("DM", 50, 40),
+        slot("CM", 68, 50),
+        slot("RM", 90, 52),
+        slot("ST", 37, 82),
+        slot("ST", 63, 82),
+      ],
+    },
+    {
+      id: "5-3-2",
+      slots: [
+        GK,
+        slot("LB", 8, 32),
+        slot("CB", 30, 22),
+        slot("CB", 50, 20),
+        slot("CB", 70, 22),
+        slot("RB", 92, 32),
+        slot("CM", 28, 52),
+        slot("CM", 50, 48),
+        slot("CM", 72, 52),
+        slot("ST", 37, 80),
+        slot("ST", 63, 80),
+      ],
+    },
+  ] as Formation[]
+).map(withSides);
 
 export const DEFAULT_FORMATION = "4-4-2";
 export const BENCH_SIZE = 11;
@@ -323,6 +353,9 @@ export function lineupChemistry(
   );
 }
 
+const slotOf = ({ position, side }: FormationSlot) =>
+  side ? { slot: position, side } : { slot: position };
+
 /** Turns a valid squad into the team the match engine plays. */
 export function squadToTeam(
   teamId: string,
@@ -340,7 +373,7 @@ export function squadToTeam(
     id: teamId,
     lineup: squad.lineup.map((id, i) => ({
       player: get(id),
-      slot: (shape.slots[i] as FormationSlot).position,
+      ...slotOf(shape.slots[i] as FormationSlot),
     })),
     bench: squad.bench.map(get),
     subPlan: squad.subPlan.map((s) => ({ ...s })),

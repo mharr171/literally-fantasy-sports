@@ -2,6 +2,7 @@ import {
   formation,
   type MatchdaySquad,
   rosterWarning,
+  slotLabel,
   squadProblems,
 } from "@lfs/sport-soccer";
 import type { Metadata } from "next";
@@ -154,7 +155,8 @@ function squadRoles(squad: MatchdaySquad | null): Record<string, SquadRole> {
   const slots = formation(squad.formation)?.slots ?? [];
   const roles: Record<string, SquadRole> = {};
   squad.lineup.forEach((id, i) => {
-    roles[id] = { kind: "starter", slot: slots[i]?.position ?? "?" };
+    const s = slots[i];
+    roles[id] = { kind: "starter", slot: s ? slotLabel(s) : "?" };
   });
   for (const id of squad.bench) roles[id] = { kind: "bench" };
   return roles;
