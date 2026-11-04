@@ -4,6 +4,7 @@
  */
 import { playerWorth } from "@lfs/core";
 import {
+  type Attributes,
   type GeneratedPlayer,
   PACK_FOCUSES,
   type PackFocus,
@@ -21,6 +22,9 @@ export interface ScoutedPlayer {
   potentialRange: [number, number];
   worth: number;
   chemistryColor: number;
+  /** Attributes and template variant, for the player card. */
+  attributes: Attributes;
+  templateVariant: string;
 }
 
 export function scoutPlayer(p: GeneratedPlayer): ScoutedPlayer {
@@ -34,6 +38,8 @@ export function scoutPlayer(p: GeneratedPlayer): ScoutedPlayer {
     potentialRange: p.potentialRange,
     worth: playerWorth(p),
     chemistryColor: p.chemistryColor,
+    attributes: p.attributes,
+    templateVariant: p.templateVariant,
   };
 }
 

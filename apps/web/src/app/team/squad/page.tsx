@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { WithTemplates } from "@/components/player/with-templates";
 import { getCurrentUser } from "@/lib/auth";
 import { pickOptions } from "@/lib/pick-options";
 import {
@@ -19,7 +20,9 @@ export default function SquadPage() {
   return (
     <section className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-4 py-8 sm:px-6">
       <Suspense fallback={<p className="text-sm text-zinc-500">Loading…</p>}>
-        <SquadContent />
+        <WithTemplates>
+          <SquadContent />
+        </WithTemplates>
       </Suspense>
     </section>
   );

@@ -9,7 +9,6 @@ describe("scouting", () => {
     for (const p of players) {
       const shown = scoutPlayer(p);
       expect(shown).not.toHaveProperty("potential");
-      expect(JSON.stringify(shown)).not.toContain("attributes");
       expect(shown.potentialRange).toEqual(p.potentialRange);
       expect(shown.worth).toBeGreaterThan(0);
     }

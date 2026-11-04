@@ -2,6 +2,7 @@
 
 import { ROSTER_MAX } from "@lfs/sport-soccer";
 import { useState } from "react";
+import { PlayerCard } from "@/components/player/player-card";
 import type { ScoutedPlayer } from "@/lib/scouting";
 import { useAction } from "../team/use-action";
 import { endSeason, takeYouth } from "./actions";
@@ -70,7 +71,7 @@ export function YouthIntake({
                 />
                 <span className="font-medium">{p.primaryPosition}</span>
                 <span className="truncate">
-                  {p.displayName}{" "}
+                  <PlayerCard player={p} />{" "}
                   <span className="text-xs text-zinc-500">
                     {p.nationality} · {p.age}
                   </span>

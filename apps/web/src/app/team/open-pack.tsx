@@ -2,6 +2,7 @@
 
 import { resalePrice } from "@lfs/core";
 import { useState } from "react";
+import { PlayerCard } from "@/components/player/player-card";
 import type { ScoutedPlayer } from "@/lib/scouting";
 import { resolvePack } from "./actions";
 import { useAction } from "./use-action";
@@ -56,7 +57,7 @@ export function OpenPack({
                   )}
                 </span>
                 <span className="truncate">
-                  {p.displayName}{" "}
+                  <PlayerCard player={p} />{" "}
                   <span className="text-xs text-zinc-500">
                     {p.nationality} · {p.age} · pot {p.potentialRange[0]}–
                     {p.potentialRange[1]}

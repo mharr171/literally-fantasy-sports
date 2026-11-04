@@ -4,6 +4,7 @@ import { resalePrice } from "@lfs/core";
 import { ROSTER_MIN } from "@lfs/sport-soccer";
 import { ConditionBadge } from "@/components/condition-badge";
 import { FormLabel } from "@/components/form-label";
+import { ChemistryDot, PlayerCard } from "@/components/player/player-card";
 import type { RosterPlayer } from "@/lib/team";
 import { removePlayer } from "./actions";
 import { useAction } from "./use-action";
@@ -67,7 +68,17 @@ export function RosterTable({ players }: { players: RosterPlayer[] }) {
                     </span>
                   )}
                 </td>
-                <td className="px-3 py-2">{p.displayName}</td>
+                <td className="px-3 py-2">
+                  <span className="inline-flex items-center gap-1.5">
+                    <ChemistryDot color={p.chemistryColor} />
+                    <PlayerCard
+                      player={{
+                        ...p,
+                        fitness: p.condition.fitness,
+                      }}
+                    />
+                  </span>
+                </td>
                 <td className="px-3 py-2 text-zinc-600 dark:text-zinc-400">
                   {p.nationality}
                 </td>

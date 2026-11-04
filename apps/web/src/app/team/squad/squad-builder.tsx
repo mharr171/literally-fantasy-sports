@@ -9,12 +9,16 @@ import {
   lineupChemistry,
   type MatchdaySquad,
   type PlannedSub,
+  type Position,
   positionFit,
   slotRating,
   squadProblems,
 } from "@lfs/sport-soccer";
 import { type DragEvent, useMemo, useState } from "react";
 import { ConditionBadge } from "@/components/condition-badge";
+import { Heatmap } from "@/components/player/heatmap";
+import { ChemistryDot, PlayerCardBody } from "@/components/player/player-card";
+import { useTemplates } from "@/components/player/templates-context";
 import { pickOptions } from "@/lib/pick-options";
 import type { RosterPlayer } from "@/lib/team";
 import { saveSquad } from "../actions";
@@ -77,6 +81,9 @@ export function SquadBuilder({
   );
   const [plan, setPlan] = useState<PlannedSub[]>(initial.subPlan);
   const [selected, setSelected] = useState<Loc | null>(null);
+  const [hover, setHover] = useState<number | null>(null);
+  const [coverage, setCoverage] = useState(false);
+  const templates = useTemplates();
   const [dirty, setDirty] = useState(!saved);
   const { error, pending, run } = useAction();
 
@@ -97,6 +104,47 @@ export function SquadBuilder({
 
   const starters = lineup.map((id) => (id ? byId.get(id) : undefined));
   const present = starters.filter(Boolean) as RosterPlayer[];
+  // Heatmaps (M5): the highlighted player's template in their slot, or the
+  // whole starting 11 weighted by rating.
+  const gridFor = (player: RosterPlayer, position: Position) => {
+    if (!templates) return null;
+    const variant =
+      player.templateVariant !== "default" &&
+      player.primaryPosition === position
+        ? templates.variants[position]?.[player.templateVariant]
+        : undefined;
+    return variant ?? templates.templates[position];
+  };
+  const focus = hover ?? (selected?.area === "lineup" ? selected.index : null);
+  let overlayGrid: number[][] | null = null;
+  if (coverage && templates) {
+    const sum = Array.from({ length: 25 }, () => Array(17).fill(0) as number[]);
+    slots.forEach((slot, i) => {
+      const p = starters[i];
+      const g = p ? gridFor(p, slot.position) : null;
+      if (!p || !g) return;
+      const weight = slotRating(p, slot.position);
+      for (let r = 0; r < g.length; r++) {
+        const row = g[r] as number[];
+        const out = sum[r] as number[];
+        for (let c = 0; c < row.length; c++)
+          out[c] = (out[c] as number) + (row[c] as number) * weight;
+      }
+    });
+    overlayGrid = sum;
+  } else if (focus !== null) {
+    const p = starters[focus];
+    const slot = slots[focus];
+    overlayGrid = p && slot ? gridFor(p, slot.position) : null;
+  }
+  const selectedId = !selected
+    ? null
+    : selected.area === "lineup"
+      ? (lineup[selected.index] ?? null)
+      : selected.area === "bench"
+        ? (bench[selected.index] ?? null)
+        : selected.id || null;
+  const selectedPlayer = selectedId ? byId.get(selectedId) : undefined;
   const boosts = lineupChemistry(present);
   const chemistry = new Map(present.map((p, i) => [p.id, boosts[i] ?? 0]));
 
@@ -238,57 +286,104 @@ export function SquadBuilder({
       )}
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,26rem)_1fr]">
-        {/* The pitch, attacking upwards. */}
-        <div className="relative mx-auto aspect-[68/105] w-full max-w-md overflow-hidden rounded-md border-2 border-emerald-800 bg-emerald-700 dark:bg-emerald-900">
-          <div className="absolute inset-x-0 top-1/2 h-px bg-white/40" />
-          <div className="absolute left-1/2 top-1/2 h-1/5 w-1/3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/40" />
-          <div className="absolute bottom-0 left-1/2 h-[15%] w-1/2 -translate-x-1/2 border border-b-0 border-white/40" />
-          <div className="absolute left-1/2 top-0 h-[15%] w-1/2 -translate-x-1/2 border border-t-0 border-white/40" />
-          {slots.map((s, i) => {
-            const loc: Loc = { area: "lineup", index: i };
-            const player = starters[i];
-            const boost = player ? (chemistry.get(player.id) ?? 0) : 0;
-            return (
-              <button
-                // biome-ignore lint/suspicious/noArrayIndexKey: slots are fixed by the formation
-                key={i}
-                type="button"
-                {...dragProps(loc)}
-                style={{ left: `${s.x}%`, bottom: `${s.y}%` }}
-                className={`absolute flex w-[22%] -translate-x-1/2 translate-y-1/2 cursor-pointer flex-col items-center rounded-md bg-white/95 px-1 py-0.5 text-center text-[11px] leading-tight text-zinc-900 shadow ${ring(loc)}`}
-              >
-                <span className="font-semibold text-zinc-500">
-                  {s.position}
-                </span>
-                {player ? (
-                  <>
-                    <span className="flex w-full items-center justify-center gap-1 truncate font-medium">
-                      <span
-                        className={`inline-block h-2 w-2 shrink-0 rounded-full ${CHEMISTRY_COLORS[player.chemistryColor] ?? "bg-zinc-400"}`}
-                      />
-                      <span className="truncate">
-                        {lastName(player.displayName)}
-                      </span>
-                    </span>
-                    <ConditionBadge condition={player.condition} compact />
-                    <span
-                      className={FIT_STYLE[positionFit(player, s.position)]}
-                    >
-                      {slotRating(player, s.position)}
-                      {boost > 0 && (
-                        <span className="text-sky-700">
-                          {" "}
-                          +{Math.round(boost * 100)}%
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={coverage}
+                onChange={(e) => setCoverage(e.target.checked)}
+              />
+              Team coverage
+            </label>
+            <span className="text-xs text-zinc-500">
+              {coverage
+                ? "Where your starting 11 has influence, weighted by rating."
+                : "Hover or tap a player on the pitch to see their heatmap."}
+            </span>
+          </div>
+          {/* The pitch, attacking upwards. */}
+          <div className="relative mx-auto aspect-[68/105] w-full max-w-md overflow-hidden rounded-md border-2 border-emerald-800 bg-emerald-700 dark:bg-emerald-900">
+            <Heatmap
+              grid={overlayGrid}
+              overlay
+              className="pointer-events-none absolute inset-0 h-full w-full"
+              label={
+                coverage
+                  ? "Team coverage heatmap"
+                  : "Heatmap of the highlighted player"
+              }
+            />
+            <div className="absolute inset-x-0 top-1/2 h-px bg-white/40" />
+            <div className="absolute left-1/2 top-1/2 h-1/5 w-1/3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/40" />
+            <div className="absolute bottom-0 left-1/2 h-[15%] w-1/2 -translate-x-1/2 border border-b-0 border-white/40" />
+            <div className="absolute left-1/2 top-0 h-[15%] w-1/2 -translate-x-1/2 border border-t-0 border-white/40" />
+            {slots.map((s, i) => {
+              const loc: Loc = { area: "lineup", index: i };
+              const player = starters[i];
+              const boost = player ? (chemistry.get(player.id) ?? 0) : 0;
+              return (
+                <button
+                  // biome-ignore lint/suspicious/noArrayIndexKey: slots are fixed by the formation
+                  key={i}
+                  type="button"
+                  {...dragProps(loc)}
+                  onPointerEnter={(e) =>
+                    e.pointerType === "mouse" && setHover(i)
+                  }
+                  onPointerLeave={(e) =>
+                    e.pointerType === "mouse" && setHover(null)
+                  }
+                  style={{ left: `${s.x}%`, bottom: `${s.y}%` }}
+                  className={`absolute flex w-[22%] -translate-x-1/2 translate-y-1/2 cursor-pointer flex-col items-center rounded-md bg-white/95 px-1 py-0.5 text-center text-[11px] leading-tight text-zinc-900 shadow ${ring(loc)}`}
+                >
+                  <span className="font-semibold text-zinc-500">
+                    {s.position}
+                  </span>
+                  {player ? (
+                    <>
+                      <span className="flex w-full items-center justify-center gap-1 truncate font-medium">
+                        <span
+                          className={`inline-block h-2 w-2 shrink-0 rounded-full ${CHEMISTRY_COLORS[player.chemistryColor] ?? "bg-zinc-400"}`}
+                        />
+                        <span className="truncate">
+                          {lastName(player.displayName)}
                         </span>
-                      )}
-                    </span>
-                  </>
-                ) : (
-                  <span className="text-zinc-400">empty</span>
-                )}
-              </button>
-            );
-          })}
+                      </span>
+                      <ConditionBadge condition={player.condition} compact />
+                      <span
+                        className={FIT_STYLE[positionFit(player, s.position)]}
+                      >
+                        {slotRating(player, s.position)}
+                        {boost > 0 && (
+                          <span className="text-sky-700">
+                            {" "}
+                            +{Math.round(boost * 100)}%
+                          </span>
+                        )}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-zinc-400">empty</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          {selectedPlayer && (
+            <div className="rounded-md border border-zinc-200 p-3 dark:border-zinc-800">
+              <PlayerCardBody
+                player={{
+                  ...selectedPlayer,
+                  fitness: selectedPlayer.condition.fitness,
+                }}
+              />
+              <p className="mt-2 text-xs text-zinc-500">
+                Tap another player to swap them, or tap this one again to
+                deselect.
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-4">
@@ -387,7 +482,8 @@ function PlayerList({
               <span className="font-medium">
                 {player?.primaryPosition ?? ""}
               </span>
-              <span className="truncate">
+              <span className="flex items-center gap-1.5 truncate">
+                {player && <ChemistryDot color={player.chemistryColor} />}
                 {player?.displayName ?? (
                   <span className="text-zinc-400">empty</span>
                 )}

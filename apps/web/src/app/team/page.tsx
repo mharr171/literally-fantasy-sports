@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { WithTemplates } from "@/components/player/with-templates";
 import { getCurrentUser } from "@/lib/auth";
 import { FOCUS_LABELS, scoutPlayer } from "@/lib/scouting";
 import { liveGenerationSettings } from "@/lib/season";
@@ -28,7 +29,9 @@ export default function TeamPage() {
   return (
     <section className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
       <Suspense fallback={<p className="text-sm text-zinc-500">Loading…</p>}>
-        <TeamContent />
+        <WithTemplates>
+          <TeamContent />
+        </WithTemplates>
       </Suspense>
     </section>
   );
