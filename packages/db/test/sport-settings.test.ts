@@ -21,7 +21,7 @@ describe.runIf(sql)("sport settings: energy switches (D93)", () => {
     await db.end();
   });
 
-  it("starts soccer with energy on, 15 minutes per point, up to 3", async () => {
+  it("starts soccer with energy on, 15 minutes per point, up to 6 (D118)", async () => {
     expect(
       await asUser(
         db,
@@ -30,7 +30,7 @@ describe.runIf(sql)("sport settings: energy switches (D93)", () => {
           tx`select energy_enabled, energy_refill_minutes, energy_max from sport_settings where sport = 'soccer'`,
       ),
     ).toEqual([
-      { energy_enabled: true, energy_refill_minutes: 15, energy_max: 3 },
+      { energy_enabled: true, energy_refill_minutes: 15, energy_max: 6 },
     ]);
   });
 
