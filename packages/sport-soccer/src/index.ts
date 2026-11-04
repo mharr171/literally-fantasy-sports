@@ -1,3 +1,4 @@
+export * from "./ai-team";
 export * from "./attributes";
 export * from "./effective-skill";
 export * from "./generation";
