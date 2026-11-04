@@ -17,5 +17,6 @@ export * from "./roster";
 export * from "./season-end";
 export * from "./season-play";
 export * from "./sport";
+export * from "./squad-score";
 export * from "./stored-config";
 export * from "./templates";
