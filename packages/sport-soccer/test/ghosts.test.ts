@@ -9,7 +9,7 @@ import {
   seasonStats,
   snapshotTeam,
 } from "../src/ghosts";
-import { defaultSoccerConfig } from "../src/match";
+import { defaultSoccerConfig, simulateMatch } from "../src/match";
 import { squadProblems, squadToTeam } from "../src/matchday";
 import {
   newLeague,
@@ -231,5 +231,35 @@ describe("seasonStats (D19)", () => {
     expect(seasonStats(slots, fixtures, 1).playoffs).toBe("semi");
     expect(seasonStats(slots, fixtures.slice(0, 3), 3).playoffs).toBe("none");
     expect(() => seasonStats(slots, fixtures, 9)).toThrow(/No team/);
+  });
+});
+
+describe("playing against your own ghost", () => {
+  it("works even though the ghost shares players with the manager's team", () => {
+    const me = roster("same-club");
+    const myTeam = squadToTeam(
+      "me",
+      me.squad,
+      new Map(me.players.map((p) => [p.id, p])),
+    );
+    const ghost = ghostTeam("ghost-3", snapshotTeam(me.players, me.squad));
+    const ids = (t: typeof myTeam) => [
+      ...t.lineup.map((s) => s.player.id),
+      ...(t.bench ?? []).map((p) => p.id),
+    ];
+    const mine = new Set(ids(myTeam));
+    expect(ids(ghost.team).some((id) => mine.has(id))).toBe(false);
+    // Every ghost player still has a name for match reports.
+    for (const id of ids(ghost.team)) expect(ghost.names.get(id)).toBeTruthy();
+    const { result } = simulateMatch(
+      {
+        home: myTeam,
+        away: ghost.team,
+        mode: "league",
+        config: defaultSoccerConfig(),
+      },
+      "derby",
+    );
+    expect(result.score.home + result.score.away).toBeGreaterThanOrEqual(0);
   });
 });
