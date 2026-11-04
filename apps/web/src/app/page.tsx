@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Suspense } from "react";
+import { ContinueLink } from "@/components/getting-started";
 
 export default function Home() {
   return (
@@ -11,20 +13,33 @@ export default function Home() {
         against AI teams and the ghosts of other managers&apos; finished
         seasons. Soccer comes first.
       </p>
-      <div>
-        <Link
-          href="/team"
-          className="inline-block rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-        >
-          Build your team
-        </Link>
+      <div className="flex flex-wrap gap-3">
+        <Suspense fallback={<BuildLink />}>
+          <MainAction />
+        </Suspense>
         <Link
           href="/leaderboard"
-          className="ml-3 inline-block rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+          className="inline-block rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
         >
           Leaderboard
         </Link>
       </div>
     </section>
+  );
+}
+
+/** A new manager's next step (M6), else the way to their team. */
+async function MainAction() {
+  return (await ContinueLink()) ?? <BuildLink />;
+}
+
+function BuildLink() {
+  return (
+    <Link
+      href="/team"
+      className="inline-block rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+    >
+      Build your team
+    </Link>
   );
 }
