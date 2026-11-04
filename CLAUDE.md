@@ -21,7 +21,7 @@ pnpm + Turborepo monorepo.
 | --- | --- |
 | `apps/web` | Next.js (App Router) app: UI, server actions, auth, admin |
 | `packages/config` | Shared tsconfig (`@lfs/config/tsconfig.base.json`) |
-| `packages/core` *(M1)* | Sport-agnostic engine: seeded RNG, Elo, seasons, `Sport` interface |
+| `packages/core` | Sport-agnostic engine: seeded RNG, Elo, influence grids, `Sport` interface (ADR 0001) |
 | `packages/sport-*` *(M1+)* | One package per sport, e.g. `sport-soccer` |
 | `packages/db` | Drizzle schema (`src/schema.ts`), SQL migrations (`migrations/`), database tests |
 | `docs/` | Architecture notes, ADRs, legal sources |
@@ -34,6 +34,8 @@ pnpm + Turborepo monorepo.
 - Engine packages are pure TypeScript: no I/O, no database, no framework code.
   Randomness comes only from the seeded RNG so matches replay exactly.
 - Build soccer cleanly; extract shared code into core only when a second sport needs it.
+- Never change how `createRng` produces numbers: replays depend on it, and its
+  tests pin exact values. Give new random rolls their own `rng.fork("label")`.
 - Matches are simulated on the server only. Row-level security on every table.
 
 ## Next.js
@@ -51,7 +53,7 @@ pnpm install       # install everything
 pnpm dev           # run the web app at http://localhost:3000
 pnpm lint          # Biome lint + format check (pnpm lint:fix to fix)
 pnpm typecheck     # TypeScript in every package
-pnpm test          # Vitest (engine packages, from M1)
+pnpm test          # Vitest with coverage (engine packages; 90% minimum)
 pnpm build         # production build
 pnpm db:generate   # after editing packages/db/src/schema.ts: write a new migration
 pnpm test:db       # database tests (needs DATABASE_URL, see below)
