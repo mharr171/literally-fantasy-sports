@@ -28,15 +28,13 @@ CREATE TABLE auth.users (
 );
 
 -- Same behavior as Supabase: the user id comes from the request's JWT claims.
+-- Settings left empty by an earlier transaction count as missing.
 CREATE FUNCTION auth.uid() RETURNS uuid
 LANGUAGE sql STABLE
 AS $$
-  SELECT nullif(
-    coalesce(
-      current_setting('request.jwt.claim.sub', true),
-      current_setting('request.jwt.claims', true)::jsonb ->> 'sub'
-    ),
-    ''
+  SELECT coalesce(
+    nullif(current_setting('request.jwt.claim.sub', true), ''),
+    nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub'
   )::uuid
 $$;
 GRANT EXECUTE ON FUNCTION auth.uid() TO anon, authenticated, service_role;
