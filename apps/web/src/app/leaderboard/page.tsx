@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { ClubBadge } from "@/components/club-badge";
 import { EmptyState } from "@/components/empty-state";
 import { getCurrentUser } from "@/lib/auth";
 import { loadLeaderboard } from "@/lib/season";
@@ -79,7 +80,12 @@ async function Board() {
                 className={`border-t border-zinc-200 dark:border-zinc-800 ${mine ? "bg-sky-50 font-semibold dark:bg-sky-950" : ""}`}
               >
                 <td className="px-3 py-1.5">{i + 1}</td>
-                <td className="px-3 py-1.5">{e.teamName}</td>
+                <td className="px-3 py-1.5">
+                  <span className="inline-flex items-center gap-1.5">
+                    <ClubBadge name={e.teamName} colors={e.colors} />
+                    {e.teamName}
+                  </span>
+                </td>
                 <td className="px-3 py-1.5 text-right">{e.seasonNumber}</td>
                 <td className="px-3 py-1.5 text-right tabular-nums">{e.elo}</td>
                 <td className="px-3 py-1.5 text-right">

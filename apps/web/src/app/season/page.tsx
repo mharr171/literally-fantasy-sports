@@ -201,6 +201,7 @@ async function SeasonContent() {
       }
       season={season}
       teamName={team.name}
+      teamColors={team.colors}
       elo={team.elo}
       funds={team.funds}
       wrapUp={wrapUp}

@@ -3,10 +3,13 @@
 import type { Side } from "@lfs/core";
 import type { MatchSummary, PlayLine } from "@lfs/sport-soccer";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ClubBadge } from "@/components/club-badge";
 
 export interface MatchViewProps {
   title: string;
   teams: Record<Side, string>;
+  /** Club colors per side (D107); null for clubs that have none. */
+  teamColors?: Record<Side, string[] | null>;
   /** The manager's side, or null for a match between two other clubs. */
   mySide: Side | null;
   score: Record<Side, number>;
@@ -39,6 +42,7 @@ const TICK_MS = 120;
 export function MatchView({
   title,
   teams,
+  teamColors,
   mySide,
   score,
   summary,
@@ -109,7 +113,8 @@ export function MatchView({
           <span
             className={`text-right font-semibold ${mySide === "home" ? "text-sky-700 dark:text-sky-400" : ""}`}
           >
-            {teams.home}
+            {teams.home}{" "}
+            <ClubBadge name={teams.home} colors={teamColors?.home} />
           </span>
           <span className="text-center">
             <span className="block text-3xl font-bold tabular-nums">
@@ -133,6 +138,7 @@ export function MatchView({
           <span
             className={`font-semibold ${mySide === "away" ? "text-sky-700 dark:text-sky-400" : ""}`}
           >
+            <ClubBadge name={teams.away} colors={teamColors?.away} />{" "}
             {teams.away}
           </span>
         </div>

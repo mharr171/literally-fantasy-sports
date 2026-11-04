@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { signOut } from "@/app/auth/actions";
+import { ClubBadge } from "@/components/club-badge";
 import { getCurrentProfile } from "@/lib/auth";
+import { loadMyTeam } from "@/lib/team";
 
 export function SiteHeader() {
   return (
@@ -28,6 +30,7 @@ export function SiteHeader() {
 
 async function AccountMenu() {
   const user = await getCurrentProfile();
+  const team = user ? await loadMyTeam(user.id) : null;
 
   if (!user) {
     return (
@@ -42,7 +45,11 @@ async function AccountMenu() {
 
   return (
     <div className="flex min-w-0 items-center gap-3 text-sm">
-      <Link href="/team" className="font-medium hover:underline">
+      <Link
+        href="/team"
+        className="inline-flex items-center gap-1.5 font-medium hover:underline"
+      >
+        {team && <ClubBadge name={team.name} colors={team.colors} />}
         My team
       </Link>
       <Link href="/season" className="font-medium hover:underline">

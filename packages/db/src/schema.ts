@@ -189,6 +189,11 @@ export const teams = pgTable(
     energyUpdatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     /** Team morale after recent results, −1 to 1 (M4). */
     morale: doublePrecision().notNull().default(0),
+    /**
+     * Club colors (D107): 2 or 3 palette keys, main color first. Empty for
+     * clubs from before, which show colors worked out from their name.
+     */
+    colors: text().array().notNull().default(sql`'{}'::text[]`),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -202,6 +207,10 @@ export const teams = pgTable(
     check("teams_funds_nonnegative", sql`${t.funds} >= 0`),
     check("teams_energy_nonnegative", sql`${t.energy} >= 0`),
     check("teams_morale_range", sql`${t.morale} between -1 and 1`),
+    check(
+      "teams_colors",
+      sql`cardinality(${t.colors}) = 0 or (cardinality(${t.colors}) between 2 and 3 and array_position(${t.colors}, null) is null)`,
+    ),
     pgPolicy("teams_select_own", {
       for: "select",
       to: authenticatedRole,

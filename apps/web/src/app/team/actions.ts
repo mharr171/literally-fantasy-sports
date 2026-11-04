@@ -1,6 +1,11 @@
 "use server";
 
-import { normalizeTeamName, resalePrice, teamNameError } from "@lfs/core";
+import {
+  clubColorsError,
+  normalizeTeamName,
+  resalePrice,
+  teamNameError,
+} from "@lfs/core";
 import {
   BOUGHT_TIERS,
   PACK_FOCUSES,
@@ -29,7 +34,7 @@ import {
 
 export type CreateTeamState =
   | { status: "idle" }
-  | { status: "error"; name: string; message: string };
+  | { status: "error"; name: string; colors: string[]; message: string };
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -58,12 +63,14 @@ export async function createTeam(
   formData: FormData,
 ): Promise<CreateTeamState> {
   const name = normalizeTeamName(String(formData.get("name") ?? ""));
+  const colors = formData.getAll("colors").map(String);
   const error = (message: string): CreateTeamState => ({
     status: "error",
     name,
+    colors,
     message,
   });
-  const problem = teamNameError(name);
+  const problem = teamNameError(name) ?? clubColorsError(colors);
   if (problem) return error(problem);
   try {
     const user = await requireUser();
@@ -78,6 +85,7 @@ export async function createTeam(
         p_sport: SOCCER,
         p_name: name,
         p_packs: starterPackPlan(),
+        p_colors: colors,
       },
     );
     if (rpcError) {
@@ -94,6 +102,26 @@ export async function createTeam(
   }
   refresh();
   return { status: "idle" };
+}
+
+/** Changes the club's colors (D107). */
+export async function setClubColors(colors: string[]): Promise<ActionResult> {
+  try {
+    const picked = z.array(z.string().max(20)).max(5).parse(colors);
+    const problem = clubColorsError(picked);
+    if (problem) throw new Error(problem);
+    const team = await requireTeam();
+    const { error } = await createServiceClient().rpc("set_team_colors", {
+      p_team: team.id,
+      p_colors: picked,
+    });
+    if (error) throw new Error(error.message);
+    refresh();
+    return { ok: true };
+  } catch (e) {
+    if (e instanceof z.ZodError) return fail(new Error("Those aren't colors."));
+    return fail(e);
+  }
 }
 
 const packIdsSchema = z.array(z.uuid()).min(1).max(22);
