@@ -11,11 +11,11 @@ export interface EnergySettings {
   max: number;
 }
 
-/** Balance defaults (D93): 1 point every 15 minutes, up to 3. */
+/** Balance defaults (D93, D118): 1 point every 15 minutes, up to 6. */
 export const DEFAULT_ENERGY_SETTINGS: EnergySettings = {
   enabled: true,
   refillMinutes: 15,
-  max: 3,
+  max: 6,
 };
 
 export interface StoredEnergy {

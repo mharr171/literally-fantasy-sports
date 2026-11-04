@@ -185,7 +185,7 @@ export const teams = pgTable(
     elo: integer().notNull().default(1500),
     /** Starting funds let a new team buy its first packs (balance default, Gary OKs). */
     funds: integer().notNull().default(10_000),
-    energy: integer().notNull().default(3),
+    energy: integer().notNull().default(6),
     energyUpdatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     /** Team morale after recent results, −1 to 1 (M4). */
     morale: doublePrecision().notNull().default(0),
@@ -509,7 +509,7 @@ export const sportSettings = pgTable(
     sport: text().primaryKey(),
     energyEnabled: boolean().notNull().default(true),
     energyRefillMinutes: integer().notNull().default(15),
-    energyMax: integer().notNull().default(3),
+    energyMax: integer().notNull().default(6),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
