@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.4.0](https://github.com/mharr171/literally-fantasy-sports/compare/v0.3.0...v0.4.0) (2026-11-04)
+
+
+### Features
+
+* end the season with ageing, retirements and a youth intake, then start the next one ([#32](https://github.com/mharr171/literally-fantasy-sports/issues/32)) ([c5bc6f8](https://github.com/mharr171/literally-fantasy-sports/commit/c5bc6f8a3897a6df0dbfa0843536b9a946143fa0))
+* finished seasons become ghost opponents and go on the leaderboard ([#33](https://github.com/mharr171/literally-fantasy-sports/issues/33)) ([1d715b1](https://github.com/mharr171/literally-fantasy-sports/commit/1d715b112d5927b1c61ba5bd1d981ed2bfab0385))
+* play a season week by week against 7 AI clubs, with a table and playoffs ([#31](https://github.com/mharr171/literally-fantasy-sports/issues/31)) ([0e1478d](https://github.com/mharr171/literally-fantasy-sports/commit/0e1478d91b0b3eb88ff3be08c0d7393c13ee0d14))
+* season engine with fixtures, league table, playoffs, payouts and AI opponents ([#30](https://github.com/mharr171/literally-fantasy-sports/issues/30)) ([2dbd83d](https://github.com/mharr171/literally-fantasy-sports/commit/2dbd83db20e45e033031c82e44dce749049b29ac))
+
+
+### Bug Fixes
+
+* you can now play against your own ghost from a past season ([#34](https://github.com/mharr171/literally-fantasy-sports/issues/34)) ([23a2237](https://github.com/mharr171/literally-fantasy-sports/commit/23a2237e714de7c6707cc7480fd34da1cc65bd64))
+
+
+### Documentation
+
+* mark M1 and M2 done and start M3 ([#28](https://github.com/mharr171/literally-fantasy-sports/issues/28)) ([c10c6a3](https://github.com/mharr171/literally-fantasy-sports/commit/c10c6a31dc2ae596195371043022823d10e5f3a9))
+
 ## [0.3.0](https://github.com/mharr171/literally-fantasy-sports/compare/v0.2.0...v0.3.0) (2026-11-04)
 
 
