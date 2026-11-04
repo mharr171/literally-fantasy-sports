@@ -110,6 +110,10 @@ async function MatchContent({
     <MatchView
       title={title}
       teams={teams}
+      teamColors={{
+        home: fixture.homeSlot === MANAGER_SLOT ? team.colors : null,
+        away: fixture.awaySlot === MANAGER_SLOT ? team.colors : null,
+      }}
       mySide={
         fixture.homeSlot === MANAGER_SLOT
           ? "home"

@@ -228,6 +228,8 @@ export interface LeaderboardEntry {
   elo: number;
   stats: SeasonStats;
   completedAt: string;
+  /** The club's current colors (D107); empty if it has none or is gone. */
+  colors: string[];
 }
 
 /**
@@ -244,6 +246,17 @@ export async function loadLeaderboard(
     .order("elo", { ascending: false })
     .limit(limit * 3);
   if (error) throw new Error(error.message);
+  const teamIds = [...new Set((data ?? []).map((s) => s.team_id as string))];
+  const colors = new Map<string, string[]>();
+  if (teamIds.length > 0) {
+    const { data: teams, error: teamsError } = await createServiceClient()
+      .from("teams")
+      .select("id, colors")
+      .in("id", teamIds);
+    if (teamsError) throw new Error(teamsError.message);
+    for (const t of teams ?? [])
+      colors.set(t.id as string, (t.colors as string[] | null) ?? []);
+  }
   return (data ?? [])
     .map((s) => ({
       id: s.id as string,
@@ -253,6 +266,7 @@ export async function loadLeaderboard(
       elo: s.elo as number,
       stats: s.stats as SeasonStats,
       completedAt: s.completed_at as string,
+      colors: colors.get(s.team_id as string) ?? [],
     }))
     .sort(
       (a, b) =>

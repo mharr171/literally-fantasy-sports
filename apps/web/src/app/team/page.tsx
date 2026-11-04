@@ -8,6 +8,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { ClubBadge } from "@/components/club-badge";
 import { GettingStarted } from "@/components/getting-started";
 import { WithTemplates } from "@/components/player/with-templates";
 import { getCurrentUser } from "@/lib/auth";
@@ -23,6 +24,7 @@ import {
   openedContents,
   type RosterPlayer,
 } from "@/lib/team";
+import { ClubColorsEditor } from "./club-colors-editor";
 import { CreateTeamForm } from "./create-team-form";
 import { OpenPack } from "./open-pack";
 import { RosterTable, type SquadRole } from "./roster-table";
@@ -131,11 +133,17 @@ async function TeamContent() {
 
 function TeamHeading({ team }: { team: MyTeam }) {
   return (
-    <div className="flex flex-wrap items-baseline justify-between gap-2">
-      <h1 className="text-3xl font-semibold tracking-tight">{team.name}</h1>
-      <p className="text-sm text-zinc-600 dark:text-zinc-400">
-        Elo {team.elo} · Funds {team.funds.toLocaleString("en-US")}
-      </p>
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h1 className="flex items-center gap-3 text-3xl font-semibold tracking-tight">
+          <ClubBadge name={team.name} colors={team.colors} size="h-6 w-9" />
+          {team.name}
+        </h1>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          Elo {team.elo} · Funds {team.funds.toLocaleString("en-US")}
+        </p>
+      </div>
+      <ClubColorsEditor name={team.name} colors={team.colors} />
     </div>
   );
 }

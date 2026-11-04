@@ -24,6 +24,8 @@ export interface MyTeam {
   energyUpdatedAt: string;
   /** Team morale after recent results, −1 to 1 (M4). */
   morale: number;
+  /** Club color keys, main first; empty for clubs from before (D107). */
+  colors: string[];
 }
 
 /**
@@ -38,6 +40,7 @@ const toTeam = (data: {
   energy: number;
   energy_updated_at: string;
   morale: number;
+  colors: string[] | null;
 }): MyTeam => ({
   id: data.id,
   name: data.name,
@@ -46,13 +49,14 @@ const toTeam = (data: {
   energy: data.energy,
   energyUpdatedAt: data.energy_updated_at,
   morale: data.morale,
+  colors: data.colors ?? [],
 });
 
 /** Any team, by id (admin tools). */
 export async function loadTeamById(teamId: string): Promise<MyTeam | null> {
   const { data, error } = await createServiceClient()
     .from("teams")
-    .select("id, name, elo, funds, energy, energy_updated_at, morale")
+    .select("id, name, elo, funds, energy, energy_updated_at, morale, colors")
     .eq("id", teamId)
     .eq("sport", SOCCER)
     .maybeSingle();
@@ -74,21 +78,12 @@ export async function listTeams(): Promise<{ id: string; name: string }[]> {
 export async function loadMyTeam(ownerId: string): Promise<MyTeam | null> {
   const { data, error } = await createServiceClient()
     .from("teams")
-    .select("id, name, elo, funds, energy, energy_updated_at, morale")
+    .select("id, name, elo, funds, energy, energy_updated_at, morale, colors")
     .eq("owner_id", ownerId)
     .eq("sport", SOCCER)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data) return null;
-  return {
-    id: data.id,
-    name: data.name,
-    elo: data.elo,
-    funds: data.funds,
-    energy: data.energy,
-    energyUpdatedAt: data.energy_updated_at,
-    morale: data.morale,
-  };
+  return data ? toTeam(data) : null;
 }
 
 export interface StarterPack {

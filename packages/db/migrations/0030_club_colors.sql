@@ -1,0 +1,2 @@
+ALTER TABLE "teams" ADD COLUMN "colors" text[] DEFAULT '{}'::text[] NOT NULL;--> statement-breakpoint
+ALTER TABLE "teams" ADD CONSTRAINT "teams_colors" CHECK (cardinality("teams"."colors") = 0 or (cardinality("teams"."colors") between 2 and 3 and array_position("teams"."colors", null) is null));

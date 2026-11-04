@@ -44,7 +44,37 @@ describe.runIf(sql)("starter squad functions (D83)", () => {
   const createTeam = (tx: Parameters<Parameters<typeof asService>[1]>[0]) =>
     tx<{ id: string }[]>`
       select public.create_team_with_starter_packs(
-        ${owner}, 'soccer', ${`${tag} Rovers`}, ${tx.json(PACKS)}) as id`;
+        ${owner}, 'soccer', ${`${tag} Rovers`}, ${tx.json(PACKS)},
+        ${tx.array(["navy", "gold"])}) as id`;
+
+  it("saves the club's colors and lets the server change them (D107)", async () => {
+    const result = await asService(db, async (tx) => {
+      const [t] = await createTeam(tx);
+      const id = t?.id as string;
+      const [made] = await tx`select colors from teams where id = ${id}`;
+      await tx`select public.set_team_colors(${id}, ${tx.array(["red", "white", "black"])})`;
+      const [changed] = await tx`select colors from teams where id = ${id}`;
+      const one = await tx`savepoint s`.then(() =>
+        tx`select public.set_team_colors(${id}, ${tx.array(["red"])})`.then(
+          () => "ok",
+          (e: Error) => e.message,
+        ),
+      );
+      await tx`rollback to savepoint s`;
+      const missing = await tx`savepoint s2`.then(() =>
+        tx`select public.set_team_colors(gen_random_uuid(), ${tx.array(["red", "white"])})`.then(
+          () => "ok",
+          (e: Error) => e.message,
+        ),
+      );
+      await tx`rollback to savepoint s2`;
+      return { made, changed, one, missing };
+    });
+    expect(result.made).toEqual({ colors: ["navy", "gold"] });
+    expect(result.changed).toEqual({ colors: ["red", "white", "black"] });
+    expect(result.one).toMatch(/teams_colors/);
+    expect(result.missing).toMatch(/team not found/);
+  });
 
   it("creates a team with its starter packs and random seeds", async () => {
     const packs = await asService(db, async (tx) => {
@@ -113,13 +143,19 @@ describe.runIf(sql)("starter squad functions (D83)", () => {
       await expect(
         run(
           (tx) =>
-            tx`select public.create_team_with_starter_packs(${owner}, 'soccer', 'Mine FC', '[]')`,
+            tx`select public.create_team_with_starter_packs(${owner}, 'soccer', 'Mine FC', '[]', '{}')`,
         ),
       ).rejects.toThrow(/permission denied/);
       await expect(
         run(
           (tx) =>
             tx`select public.resolve_starter_packs(gen_random_uuid(), '[]', '{}')`,
+        ),
+      ).rejects.toThrow(/permission denied/);
+      await expect(
+        run(
+          (tx) =>
+            tx`select public.set_team_colors(gen_random_uuid(), '{red,white}')`,
         ),
       ).rejects.toThrow(/permission denied/);
     }

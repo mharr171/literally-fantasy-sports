@@ -6,6 +6,7 @@ import {
 } from "@lfs/sport-soccer";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { ClubBadge } from "@/components/club-badge";
 import { EmptyState } from "@/components/empty-state";
 import { moraleLabel } from "@/components/form-label";
 import type { LoadedSeason } from "@/lib/season";
@@ -25,6 +26,7 @@ function stageLabel(season: LoadedSeason): string {
 export function SeasonView({
   season,
   teamName,
+  teamColors,
   elo,
   funds,
   wrapUp,
@@ -40,6 +42,8 @@ export function SeasonView({
   energy?: EnergyView | null;
   season: LoadedSeason;
   teamName: string;
+  /** The manager's club colors (D107); other clubs get theirs from their name. */
+  teamColors?: string[];
   elo: number;
   funds: number;
   /** Season-end steps, shown once the season is finished. */
@@ -47,6 +51,12 @@ export function SeasonView({
 }) {
   const name = (slot: number) =>
     season.slots.find((s) => s.slot === slot)?.name ?? "?";
+  const badge = (slot: number) => (
+    <ClubBadge
+      name={name(slot)}
+      colors={slot === MANAGER_SLOT ? teamColors : null}
+    />
+  );
   const standings = table(season.slots, season.fixtures);
   const played = season.fixtures.filter((f) => f.homeScore !== null);
   const mine = (f: { homeSlot: number; awaySlot: number }) =>
@@ -166,7 +176,10 @@ export function SeasonView({
                   >
                     <td className="px-3 py-1.5">{i + 1}</td>
                     <td className="px-3 py-1.5">
-                      {info?.name}
+                      <span className="inline-flex items-center gap-1.5">
+                        {badge(slot)}
+                        {info?.name}
+                      </span>
                       {info?.kind === "ghost" && (
                         <span
                           className="ml-1.5 rounded bg-violet-100 px-1 text-xs font-normal text-violet-800 dark:bg-violet-950 dark:text-violet-300"
@@ -242,7 +255,7 @@ export function SeasonView({
                       className={`grid grid-cols-[1fr_auto_1fr] gap-2 py-0.5 ${mine(f) ? "font-semibold" : ""}`}
                     >
                       <span className="truncate text-right">
-                        {name(f.homeSlot)}
+                        {name(f.homeSlot)} {badge(f.homeSlot)}
                       </span>
                       <Link
                         href={`/season/match/${f.id}`}
@@ -257,7 +270,9 @@ export function SeasonView({
                             ? " (aet)"
                             : ""}
                       </Link>
-                      <span className="truncate">{name(f.awaySlot)}</span>
+                      <span className="truncate">
+                        {badge(f.awaySlot)} {name(f.awaySlot)}
+                      </span>
                     </li>
                   ))}
                 </ul>

@@ -211,6 +211,20 @@
       "when": 1793830146246,
       "tag": "0029_energy_max_six_soccer",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1793830306490,
+      "tag": "0030_club_colors",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1793830317323,
+      "tag": "0031_club_colors_functions",
+      "breakpoints": true
     }
   ]
 }

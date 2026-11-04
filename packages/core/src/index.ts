@@ -1,4 +1,5 @@
 export * from "./chemistry";
+export * from "./club-colors";
 export * from "./elo";
 export * from "./energy";
 export * from "./grid";
