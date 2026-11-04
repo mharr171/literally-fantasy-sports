@@ -35,6 +35,7 @@ import {
   pickGhosts,
 } from "./ghosts";
 import {
+  type PlayerMatchReport,
   type SoccerConfig,
   type SoccerEvent,
   type SoccerTeam,
@@ -223,6 +224,8 @@ export interface WeekOutcome {
   newFixtures: NewFixture[];
   status: SeasonStatus;
   week: number;
+  /** How each of the manager's players got on this week (empty if they had no match). */
+  managerReports: Record<string, PlayerMatchReport>;
 }
 
 export interface ManagerSide {
@@ -286,6 +289,7 @@ export function playWeek(
 
   const elo = { ...state.elo };
   let managerFunds = 0;
+  const managerReports: Record<string, PlayerMatchReport> = {};
   const played: PlayedFixture[] = [];
   for (const f of fixtures) {
     const knockout = f.stage !== "league";
@@ -324,6 +328,9 @@ export function playWeek(
             : "loss",
         payouts,
       );
+    if (managerSide)
+      for (const [id, r] of Object.entries(result.players))
+        if (r.side === managerSide) managerReports[id] = r;
     played.push({
       id: f.id,
       homeScore,
@@ -394,7 +401,15 @@ export function playWeek(
     changed[f.homeSlot] = elo[f.homeSlot] as number;
     changed[f.awaySlot] = elo[f.awaySlot] as number;
   }
-  return { played, elo: changed, managerFunds, newFixtures, status, week };
+  return {
+    played,
+    elo: changed,
+    managerFunds,
+    newFixtures,
+    status,
+    week,
+    managerReports,
+  };
 }
 
 /** The league table from the league fixtures played so far. */

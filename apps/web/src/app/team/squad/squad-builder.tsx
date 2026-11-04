@@ -14,6 +14,7 @@ import {
   squadProblems,
 } from "@lfs/sport-soccer";
 import { type DragEvent, useMemo, useState } from "react";
+import { ConditionBadge } from "@/components/condition-badge";
 import type { RosterPlayer } from "@/lib/team";
 import { saveSquad } from "../actions";
 import { useAction } from "../use-action";
@@ -268,6 +269,7 @@ export function SquadBuilder({
                         {lastName(player.displayName)}
                       </span>
                     </span>
+                    <ConditionBadge condition={player.condition} compact />
                     <span
                       className={FIT_STYLE[positionFit(player, s.position)]}
                     >
@@ -329,7 +331,9 @@ export function SquadBuilder({
         (+25%), <span className={FIT_STYLE.secondary}>amber</span> in their
         second (+10%), <span className={FIT_STYLE.other}>red</span> out of
         position. Coloured dots are chemistry colours; blue numbers are the
-        chemistry boost for starters who share a colour.
+        chemistry boost for starters who share a colour. Fitness carries over
+        between weeks (+20 a week); injured (✚) and suspended (⛔) players are
+        swapped out automatically when the match is played.
       </p>
     </div>
   );
@@ -376,7 +380,7 @@ function PlayerList({
             <button
               type="button"
               {...dragProps(loc)}
-              className={`grid w-full cursor-pointer grid-cols-[2rem_3rem_1fr_2rem] items-center gap-1 rounded border border-zinc-200 px-2 py-1 text-left text-sm hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900 ${ring(loc)}`}
+              className={`grid w-full cursor-pointer grid-cols-[2rem_3rem_1fr_2rem_3rem] items-center gap-1 rounded border border-zinc-200 px-2 py-1 text-left text-sm hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900 ${ring(loc)}`}
             >
               <span className="text-xs text-zinc-500">{label}</span>
               <span className="font-medium">
@@ -389,6 +393,11 @@ function PlayerList({
               </span>
               <span className="text-right font-semibold tabular-nums">
                 {player?.overall ?? ""}
+              </span>
+              <span className="text-right">
+                {player && (
+                  <ConditionBadge condition={player.condition} compact />
+                )}
               </span>
             </button>
           </li>

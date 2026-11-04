@@ -2,6 +2,7 @@
 
 import { resalePrice } from "@lfs/core";
 import { ROSTER_MIN } from "@lfs/sport-soccer";
+import { ConditionBadge } from "@/components/condition-badge";
 import type { RosterPlayer } from "@/lib/team";
 import { removePlayer } from "./actions";
 import { useAction } from "./use-action";
@@ -33,7 +34,7 @@ export function RosterTable({ players }: { players: RosterPlayer[] }) {
         </p>
       )}
       <div className="overflow-x-auto rounded-md border border-zinc-200 dark:border-zinc-800">
-        <table className="w-full min-w-[42rem] text-left text-sm">
+        <table className="w-full min-w-[48rem] text-left text-sm">
           <thead className="bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:bg-zinc-900">
             <tr>
               <th className="px-3 py-2">Pos</th>
@@ -43,6 +44,7 @@ export function RosterTable({ players }: { players: RosterPlayer[] }) {
               <th className="px-3 py-2 text-right">Overall</th>
               <th className="px-3 py-2 text-right">Potential</th>
               <th className="px-3 py-2 text-right">Worth</th>
+              <th className="px-3 py-2 text-right">Condition</th>
               <th className="px-3 py-2">
                 <span className="sr-only">Actions</span>
               </th>
@@ -75,6 +77,9 @@ export function RosterTable({ players }: { players: RosterPlayer[] }) {
                   {p.potentialRange[0]}–{p.potentialRange[1]}
                 </td>
                 <td className="px-3 py-2 text-right">{money(p.worth)}</td>
+                <td className="px-3 py-2 text-right">
+                  <ConditionBadge condition={p.condition} compact />
+                </td>
                 <td className="px-3 py-2">
                   <div className="flex justify-end gap-1">
                     {!p.fromStarterPack && (

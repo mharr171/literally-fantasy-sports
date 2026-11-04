@@ -2,12 +2,18 @@
 
 import { currentEnergy, playerWorth, spendEnergy } from "@lfs/core";
 import {
+  availableSquad,
   DEFAULT_GHOST_SETTINGS,
   endOfSeason,
+  FRESH,
+  isAvailable,
   MANAGER_SLOT,
   newLeague,
+  nextCondition,
+  type PlayerCondition,
   playWeek,
   rosterWarning,
+  seasonReset,
   seasonStats,
   snapshotTeam,
   squadProblems,
@@ -157,6 +163,11 @@ export async function playNextWeek(): Promise<ActionResult> {
       energyAfter = spendEnergy(stored, now, energySettings);
     }
     const { config } = await configFor(season.configVersion);
+    // Injured and suspended players sit out; the best fit players step in.
+    const condition = new Map(roster.map((p) => [p.id, p.condition]));
+    const { squad: playing } = availableSquad(squad, roster, (id) =>
+      isAvailable(condition.get(id) ?? FRESH),
+    );
     const elo = Object.fromEntries(season.slots.map((s) => [s.slot, s.elo]));
     elo[MANAGER_SLOT] = team.elo;
     const outcome = playWeek(
@@ -169,11 +180,16 @@ export async function playNextWeek(): Promise<ActionResult> {
         fixtures: season.fixtures,
       },
       {
-        team: squadToTeam(
-          team.id,
-          squad,
-          new Map(roster.map((p) => [p.id, p])),
-        ),
+        team: {
+          ...squadToTeam(
+            team.id,
+            playing,
+            new Map(roster.map((p) => [p.id, p])),
+          ),
+          fitness: Object.fromEntries(
+            roster.map((p) => [p.id, p.condition.fitness]),
+          ),
+        },
         names: new Map(roster.map((p) => [p.id, p.displayName])),
         ghosts: await loadGhostTeams(season.slots),
       },
@@ -203,6 +219,16 @@ export async function playNextWeek(): Promise<ActionResult> {
       p_next_week: outcome.week,
       p_energy: energyAfter?.energy ?? null,
       p_energy_updated_at: energyAfter?.updatedAt.toISOString() ?? null,
+      p_players: roster.map((p) => {
+        const next = nextCondition(p.condition, outcome.managerReports[p.id]);
+        return {
+          id: p.id,
+          fitness: next.fitness,
+          injured_weeks: next.injuredWeeks,
+          suspended_weeks: next.suspendedWeeks,
+          yellow_cards: next.yellowCards,
+        };
+      }),
     });
     if (error) {
       if (error.message.includes("already played"))
@@ -274,6 +300,9 @@ export async function endSeason(): Promise<ActionResult> {
           age: a.age,
           potentialRange: p.potentialRange,
         }),
+        ...conditionRow(
+          seasonReset(roster.find((r) => r.id === a.id)?.condition ?? FRESH),
+        ),
       };
     });
     const review = {
@@ -352,4 +381,13 @@ export async function takeYouth(taken: number[]): Promise<ActionResult> {
       return fail(new Error("That pick isn't valid."));
     return fail(e);
   }
+}
+
+function conditionRow(c: PlayerCondition) {
+  return {
+    fitness: c.fitness,
+    injured_weeks: c.injuredWeeks,
+    suspended_weeks: c.suspendedWeeks,
+    yellow_cards: c.yellowCards,
+  };
 }

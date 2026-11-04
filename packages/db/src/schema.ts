@@ -235,6 +235,14 @@ export const players = pgTable(
     templateVariant: text().notNull().default("default"),
     /** Came from a free starter pack: can be released but not resold (D83). */
     fromStarterPack: boolean().notNull().default(false),
+    /** Match fitness at the next kickoff, 0–100 (D45, M4). */
+    fitness: integer().notNull().default(100),
+    /** Game weeks still out injured. */
+    injuredWeeks: integer().notNull().default(0),
+    /** Matches still to sit out. */
+    suspendedWeeks: integer().notNull().default(0),
+    /** Yellow cards this season (every 5th earns a ban). */
+    yellowCards: integer().notNull().default(0),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -250,6 +258,10 @@ export const players = pgTable(
     ),
     check("players_age_range", sql`${t.age} between 14 and 50`),
     check("players_worth_nonnegative", sql`${t.worth} >= 0`),
+    check(
+      "players_condition",
+      sql`${t.fitness} between 0 and 100 and ${t.injuredWeeks} >= 0 and ${t.suspendedWeeks} >= 0 and ${t.yellowCards} >= 0`,
+    ),
     pgPolicy("players_select_own", {
       for: "select",
       to: authenticatedRole,

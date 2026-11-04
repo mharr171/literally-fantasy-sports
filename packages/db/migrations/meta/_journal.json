@@ -141,6 +141,20 @@
       "when": 1793774536626,
       "tag": "0019_sport_settings_grants_and_energy",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1793775682539,
+      "tag": "0020_player_condition",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1793775683621,
+      "tag": "0021_player_condition_functions",
+      "breakpoints": true
     }
   ]
 }
