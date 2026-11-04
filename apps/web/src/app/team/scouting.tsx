@@ -2,6 +2,7 @@
 
 import { type PackFocus, ROSTER_MAX, ROSTER_MIN } from "@lfs/sport-soccer";
 import { useMemo, useState, useTransition } from "react";
+import { PlayerCard } from "@/components/player/player-card";
 import { countByLine, FOCUS_LABELS, type ScoutedPlayer } from "@/lib/scouting";
 import { confirmStarterSquad, openPacks } from "./actions";
 
@@ -194,7 +195,7 @@ function PackCard({
                   )}
                 </span>
                 <span className="truncate">
-                  {p.displayName}{" "}
+                  <PlayerCard player={p} />{" "}
                   <span className="text-xs text-zinc-500">
                     {p.nationality} · {p.age}
                   </span>
