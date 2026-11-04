@@ -21,7 +21,7 @@ We do not collect payment information, and we do not ask for any information bey
 
 ## What other players can see
 
-Your team name, display name, season results and leaderboard entries are visible to other players. Finished seasons may appear in other players' leagues as computer-controlled "ghost" teams. Your email address is never shown to other players.
+Your team name, club colors, display name, season results and leaderboard entries are visible to other players, and so are your club's roster and lineups (the generated players' names, positions, ratings and chemistry colors). Your players' potential and condition are shown only to you. Finished seasons may appear in other players' leagues as computer-controlled "ghost" teams. Your email address is never shown to other players.
 
 ## Sharing
 

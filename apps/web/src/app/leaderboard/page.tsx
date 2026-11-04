@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { ClubBadge } from "@/components/club-badge";
@@ -81,10 +82,14 @@ async function Board() {
               >
                 <td className="px-3 py-1.5">{i + 1}</td>
                 <td className="px-3 py-1.5">
-                  <span className="inline-flex items-center gap-1.5">
+                  <Link
+                    href={`/leaderboard/${e.id}`}
+                    className="inline-flex items-center gap-1.5 hover:underline"
+                    title="See this season's roster"
+                  >
                     <ClubBadge name={e.teamName} colors={e.colors} />
                     {e.teamName}
-                  </span>
+                  </Link>
                 </td>
                 <td className="px-3 py-1.5 text-right">{e.seasonNumber}</td>
                 <td className="px-3 py-1.5 text-right tabular-nums">{e.elo}</td>
