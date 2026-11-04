@@ -8,9 +8,9 @@ if [ -z "$base" ] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
   echo "No earlier deployment to compare with: building."
   exit 1
 fi
-# docs/legal: the privacy policy and terms pages are built from it.
+# docs/legal and CHANGELOG.md: the legal and What's new pages are built from them.
 if git diff --quiet "$base" HEAD -- . ../../packages ../../docs/legal \
-  ../../package.json ../../pnpm-lock.yaml ../../pnpm-workspace.yaml \
+  ../../CHANGELOG.md ../../package.json ../../pnpm-lock.yaml ../../pnpm-workspace.yaml \
   ../../turbo.json; then
   echo "Nothing the site is built from changed since $base: skipping."
   exit 0
