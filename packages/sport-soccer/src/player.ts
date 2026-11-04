@@ -15,6 +15,8 @@ export interface SoccerPlayer {
   secondaryPosition: Position | null;
   /** Permanent chemistry colour, 0–4 for soccer (D42). */
   chemistryColor: number;
+  /** Which of the primary position's templates the player uses (D84); default if absent. */
+  templateVariant?: string;
 }
 
 /** The headline overall shown on a player card: the rating at the primary position. */

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth";
 import { FOCUS_LABELS, scoutPlayer } from "@/lib/scouting";
+import { liveGenerationSettings } from "@/lib/season";
 import {
   loadMyTeam,
   loadOpenBoughtPack,
@@ -39,7 +40,10 @@ async function TeamContent() {
   const team = await loadMyTeam(user.id);
   if (!team) return <CreateTeamForm />;
 
-  const packs = await loadStarterPacks(team.id);
+  const [packs, generation] = await Promise.all([
+    loadStarterPacks(team.id),
+    liveGenerationSettings(),
+  ]);
   if (packs.some((p) => !p.resolved)) {
     return (
       <>
@@ -48,7 +52,9 @@ async function TeamContent() {
           packs={packs.map((p) => ({
             id: p.id,
             focus: p.focus,
-            players: p.opened ? openedContents(p).map(scoutPlayer) : null,
+            players: p.opened
+              ? openedContents(p, generation).map(scoutPlayer)
+              : null,
           }))}
         />
       </>
@@ -96,7 +102,7 @@ async function TeamContent() {
           key={openPack.id}
           packId={openPack.id}
           title={`${tierName(openPack.tier)} pack · ${FOCUS_LABELS[openPack.focus]}`}
-          players={openedContents(openPack).map(scoutPlayer)}
+          players={openedContents(openPack, generation).map(scoutPlayer)}
           rosterSize={roster.length}
         />
       )}

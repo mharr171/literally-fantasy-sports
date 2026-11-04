@@ -6,8 +6,17 @@
  * - "tuning": a partial MatchTuning; missing values use the defaults.
  * - "templates.<position>": a 25 × 17 grid (rows from own goal line to the
  *   opponent's), e.g. "templates.st".
+ * - "variants.<position>": named extra templates for a position (D82), as
+ *   { name: grid }, e.g. "variants.st": { "poacher": [...] }.
+ * - "variants.enabled": the templates new players can be given (D84), as
+ *   { position: names }, where "default" is the position's main template.
  */
 import { type InfluenceMap, influenceMapFromRows } from "@lfs/core";
+import {
+  DEFAULT_GENERATION_SETTINGS,
+  DEFAULT_TEMPLATE_VARIANT,
+  type GenerationSettings,
+} from "./generation";
 import {
   DEFAULT_MATCH_TUNING,
   defaultSoccerConfig,
@@ -34,6 +43,26 @@ export const MIRROR_PAIRS: Partial<Record<Position, Position>> = {
 
 export const templateKey = (position: Position) =>
   `templates.${position.toLowerCase()}`;
+
+export const variantsKey = (position: Position) =>
+  `variants.${position.toLowerCase()}`;
+export const ENABLED_VARIANTS_KEY = "variants.enabled";
+
+/** Named variants per position (the default template is stored separately). */
+export type StoredVariants = Partial<
+  Record<Position, Record<string, TemplateGrid>>
+>;
+/** Templates new players can be given, per position; "default" is the main one. */
+export type EnabledVariants = Partial<Record<Position, string[]>>;
+
+/** Variant names: short, lowercase letters, digits and dashes, never "default". */
+export function variantNameError(name: string): string | null {
+  if (!/^[a-z0-9][a-z0-9-]{0,23}$/.test(name))
+    return "Use 1–24 lowercase letters, digits or dashes.";
+  if (name === DEFAULT_TEMPLATE_VARIANT)
+    return "That name is taken by the default template.";
+  return null;
+}
 
 /** Throws unless the grid is 25 × 17, non-negative and not all zero. */
 export function assertValidTemplate(
@@ -121,6 +150,70 @@ export function templatesFromValues(
   return out;
 }
 
+/** Rows for game_config: one per position that has variants, plus the enabled lists. */
+export function variantsToRows(
+  variants: StoredVariants,
+  enabled: EnabledVariants,
+): { key: string; value: unknown }[] {
+  const rows: { key: string; value: unknown }[] = [];
+  for (const p of POSITIONS) {
+    const named = variants[p] ?? {};
+    const normalised: Record<string, TemplateGrid> = {};
+    for (const [name, grid] of Object.entries(named)) {
+      const problem = variantNameError(name);
+      if (problem) throw new RangeError(`${p} variant "${name}": ${problem}`);
+      assertValidTemplate(grid, `${p} ${name}`);
+      normalised[name] = normalizeTemplate(grid);
+    }
+    rows.push({ key: variantsKey(p), value: normalised });
+  }
+  const lists: EnabledVariants = {};
+  for (const p of POSITIONS) {
+    const names = (enabled[p] ?? []).filter(
+      (n) => n === DEFAULT_TEMPLATE_VARIANT || variants[p]?.[n] !== undefined,
+    );
+    if (names.length > 0) lists[p] = [...new Set(names)];
+  }
+  rows.push({ key: ENABLED_VARIANTS_KEY, value: lists });
+  return rows;
+}
+
+export function variantsFromValues(
+  values: Record<string, unknown>,
+): StoredVariants {
+  const out: StoredVariants = {};
+  for (const p of POSITIONS) {
+    const v = values[variantsKey(p)] as
+      | Record<string, TemplateGrid>
+      | undefined;
+    if (!v || Object.keys(v).length === 0) continue;
+    for (const [name, grid] of Object.entries(v))
+      assertValidTemplate(grid, `${p} ${name}`);
+    out[p] = v;
+  }
+  return out;
+}
+
+export function enabledVariantsFromValues(
+  values: Record<string, unknown>,
+): EnabledVariants {
+  return (values[ENABLED_VARIANTS_KEY] as EnabledVariants | undefined) ?? {};
+}
+
+/**
+ * Generation settings for a stored version: new players get one of the
+ * position's enabled templates at random (D84). Positions with nothing
+ * enabled use the default template.
+ */
+export function generationSettingsFromValues(
+  values: Record<string, unknown>,
+  base: GenerationSettings = DEFAULT_GENERATION_SETTINGS,
+): GenerationSettings {
+  const enabled = enabledVariantsFromValues(values);
+  if (Object.keys(enabled).length === 0) return base;
+  return { ...base, templateVariants: enabled };
+}
+
 /**
  * A playable config from a stored version's values. Anything missing falls
  * back to the built-in defaults, so a version can hold only what changed.
@@ -138,9 +231,21 @@ export function soccerConfigFromValues(
   ][]) {
     templates[p] = influenceMapFromRows(normalizeTemplate(grid));
   }
+  const variants: SoccerConfig["variants"] = {};
+  for (const [p, named] of Object.entries(variantsFromValues(values)) as [
+    Position,
+    Record<string, TemplateGrid>,
+  ][]) {
+    variants[p] = Object.fromEntries(
+      Object.entries(named).map(([name, grid]) => [
+        name,
+        influenceMapFromRows(normalizeTemplate(grid)),
+      ]),
+    );
+  }
   const tuning: MatchTuning = {
     ...DEFAULT_MATCH_TUNING,
     ...((values.tuning as Partial<MatchTuning> | undefined) ?? {}),
   };
-  return { ...base, version, templates, tuning };
+  return { ...base, version, templates, variants, tuning };
 }

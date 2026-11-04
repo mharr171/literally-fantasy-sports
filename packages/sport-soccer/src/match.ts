@@ -148,6 +148,8 @@ export interface SoccerConfig {
   skill: EffectiveSkillConfig;
   chemistry: ChemistryBoosts;
   templates: PositionTemplates;
+  /** Named template variants per position (D82, D84). */
+  variants?: Partial<Record<Position, Record<string, InfluenceMap>>>;
   tuning: MatchTuning;
 }
 
@@ -244,6 +246,22 @@ interface Zones {
   attack: number;
 }
 
+const variantZoneCache = new WeakMap<InfluenceMap, Zones>();
+
+/** A variant template's share of each third. */
+function variantZones(t: InfluenceMap, thirdRows: number): Zones {
+  const cached = variantZoneCache.get(t);
+  if (cached) return cached;
+  const { rows } = SOCCER_GRID;
+  const z = {
+    defence: sumRows(t, 0, thirdRows),
+    midfield: sumRows(t, thirdRows, rows - thirdRows),
+    attack: sumRows(t, rows - thirdRows, rows),
+  };
+  variantZoneCache.set(t, z);
+  return z;
+}
+
 const zoneCache = new WeakMap<
   PositionTemplates,
   { zones: Record<Position, Zones>; baseline: number }
@@ -309,6 +327,10 @@ interface OnField {
   skill: number;
   /** Sum of skill over the phases played in this slot, for the heatmap. */
   skillTotal: number;
+  /** The influence template this player uses here (their variant or the slot's). */
+  template: InfluenceMap;
+  /** That template's share of each third. */
+  zones: Zones;
 }
 
 interface TeamState {
@@ -320,7 +342,7 @@ interface TeamState {
   windowsUsed: number;
   planDone: Set<number>;
   /** Slot-skill totals of players who have left, for the heatmap. */
-  pastContributions: { slot: Position; skillTotal: number }[];
+  pastContributions: { template: InfluenceMap; skillTotal: number }[];
   zones: Zones;
 }
 
@@ -366,7 +388,25 @@ function enterField(
   );
   const fitKind = positionFit(player, slot);
   const fit = fitKind === "other" ? 0 : state.config.skill.positionFit[fitKind];
-  return { player, slot, base, fit, skill: base, skillTotal: 0 };
+  // A player's own template variant applies at their primary position (D84).
+  const variant =
+    player.templateVariant && player.primaryPosition === slot
+      ? state.config.variants?.[slot]?.[player.templateVariant]
+      : undefined;
+  const template = variant ?? state.config.templates[slot];
+  const zones = variant
+    ? variantZones(variant, state.tuning.thirdRows)
+    : (state.zones[slot] as Zones);
+  return {
+    player,
+    slot,
+    base,
+    fit,
+    skill: base,
+    skillTotal: 0,
+    template,
+    zones,
+  };
 }
 
 function report(state: MatchState, id: string) {
@@ -390,7 +430,7 @@ function refreshTeam(state: MatchState, team: TeamState): void {
       0,
       p.base * (1 + p.fit + (chemistry[i] as number) + extra - tiredness),
     );
-    const z = state.zones[p.slot];
+    const z = p.zones;
     zones.defence += z.defence * p.skill;
     zones.midfield += z.midfield * p.skill;
     zones.attack += z.attack * p.skill;
@@ -406,7 +446,10 @@ function keeperOf(team: TeamState): OnField | undefined {
 function removeFromField(team: TeamState, id: string): Position {
   const idx = team.onField.findIndex((p) => p.player.id === id);
   const [gone] = team.onField.splice(idx, 1) as [OnField];
-  team.pastContributions.push({ slot: gone.slot, skillTotal: gone.skillTotal });
+  team.pastContributions.push({
+    template: gone.template,
+    skillTotal: gone.skillTotal,
+  });
   return gone.slot;
 }
 
@@ -481,7 +524,10 @@ function ensureKeeper(
     if (p.player.attributes.goalkeeping > pick.player.attributes.goalkeeping)
       pick = p;
   }
-  team.pastContributions.push({ slot: pick.slot, skillTotal: pick.skillTotal });
+  team.pastContributions.push({
+    template: pick.template,
+    skillTotal: pick.skillTotal,
+  });
   const replacement = enterField(state, pick.player, "GK");
   team.onField[team.onField.indexOf(pick)] = replacement;
   state.events.push({
@@ -616,8 +662,7 @@ function betweenPhases(
     // yellow play more carefully.
     if (side === defending && team.onField.length > 0) {
       const weights = team.onField.map((p) => {
-        const base =
-          p.slot === "GK" ? 0.05 : 0.6 + (state.zones[p.slot] as Zones).defence;
+        const base = p.slot === "GK" ? 0.05 : 0.6 + p.zones.defence;
         return report(state, p.player.id).yellowCards > 0 ? base * 0.25 : base;
       });
       if (rng.cards.chance(tuning.redRate)) {
@@ -682,7 +727,7 @@ function playAttack(state: MatchState, side: Side, minute: number): void {
   const shooters = att.onField.filter((p) => p.slot !== "GK");
   if (shooters.length === 0) return;
   const weights = shooters.map(
-    (p) => (state.zones[p.slot] as Zones).attack * p.player.attributes.shooting,
+    (p) => p.zones.attack * p.player.attributes.shooting,
   );
   const shooter = shooters[rng.shooters.weightedIndex(weights)] as OnField;
   const playerId = shooter.player.id;
@@ -835,18 +880,17 @@ function prepareTeam(
 }
 
 /** Average influence over the match, from everyone who played in each slot. */
-function teamMap(
-  state: MatchState,
-  team: TeamState,
-  phases: number,
-): InfluenceMap {
+function teamMap(team: TeamState, phases: number): InfluenceMap {
   const map = createInfluenceMap(SOCCER_GRID);
   const parts = [
     ...team.pastContributions,
-    ...team.onField.map((p) => ({ slot: p.slot, skillTotal: p.skillTotal })),
+    ...team.onField.map((p) => ({
+      template: p.template,
+      skillTotal: p.skillTotal,
+    })),
   ];
-  for (const { slot, skillTotal } of parts) {
-    addScaled(map, state.config.templates[slot], skillTotal / phases);
+  for (const { template, skillTotal } of parts) {
+    addScaled(map, template, skillTotal / phases);
   }
   return map;
 }
@@ -945,8 +989,8 @@ export function simulateMatch(
     events,
     // Both maps in the home team's frame, ready to overlay on one pitch.
     influence: {
-      home: teamMap(state, state.teams.home, phasesPlayed),
-      away: flipMap(teamMap(state, state.teams.away, phasesPlayed)),
+      home: teamMap(state.teams.home, phasesPlayed),
+      away: flipMap(teamMap(state.teams.away, phasesPlayed)),
     },
   };
 }
