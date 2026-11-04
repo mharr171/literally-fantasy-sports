@@ -170,15 +170,24 @@ The existing `playoffs` payout becomes "reaching the semi-finals". A new
 after that.
 
 A nightly `prune_old_data()` function does the deleting. It is run by the
-existing nightly backup workflow, just before the dump. The backup then
-covers only:
+existing nightly backup workflow, just before the dump.
+
+The backup keeps AI clubs, because players can't tell them from real ones
+and they should come back after a restore exactly as they were. It saves:
+
 - the permanent records (`season_records`, `ghosts`, `player_careers`);
-- real clubs and their players, squads and seasons;
+- every club, real or AI, with its players, squads, funds, Elo and seasons;
 - settings and the accounts.
 
-Rows belonging to AI clubs are left out with filtered `COPY` statements.
-After a restore, a fresh AI pool is generated, while every real club and all
-history come back.
+It leaves out what is rebuilt or short-lived: fixtures and clones of AI
+seasons in progress, using filtered `COPY` statements. An AI club caught in
+the middle of a season after a restore restarts that season.
+
+Including AI clubs adds about 4–5 MB to the nightly file. Their players
+change every day, so each night adds roughly 1–2 MB of compressed history
+to `lfs-backups`, a few hundred MB a year. That is fine for a couple of
+years. If it grows too big, the backups repo's history can be squashed to
+keep, say, the last 90 nights, with Gary's OK.
 
 **Expected size**, rough figures, measured again once it runs:
 
@@ -221,8 +230,6 @@ Each step below is one PR. The ones marked "migration" wait for Gary's
 ## Needs Gary
 
 - OK the playoff bonuses above (balance defaults).
-- OK leaving AI clubs out of backups. After a restore, the AI world starts
-  fresh while real clubs and all history come back.
 - Add one repository secret when step 8 lands: `SUPABASE_SECRET_KEY` for
   Actions (the same value Vercel has).
 - Whether the main repo is private matters for the GitHub Actions free
