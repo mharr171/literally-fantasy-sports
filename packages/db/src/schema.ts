@@ -300,6 +300,34 @@ export const packs = pgTable(
   ],
 ).enableRLS();
 
+/**
+ * Each team's saved matchday squad (D15, D88): a formation, the 11 starters
+ * by slot, the bench and a sub plan, all as player ids. The server checks it
+ * with the engine before saving; a player leaving the team makes it invalid
+ * until the manager fixes it.
+ */
+export const matchdaySquads = pgTable(
+  "matchday_squads",
+  {
+    teamId: uuid()
+      .primaryKey()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    formation: text().notNull(),
+    lineup: jsonb().notNull(),
+    bench: jsonb().notNull(),
+    subPlan: jsonb().notNull().default([]),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    pgPolicy("matchday_squads_select_own", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`exists (select 1 from public.teams tm where tm.id = ${t.teamId} and tm.owner_id = ${authUid})`,
+    }),
+  ],
+).enableRLS();
+
 export type Team = typeof teams.$inferSelect;
 export type Player = typeof players.$inferSelect;
 export type Pack = typeof packs.$inferSelect;
+export type MatchdaySquadRow = typeof matchdaySquads.$inferSelect;

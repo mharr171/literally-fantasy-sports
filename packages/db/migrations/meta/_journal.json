@@ -71,6 +71,20 @@
       "when": 1793767552445,
       "tag": "0009_shop_functions",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793768414612,
+      "tag": "0010_matchday_squads",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793768415495,
+      "tag": "0011_matchday_squads_grants",
+      "breakpoints": true
     }
   ]
 }

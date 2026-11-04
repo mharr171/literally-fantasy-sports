@@ -1,5 +1,6 @@
-import { POSITIONS, rosterWarning } from "@lfs/sport-soccer";
+import { POSITIONS, rosterWarning, squadProblems } from "@lfs/sport-soccer";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth";
@@ -8,6 +9,7 @@ import {
   loadMyTeam,
   loadOpenBoughtPack,
   loadRoster,
+  loadSquad,
   loadStarterPacks,
   type MyTeam,
   openedContents,
@@ -53,14 +55,37 @@ async function TeamContent() {
     );
   }
 
-  const [roster, openPack] = await Promise.all([
+  const [roster, openPack, squad] = await Promise.all([
     loadRoster(team.id),
     loadOpenBoughtPack(team.id),
+    loadSquad(team.id),
   ]);
+  const squadReady =
+    squad !== null &&
+    squadProblems(squad, new Set(roster.map((p) => p.id))).length === 0;
   const tierName = (id: string) => id.charAt(0).toUpperCase() + id.slice(1);
   return (
     <>
       <TeamHeading team={team} />
+      <div className="flex flex-wrap items-center gap-3 rounded-md border border-zinc-200 p-3 text-sm dark:border-zinc-800">
+        <span className="font-medium">Matchday squad:</span>
+        <span
+          className={
+            squadReady
+              ? "text-emerald-700 dark:text-emerald-400"
+              : "text-amber-700 dark:text-amber-400"
+          }
+        >
+          {squadReady ? "ready" : squad ? "needs changes" : "not picked yet"}
+        </span>
+        <span className="flex-1" />
+        <Link
+          href="/team/squad"
+          className="rounded-md bg-zinc-900 px-3 py-1.5 font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+        >
+          {squad ? "Edit squad" : "Pick your matchday 22"}
+        </Link>
+      </div>
       {openPack && (
         <OpenPack
           key={openPack.id}
