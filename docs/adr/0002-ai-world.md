@@ -172,22 +172,22 @@ after that.
 A nightly `prune_old_data()` function does the deleting. It is run by the
 existing nightly backup workflow, just before the dump.
 
-The backup keeps AI clubs, because players can't tell them from real ones
-and they should come back after a restore exactly as they were. It saves:
+The backup treats AI clubs exactly like real clubs, because players can't
+tell them apart. A restore brings every club back exactly as it was,
+including seasons in progress (fixtures and clones). A slow AI club halfway
+through a season carries on from where it was. It saves everything the
+database holds after the prune: permanent records, every club with its
+players, squads, seasons, fixtures and clones, settings and the accounts.
 
-- the permanent records (`season_records`, `ghosts`, `player_careers`);
-- every club, real or AI, with its players, squads, funds, Elo and seasons;
-- settings and the accounts.
+With AI seasons in progress included, the nightly file is about 40–50 MB.
+New clones every day would add several GB a year to `lfs-backups`' history,
+which is too much for a GitHub repo. So the backup changes in two ways
+(this changes D70):
 
-It leaves out what is rebuilt or short-lived: fixtures and clones of AI
-seasons in progress, using filtered `COPY` statements. An AI club caught in
-the middle of a season after a restore restarts that season.
-
-Including AI clubs adds about 4–5 MB to the nightly file. Their players
-change every day, so each night adds roughly 1–2 MB of compressed history
-to `lfs-backups`, a few hundred MB a year. That is fine for a couple of
-years. If it grows too big, the backups repo's history can be squashed to
-keep, say, the last 90 nights, with Gary's OK.
+- The file is gzipped (`lfs-prod.sql.gz`, about 8–10 MB).
+- `lfs-backups` keeps the last 30 nights, plus the first night of each
+  month for a year. Older nights are dropped by rewriting that repo's
+  history, which only the backup workflow writes to.
 
 **Expected size**, rough figures, measured again once it runs:
 
@@ -230,6 +230,8 @@ Each step below is one PR. The ones marked "migration" wait for Gary's
 ## Needs Gary
 
 - OK the playoff bonuses above (balance defaults).
+- OK the backup change: gzipped, with the last 30 nights plus one a month
+  for a year, instead of every night forever (D70).
 - Add one repository secret when step 8 lands: `SUPABASE_SECRET_KEY` for
   Actions (the same value Vercel has).
 - Whether the main repo is private matters for the GitHub Actions free
