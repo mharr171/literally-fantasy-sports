@@ -107,6 +107,7 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D84 | Nov 4, 2026 | Each player is given one of the available template variants for their position when generated, and keeps it. Answers D82's open question | M2 |
 | D85 | Nov 4, 2026 | Player worth = 1,000 × 1.08^(overall − 50) × age factor (×1.2 to 21, ×1.0 to 29, ×0.8 to 31, ×0.6 after) × (1 + 4% per point the shown potential midpoint is above the overall), rounded to 50. Uses the shown range, never the hidden potential. Bulk resale pays 25% of worth. Resolves D73's first item | M2 |
 | D86 | Nov 4, 2026 | Initial scouting: a manager opens starter packs (one at a time or all at once), then picks their 22–30 from every opened player together, not pack by pack. Pack seeds are hidden from managers, since a seed reveals true potential | M2 |
+| D87 | Nov 4, 2026 | Bought packs (proposed defaults, Gary approves): Basic 5,000 (overall 40–49 25%, 50–59 50%, 60–69 20%, 70–79 5%), Silver 12,000 (50–59 35%, 60–69 45%, 70–79 17%, 80–89 3%), Gold 30,000 (60–69 40%, 70–79 45%, 80–89 13%, 90–99 2%). Position-focused packs cost 20% more. A bought pack opens at once and must be sorted (keep or bulk-sell each player) before buying another. New teams start with 10,000 funds. Release and resale stop at 22 players; starter-pack players can be released but not sold | M2 |
 
 ## 1. Vision & goals
 

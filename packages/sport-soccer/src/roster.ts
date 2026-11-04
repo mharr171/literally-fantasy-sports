@@ -32,15 +32,84 @@ export function isPackFocus(value: string): value is PackFocus {
   return (PACK_FOCUSES as readonly string[]).includes(value);
 }
 
-/** Every pack tier, by id. Bought tiers arrive later in M2. */
-export const PACK_TIERS: Record<string, PackTier> = {
-  [STARTER_TIER.id]: STARTER_TIER,
+/** A tier managers can buy, with its price in funds. */
+export interface BoughtTier extends PackTier {
+  name: string;
+  price: number;
+}
+
+const bandTier = (
+  id: string,
+  name: string,
+  price: number,
+  bands: [min: number, max: number, percent: number][],
+): BoughtTier => {
+  const odds = bands.map(([min, max, weight]) => ({ min, max, weight }));
+  const total = odds.reduce((a, b) => a + b.weight, 0);
+  return {
+    id,
+    name,
+    price,
+    bands: odds,
+    min: Math.min(...odds.map((b) => b.min)),
+    max: Math.max(...odds.map((b) => b.max)),
+    mean:
+      odds.reduce((a, b) => a + ((b.min + b.max) / 2) * b.weight, 0) / total,
+    spread: 0,
+  };
 };
+
+/**
+ * Packs for sale, cheapest first, with published odds of player skill (D47).
+ * Basic costs 5,000 (D39). Balance defaults: changed only with Gary's OK.
+ */
+export const BOUGHT_TIERS: readonly BoughtTier[] = [
+  bandTier("basic", "Basic", 5_000, [
+    [40, 49, 25],
+    [50, 59, 50],
+    [60, 69, 20],
+    [70, 79, 5],
+  ]),
+  bandTier("silver", "Silver", 12_000, [
+    [50, 59, 35],
+    [60, 69, 45],
+    [70, 79, 17],
+    [80, 89, 3],
+  ]),
+  bandTier("gold", "Gold", 30_000, [
+    [60, 69, 40],
+    [70, 79, 45],
+    [80, 89, 13],
+    [90, 99, 2],
+  ]),
+];
+
+/** Position-focused packs cost this much more than all-position ones. */
+export const FOCUS_SURCHARGE = 0.2;
+
+/** Every pack tier, by id. */
+export const PACK_TIERS: Record<string, PackTier> = Object.fromEntries([
+  [STARTER_TIER.id, STARTER_TIER],
+  ...BOUGHT_TIERS.map((t) => [t.id, t]),
+]);
 
 export function packTier(id: string): PackTier {
   const tier = PACK_TIERS[id];
   if (!tier) throw new Error(`Unknown pack tier: ${id}`);
   return tier;
+}
+
+export function boughtTier(id: string): BoughtTier {
+  const tier = BOUGHT_TIERS.find((t) => t.id === id);
+  if (!tier) throw new Error(`That pack isn't for sale: ${id}`);
+  return tier;
+}
+
+/** What a pack costs: the tier's price, plus the surcharge for a position focus. */
+export function packPrice(tierId: string, focus: PackFocus): number {
+  const { price } = boughtTier(tierId);
+  if (focus === "any") return price;
+  return Math.round((price * (1 + FOCUS_SURCHARGE)) / 50) * 50;
 }
 
 /** The 22 starter packs a new team receives, in a stable order (D83). */
@@ -99,5 +168,40 @@ export function starterSelectionError(
     return `Keep at least ${ROSTER_MIN} players (${kept} picked).`;
   if (kept > ROSTER_MAX)
     return `Keep at most ${ROSTER_MAX} players (${kept} picked).`;
+  return null;
+}
+
+/** Why a bought pack's keep choices are invalid, or null when they're fine. */
+export function packChoiceError(kept: readonly number[]): string | null {
+  if (new Set(kept).size !== kept.length) return "A player was picked twice.";
+  for (const i of kept)
+    if (!Number.isInteger(i) || i < 0 || i >= PACK_SIZE)
+      return "That player isn't in the pack.";
+  return null;
+}
+
+/**
+ * Why a player can't leave the roster, or null when they can. Teams keep at
+ * least ROSTER_MIN players, and free starter-pack players can be released
+ * but never sold (D83).
+ */
+export function removalError(
+  rosterSize: number,
+  player: { fromStarterPack: boolean },
+  mode: "release" | "sell",
+): string | null {
+  if (rosterSize <= ROSTER_MIN)
+    return `Keep at least ${ROSTER_MIN} players: buy a pack before letting anyone go.`;
+  if (mode === "sell" && player.fromStarterPack)
+    return "Starter-pack players were free, so they can be released but not sold.";
+  return null;
+}
+
+/** Over ROSTER_MAX the next match is blocked until the roster is trimmed (D54). */
+export function rosterWarning(rosterSize: number): string | null {
+  if (rosterSize < ROSTER_MIN)
+    return `You need at least ${ROSTER_MIN} players to play.`;
+  if (rosterSize > ROSTER_MAX)
+    return `You have ${rosterSize} players: release or sell down to ${ROSTER_MAX} before your next match.`;
   return null;
 }

@@ -65,12 +65,42 @@ export async function loadStarterPacks(teamId: string): Promise<StarterPack[]> {
 }
 
 /** The players inside a pack (server only: includes the true potential). */
-export function openedContents(pack: StarterPack): GeneratedPlayer[] {
+export function openedContents(pack: {
+  seed: string;
+  focus: PackFocus;
+  tier: string;
+}): GeneratedPlayer[] {
   return packContents(pack.seed, pack.focus, pack.tier);
+}
+
+export interface OpenPack {
+  id: string;
+  focus: PackFocus;
+  tier: string;
+  seed: string;
+}
+
+/** The team's bought pack waiting for keep-or-sell choices, if any. */
+export async function loadOpenBoughtPack(
+  teamId: string,
+): Promise<OpenPack | null> {
+  const { data, error } = await createServiceClient()
+    .from("packs")
+    .select("id, focus, tier, seed")
+    .eq("team_id", teamId)
+    .eq("kind", "bought")
+    .is("resolved_at", null)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+  if (!isPackFocus(data.focus))
+    throw new Error(`Bad pack focus: ${data.focus}`);
+  return { ...data, focus: data.focus };
 }
 
 export interface RosterPlayer {
   id: string;
+  fromStarterPack: boolean;
   displayName: string;
   nationality: string;
   age: number;
@@ -86,12 +116,13 @@ export async function loadRoster(teamId: string): Promise<RosterPlayer[]> {
   const { data, error } = await createServiceClient()
     .from("players")
     .select(
-      "id, display_name, nationality, age, primary_position, secondary_position, overall, potential_low, potential_high, worth, chemistry_color",
+      "id, from_starter_pack, display_name, nationality, age, primary_position, secondary_position, overall, potential_low, potential_high, worth, chemistry_color",
     )
     .eq("team_id", teamId);
   if (error) throw new Error(error.message);
   return (data ?? []).map((p) => ({
     id: p.id,
+    fromStarterPack: p.from_starter_pack,
     displayName: p.display_name,
     nationality: p.nationality,
     age: p.age,

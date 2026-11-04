@@ -42,7 +42,9 @@ describe.runIf(sql)("teams, players and packs", () => {
       owner,
       (tx) => tx`select name, elo, funds from teams`,
     );
-    expect(teams).toEqual([{ name: `${tag} United`, elo: 1500, funds: 0 }]);
+    expect(teams).toEqual([
+      { name: `${tag} United`, elo: 1500, funds: 10_000 },
+    ]);
     const players = await asUser(db, owner, playerColumns);
     expect(players).toEqual([
       {

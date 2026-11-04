@@ -286,13 +286,26 @@ export function positionsFor(focus: PackFocus): Position[] {
   return POSITIONS.filter((p) => POSITION_LINE[p] === line);
 }
 
-/** The skill level of a pack: player overalls are drawn around `mean`. */
+/** One band of a tier's published odds: overalls from `min` to `max`. */
+export interface OddsBand {
+  min: number;
+  max: number;
+  /** Chance of a player landing in this band, as a fraction of the tier total. */
+  weight: number;
+}
+
+/**
+ * The skill level of a pack. Tiers with `bands` draw each overall from the
+ * published odds (D47): a band by weight, then evenly within it. Otherwise
+ * overalls are drawn around `mean` and kept between `min` and `max`.
+ */
 export interface PackTier {
   id: string;
   mean: number;
   spread: number;
   min: number;
   max: number;
+  bands?: OddsBand[];
 }
 
 /** Starter packs (D83). Balance default: changed only with Gary's OK. */
@@ -313,6 +326,19 @@ export const STARTER_PACKS: { focus: PackFocus; count: number }[] = [
   { focus: "any", count: 11 },
 ];
 
+function rollOverall(rng: Rng, tier: PackTier): number {
+  if (tier.bands && tier.bands.length > 0) {
+    const band = tier.bands[
+      rng.weightedIndex(tier.bands.map((b) => b.weight))
+    ] as OddsBand;
+    return rng.int(band.min, band.max);
+  }
+  return Math.max(
+    tier.min,
+    Math.min(tier.max, Math.round(rng.normal(tier.mean, tier.spread))),
+  );
+}
+
 /** Opens a pack: PACK_SIZE players of the focus's positions at the tier's level. */
 export function generatePack(
   rng: Rng,
@@ -327,10 +353,7 @@ export function generatePack(
   return Array.from({ length: PACK_SIZE }, (_, i) => {
     const r = rng.fork(`player-${i}`);
     const position = positions[r.weightedIndex(weights)] as Position;
-    const overall = Math.max(
-      tier.min,
-      Math.min(tier.max, Math.round(r.normal(tier.mean, tier.spread))),
-    );
+    const overall = rollOverall(r, tier);
     return generatePlayer(r, { position, overall, settings });
   });
 }

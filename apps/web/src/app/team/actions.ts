@@ -1,14 +1,25 @@
 "use server";
 
-import { normalizeTeamName, teamNameError } from "@lfs/core";
-import { starterPackPlan, starterSelectionError } from "@lfs/sport-soccer";
+import { normalizeTeamName, resalePrice, teamNameError } from "@lfs/core";
+import {
+  BOUGHT_TIERS,
+  PACK_FOCUSES,
+  packChoiceError,
+  packPrice,
+  ROSTER_MIN,
+  removalError,
+  starterPackPlan,
+  starterSelectionError,
+} from "@lfs/sport-soccer";
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
-import { starterPlayerRow } from "@/lib/scouting";
+import { playerRow } from "@/lib/scouting";
 import { createServiceClient } from "@/lib/supabase/service";
 import {
   loadMyTeam,
+  loadOpenBoughtPack,
+  loadRoster,
   loadStarterPacks,
   openedContents,
   SOCCER,
@@ -130,7 +141,7 @@ export async function confirmStarterSquad(
       return (chosen[pack.id] ?? []).map((i) => {
         const player = players[i];
         if (!player) throw new Error("That player isn't in the pack.");
-        return starterPlayerRow(player);
+        return playerRow(player);
       });
     });
     const kept = Object.fromEntries(
@@ -151,6 +162,134 @@ export async function confirmStarterSquad(
   } catch (e) {
     if (e instanceof z.ZodError)
       return fail(new Error("That pick isn't valid."));
+    return fail(e);
+  }
+}
+
+/** Turns a database refusal into something a manager can act on. */
+function friendly(message: string): string {
+  if (message.includes("not enough funds"))
+    return "You can't afford that pack.";
+  if (message.includes("finish your open pack"))
+    return "Keep or sell the players in your open pack first.";
+  if (message.includes("pack is not open"))
+    return "That pack has already been sorted.";
+  if (message.includes("roster would drop below"))
+    return `Keep at least ${ROSTER_MIN} players.`;
+  if (message.includes("player is not on this team"))
+    return "That player has already left.";
+  return message;
+}
+
+async function requireSquadPicked(teamId: string) {
+  const starter = await loadStarterPacks(teamId);
+  if (starter.some((p) => !p.resolved))
+    throw new Error("Pick your starting squad before buying packs.");
+}
+
+const buySchema = z.object({
+  tier: z.enum(BOUGHT_TIERS.map((t) => t.id) as [string, ...string[]]),
+  focus: z.enum(PACK_FOCUSES),
+});
+
+/** Buys a pack (D47); it opens straight away for keep-or-sell choices. */
+export async function buyPack(input: {
+  tier: string;
+  focus: string;
+}): Promise<ActionResult> {
+  try {
+    const { tier, focus } = buySchema.parse(input);
+    const team = await requireTeam();
+    await requireSquadPicked(team.id);
+    const { error } = await createServiceClient().rpc("buy_pack", {
+      p_team: team.id,
+      p_focus: focus,
+      p_tier: tier,
+      p_price: packPrice(tier, focus),
+    });
+    if (error) throw new Error(friendly(error.message));
+    refresh();
+    return { ok: true };
+  } catch (e) {
+    if (e instanceof z.ZodError)
+      return fail(new Error("That pack isn't for sale."));
+    return fail(e);
+  }
+}
+
+const resolveSchema = z.object({
+  packId: z.uuid(),
+  kept: z.array(z.number().int().min(0).max(4)).max(5),
+});
+
+/**
+ * Keeps the chosen players from the open pack and bulk-resells the rest
+ * (D49). Players and prices are worked out here from the pack's seed.
+ */
+export async function resolvePack(input: {
+  packId: string;
+  kept: number[];
+}): Promise<ActionResult> {
+  try {
+    const { packId, kept } = resolveSchema.parse(input);
+    const problem = packChoiceError(kept);
+    if (problem) throw new Error(problem);
+    const team = await requireTeam();
+    const pack = await loadOpenBoughtPack(team.id);
+    if (!pack || pack.id !== packId)
+      throw new Error("That pack has already been sorted.");
+    const players = openedContents(pack);
+    const keep = new Set(kept);
+    const refund = players
+      .filter((_, i) => !keep.has(i))
+      .reduce((total, p) => total + resalePrice(playerRow(p).worth), 0);
+    const { error } = await createServiceClient().rpc("resolve_bought_pack", {
+      p_team: team.id,
+      p_pack: pack.id,
+      p_players: players.filter((_, i) => keep.has(i)).map(playerRow),
+      p_kept: [...keep].sort((a, b) => a - b),
+      p_refund: refund,
+    });
+    if (error) throw new Error(friendly(error.message));
+    refresh();
+    return { ok: true };
+  } catch (e) {
+    if (e instanceof z.ZodError)
+      return fail(new Error("That choice isn't valid."));
+    return fail(e);
+  }
+}
+
+const removeSchema = z.object({
+  playerId: z.uuid(),
+  mode: z.enum(["release", "sell"]),
+});
+
+/** Releases a player for free or bulk-sells them for 25% of worth (D49, D85). */
+export async function removePlayer(input: {
+  playerId: string;
+  mode: "release" | "sell";
+}): Promise<ActionResult> {
+  try {
+    const { playerId, mode } = removeSchema.parse(input);
+    const team = await requireTeam();
+    const roster = await loadRoster(team.id);
+    const player = roster.find((p) => p.id === playerId);
+    if (!player) throw new Error("That player has already left.");
+    const problem = removalError(roster.length, player, mode);
+    if (problem) throw new Error(problem);
+    const { error } = await createServiceClient().rpc("remove_player", {
+      p_team: team.id,
+      p_player: player.id,
+      p_refund: mode === "sell" ? resalePrice(player.worth) : 0,
+      p_min_roster: ROSTER_MIN,
+    });
+    if (error) throw new Error(friendly(error.message));
+    refresh();
+    return { ok: true };
+  } catch (e) {
+    if (e instanceof z.ZodError)
+      return fail(new Error("That choice isn't valid."));
     return fail(e);
   }
 }

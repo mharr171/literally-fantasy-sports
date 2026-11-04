@@ -2,12 +2,18 @@ import { describe, expect, it } from "vitest";
 import { PACK_SIZE, STARTER_TIER } from "../src/generation";
 import { POSITION_LINE } from "../src/positions";
 import {
+  BOUGHT_TIERS,
+  boughtTier,
   isPackFocus,
   PACK_FOCUSES,
+  packChoiceError,
   packContents,
+  packPrice,
   packTier,
   ROSTER_MAX,
   ROSTER_MIN,
+  removalError,
+  rosterWarning,
   type StarterPackState,
   starterPackPlan,
   starterSelectionError,
@@ -35,7 +41,7 @@ describe("starter packs", () => {
 
   it("knows its tiers and focuses", () => {
     expect(packTier("starter")).toBe(STARTER_TIER);
-    expect(() => packTier("gold")).toThrow(/Unknown pack tier/);
+    expect(() => packTier("platinum")).toThrow(/Unknown pack tier/);
     expect(isPackFocus("defence")).toBe(true);
     expect(isPackFocus("defense")).toBe(false);
   });
@@ -87,5 +93,69 @@ describe("starterSelectionError", () => {
     expect(starterSelectionError(packs(), { ...keep(22), p21: [1.5] })).toMatch(
       /isn't in the pack/,
     );
+  });
+});
+
+describe("bought packs (D47)", () => {
+  it("sells three tiers, cheapest first, with odds adding up to 100%", () => {
+    expect(BOUGHT_TIERS.map((t) => [t.id, t.price])).toEqual([
+      ["basic", 5_000],
+      ["silver", 12_000],
+      ["gold", 30_000],
+    ]);
+    for (const tier of BOUGHT_TIERS) {
+      expect(tier.bands?.reduce((a, b) => a + b.weight, 0)).toBe(100);
+      expect(packTier(tier.id)).toBe(tier);
+    }
+    expect(boughtTier("gold").min).toBe(60);
+    expect(boughtTier("gold").max).toBe(99);
+    expect(() => boughtTier("starter")).toThrow(/isn't for sale/);
+  });
+
+  it("charges 20% more for a position focus", () => {
+    expect(packPrice("basic", "any")).toBe(5_000);
+    expect(packPrice("basic", "goal")).toBe(6_000);
+    expect(packPrice("silver", "attack")).toBe(14_400);
+  });
+
+  it("draws overalls from the published odds", () => {
+    const tier = boughtTier("basic");
+    const overalls = Array.from({ length: 400 }, (_, i) =>
+      packContents(`odds-${i}`, "any", "basic"),
+    )
+      .flat()
+      .map((p) => p.overall);
+    expect(Math.min(...overalls)).toBeGreaterThanOrEqual(tier.min - 1);
+    expect(Math.max(...overalls)).toBeLessThanOrEqual(tier.max + 1);
+    const share = (lo: number, hi: number) =>
+      overalls.filter((o) => o >= lo && o <= hi).length / overalls.length;
+    expect(share(50, 59)).toBeGreaterThan(0.44);
+    expect(share(50, 59)).toBeLessThan(0.56);
+    expect(share(70, 80)).toBeGreaterThan(0.02);
+    expect(share(70, 80)).toBeLessThan(0.08);
+  });
+
+  it("checks keep choices", () => {
+    expect(packChoiceError([])).toBeNull();
+    expect(packChoiceError([0, 4])).toBeNull();
+    expect(packChoiceError([1, 1])).toMatch(/twice/);
+    expect(packChoiceError([5])).toMatch(/isn't in the pack/);
+  });
+});
+
+describe("leaving the roster", () => {
+  it("keeps at least 22 and never sells free starter players", () => {
+    const bought = { fromStarterPack: false };
+    const starter = { fromStarterPack: true };
+    expect(removalError(22, bought, "release")).toMatch(/at least 22/);
+    expect(removalError(23, starter, "release")).toBeNull();
+    expect(removalError(23, starter, "sell")).toMatch(/can't|not sold/);
+    expect(removalError(23, bought, "sell")).toBeNull();
+  });
+
+  it("warns when the roster can't play", () => {
+    expect(rosterWarning(21)).toMatch(/at least 22/);
+    expect(rosterWarning(30)).toBeNull();
+    expect(rosterWarning(33)).toMatch(/down to 30/);
   });
 });

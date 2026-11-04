@@ -182,7 +182,8 @@ export const teams = pgTable(
     sport: text().notNull(),
     name: text().notNull(),
     elo: integer().notNull().default(1500),
-    funds: integer().notNull().default(0),
+    /** Starting funds let a new team buy its first packs (balance default, Gary OKs). */
+    funds: integer().notNull().default(10_000),
     energy: integer().notNull().default(3),
     energyUpdatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
