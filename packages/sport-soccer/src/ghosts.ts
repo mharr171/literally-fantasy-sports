@@ -30,6 +30,8 @@ export interface SnapshotPlayer {
   secondaryPosition: Position | null;
   chemistryColor: number;
   overall: number;
+  /** Template variant at the primary position (D84). */
+  templateVariant?: string;
 }
 
 export interface GhostSnapshot {

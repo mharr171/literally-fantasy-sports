@@ -1,9 +1,13 @@
 import "server-only";
 import {
   defaultStoredTemplates,
+  type EnabledVariants,
+  enabledVariantsFromValues,
   POSITIONS,
   type StoredTemplates,
+  type StoredVariants,
   templatesFromValues,
+  variantsFromValues,
 } from "@lfs/sport-soccer";
 import { createClient } from "./supabase/server";
 
@@ -21,6 +25,9 @@ export interface EditorState {
   status: "draft" | "published" | "defaults";
   note: string;
   templates: StoredTemplates;
+  /** Named variants per position, and which templates new players can get (D82, D84). */
+  variants: StoredVariants;
+  enabled: EnabledVariants;
   versions: SoccerVersion[];
   /** Newest published version, if any. */
   live: number | null;
@@ -83,17 +90,22 @@ export async function loadEditorState(
       status: "defaults",
       note: "",
       templates,
+      variants: {},
+      enabled: {},
       versions,
       live,
     };
   }
-  const stored = templatesFromValues(await loadVersionValues(chosen.version));
+  const values = await loadVersionValues(chosen.version);
+  const stored = templatesFromValues(values);
   for (const p of POSITIONS) if (stored[p]) templates[p] = stored[p];
   return {
     version: chosen.version,
     status: chosen.publishedAt ? "published" : "draft",
     note: chosen.note,
     templates,
+    variants: variantsFromValues(values),
+    enabled: enabledVariantsFromValues(values),
     versions,
     live,
   };

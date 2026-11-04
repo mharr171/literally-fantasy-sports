@@ -2,6 +2,7 @@ import "server-only";
 import type { GeneratedPlayer } from "@lfs/sport-soccer";
 import {
   type Attributes,
+  type GenerationSettings,
   isPackFocus,
   type MatchdaySquad,
   type PackFocus,
@@ -122,12 +123,15 @@ export async function loadStarterPacks(teamId: string): Promise<StarterPack[]> {
 }
 
 /** The players inside a pack (server only: includes the true potential). */
-export function openedContents(pack: {
-  seed: string;
-  focus: PackFocus;
-  tier: string;
-}): GeneratedPlayer[] {
-  return packContents(pack.seed, pack.focus, pack.tier);
+export function openedContents(
+  pack: {
+    seed: string;
+    focus: PackFocus;
+    tier: string;
+  },
+  settings: GenerationSettings,
+): GeneratedPlayer[] {
+  return packContents(pack.seed, pack.focus, pack.tier, settings);
 }
 
 export interface OpenPack {
@@ -162,6 +166,8 @@ export interface RosterPlayer {
   condition: PlayerCondition;
   /** Recent form, −1 to 1 (M4). */
   form: number;
+  /** The template variant the player uses at their primary position (D84). */
+  templateVariant: string;
   attributes: Attributes;
   displayName: string;
   nationality: string;
@@ -178,7 +184,7 @@ export async function loadRoster(teamId: string): Promise<RosterPlayer[]> {
   const { data, error } = await createServiceClient()
     .from("players")
     .select(
-      "id, from_starter_pack, attributes, fitness, injured_weeks, suspended_weeks, yellow_cards, form, display_name, nationality, age, primary_position, secondary_position, overall, potential_low, potential_high, worth, chemistry_color",
+      "id, from_starter_pack, attributes, fitness, injured_weeks, suspended_weeks, yellow_cards, form, template_variant, display_name, nationality, age, primary_position, secondary_position, overall, potential_low, potential_high, worth, chemistry_color",
     )
     .eq("team_id", teamId);
   if (error) throw new Error(error.message);
@@ -193,6 +199,7 @@ export async function loadRoster(teamId: string): Promise<RosterPlayer[]> {
     },
     attributes: p.attributes as Attributes,
     form: p.form,
+    templateVariant: p.template_variant,
     displayName: p.display_name,
     nationality: p.nationality,
     age: p.age,

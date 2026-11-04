@@ -18,6 +18,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { playOneWeek, readyToPlay } from "@/lib/play-week";
 import { playerRow } from "@/lib/scouting";
 import {
+  liveGenerationSettings,
   liveSoccerConfig,
   loadGhostCandidates,
   loadLatestSeason,
@@ -155,6 +156,7 @@ export async function endSeason(): Promise<ActionResult> {
         secondaryPosition: p.secondaryPosition,
         chemistryColor: p.chemistryColor,
         overall: p.overall,
+        templateVariant: p.templateVariant,
       })),
       squad,
     );
@@ -238,7 +240,11 @@ export async function takeYouth(taken: number[]): Promise<ActionResult> {
     const season = await loadLatestSeason(team.id);
     if (!season?.closed || season.intakeResolved)
       throw new Error("The youth intake isn't open.");
-    const prospects = youthIntake(season.seed);
+    const prospects = youthIntake(
+      season.seed,
+      undefined,
+      await liveGenerationSettings(),
+    );
     const rows = picks.map((i) =>
       playerRow(prospects[i] as (typeof prospects)[number]),
     );

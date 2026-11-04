@@ -16,6 +16,7 @@ import { refresh } from "next/cache";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { playerRow } from "@/lib/scouting";
+import { liveGenerationSettings } from "@/lib/season";
 import { createServiceClient } from "@/lib/supabase/service";
 import {
   loadMyTeam,
@@ -137,8 +138,9 @@ export async function confirmStarterSquad(
     const problem = starterSelectionError(packs, chosen);
     if (problem) throw new Error(problem);
 
+    const generation = await liveGenerationSettings();
     const rows = packs.flatMap((pack) => {
-      const players = openedContents(pack);
+      const players = openedContents(pack, generation);
       return (chosen[pack.id] ?? []).map((i) => {
         const player = players[i];
         if (!player) throw new Error("That player isn't in the pack.");
@@ -239,7 +241,7 @@ export async function resolvePack(input: {
     const pack = await loadOpenBoughtPack(team.id);
     if (!pack || pack.id !== packId)
       throw new Error("That pack has already been sorted.");
-    const players = openedContents(pack);
+    const players = openedContents(pack, await liveGenerationSettings());
     const keep = new Set(kept);
     const refund = players
       .filter((_, i) => !keep.has(i))

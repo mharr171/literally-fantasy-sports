@@ -24,19 +24,35 @@ const ROWS = 25;
 const COLS = 17;
 const CELL = 20;
 
+type Variants = Partial<Record<Position, Record<string, Grid>>>;
+type Enabled = Partial<Record<Position, string[]>>;
+const DEFAULT = "default";
+
 interface Props {
   version: number | null;
   status: "draft" | "published" | "defaults";
   note: string;
   templates: Templates;
+  /** Named template variants per position (D82). */
+  variants: Variants;
+  /** Templates new players can be given (D84); "default" is the main one. */
+  enabled: Enabled;
   defaults: Templates;
+}
+
+interface Snapshot {
+  templates: Templates;
+  variants: Variants;
 }
 
 export function TemplateEditor(props: Props) {
   const router = useRouter();
   const [templates, setTemplates] = useState<Templates>(props.templates);
-  const [history, setHistory] = useState<Templates[]>([]);
+  const [variants, setVariants] = useState<Variants>(props.variants);
+  const [enabled, setEnabled] = useState<Enabled>(props.enabled);
+  const [history, setHistory] = useState<Snapshot[]>([]);
   const [position, setPosition] = useState<Position>("ST");
+  const [variant, setVariant] = useState<string>(DEFAULT);
   const [tool, setTool] = useState<Tool>("paint");
   const [size, setSize] = useState(2);
   const [strength, setStrength] = useState(0.5);
@@ -52,20 +68,29 @@ export function TemplateEditor(props: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const painting = useRef(false);
 
-  const grid = templates[position];
+  const gridOf = (
+    t: Templates,
+    v: Variants,
+    p: Position,
+    name: string,
+  ): Grid | undefined => (name === DEFAULT ? t[p] : v[p]?.[name]);
+  const grid =
+    gridOf(templates, variants, position, variant) ?? templates[position];
+  const pair = MIRROR[position];
+  const pairGrid = pair
+    ? gridOf(templates, variants, pair, variant)
+    : undefined;
+  const names = Object.keys(variants[position] ?? {});
+  const usable = (name: string) =>
+    (enabled[position] ?? [DEFAULT]).includes(name);
 
   // Draw the pitch and the current template.
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
-    drawPitch(
-      ctx,
-      grid,
-      templates[MIRROR[position] ?? position],
-      mirror && !!MIRROR[position],
-    );
-  }, [grid, templates, position, mirror]);
+    drawPitch(ctx, grid, pairGrid ?? grid, mirror && !!pairGrid);
+  }, [grid, pairGrid, mirror]);
 
   const cellAt = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -78,40 +103,45 @@ export function TemplateEditor(props: Props) {
   const stroke = useCallback(
     (row: number, col: number) => {
       if (row < 0 || row >= ROWS || col < 0 || col >= COLS) return;
-      setTemplates((current) => {
-        const next = {
-          ...current,
-          [position]: applyStroke(
-            current[position],
-            row,
-            col,
-            tool,
-            size,
-            strength,
-          ),
-        };
-        const pair = MIRROR[position];
-        if (mirror && pair) {
-          next[pair] = applyStroke(
-            current[pair],
-            row,
-            COLS - 1 - col,
-            tool,
-            size,
-            strength,
-          );
-        }
-        return next;
-      });
+      const paint = (g: Grid, c: number) =>
+        applyStroke(g, row, c, tool, size, strength);
+      const mirrored = MIRROR[position];
+      if (variant === DEFAULT) {
+        setTemplates((current) => {
+          const next = {
+            ...current,
+            [position]: paint(current[position], col),
+          };
+          if (mirror && mirrored)
+            next[mirrored] = paint(current[mirrored], COLS - 1 - col);
+          return next;
+        });
+      } else {
+        setVariants((current) => {
+          const own = current[position]?.[variant];
+          if (!own) return current;
+          const next: Variants = {
+            ...current,
+            [position]: { ...current[position], [variant]: paint(own, col) },
+          };
+          const other = mirrored ? current[mirrored]?.[variant] : undefined;
+          if (mirror && mirrored && other)
+            next[mirrored] = {
+              ...current[mirrored],
+              [variant]: paint(other, COLS - 1 - col),
+            };
+          return next;
+        });
+      }
       setDirty(true);
     },
-    [position, tool, size, strength, mirror],
+    [position, variant, tool, size, strength, mirror],
   );
 
   const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     e.currentTarget.setPointerCapture(e.pointerId);
     painting.current = true;
-    setHistory((h) => [...h.slice(-19), templates]);
+    setHistory((h) => [...h.slice(-19), { templates, variants }]);
     const { row, col } = cellAt(e);
     stroke(row, col);
   };
@@ -127,18 +157,94 @@ export function TemplateEditor(props: Props) {
   const undo = () => {
     const previous = history.at(-1);
     if (!previous) return;
-    setTemplates(previous);
+    setTemplates(previous.templates);
+    setVariants(previous.variants);
     setHistory((h) => h.slice(0, -1));
     setDirty(true);
   };
 
   const resetPosition = () => {
-    setHistory((h) => [...h.slice(-19), templates]);
-    setTemplates((t) => ({ ...t, [position]: props.defaults[position] }));
+    setHistory((h) => [...h.slice(-19), { templates, variants }]);
+    if (variant === DEFAULT)
+      setTemplates((t) => ({ ...t, [position]: props.defaults[position] }));
+    else
+      setVariants((v) => ({
+        ...v,
+        [position]: { ...v[position], [variant]: templates[position] },
+      }));
     setDirty(true);
   };
 
-  const input = () => ({ baseVersion: props.version, note, templates });
+  const addVariant = () => {
+    const name = window
+      .prompt(
+        `Name the new ${position} template (lowercase letters, digits or dashes, e.g. "poacher"):`,
+      )
+      ?.trim()
+      .toLowerCase();
+    if (!name) return;
+    if (!/^[a-z0-9][a-z0-9-]{0,23}$/.test(name) || name === DEFAULT) {
+      setMessage({
+        kind: "error",
+        text: `"${name}" isn't a valid template name.`,
+      });
+      return;
+    }
+    if (variants[position]?.[name]) {
+      setMessage({ kind: "error", text: `${position} already has "${name}".` });
+      return;
+    }
+    if (names.length >= 8) {
+      setMessage({ kind: "error", text: "At most 8 variants per position." });
+      return;
+    }
+    // Start from the position's default template.
+    setVariants((v) => ({
+      ...v,
+      [position]: { ...v[position], [name]: templates[position] },
+    }));
+    setVariant(name);
+    setDirty(true);
+  };
+
+  const deleteVariant = () => {
+    if (variant === DEFAULT) return;
+    if (
+      !window.confirm(
+        `Delete the ${position} template "${variant}"? Players who already have it will use the default template from this version on.`,
+      )
+    )
+      return;
+    setVariants((v) => {
+      const { [variant]: _gone, ...rest } = v[position] ?? {};
+      return { ...v, [position]: rest };
+    });
+    setEnabled((e) => ({
+      ...e,
+      [position]: (e[position] ?? [DEFAULT]).filter((n) => n !== variant),
+    }));
+    setVariant(DEFAULT);
+    setDirty(true);
+  };
+
+  const toggleUsable = (name: string, on: boolean) => {
+    setEnabled((e) => {
+      const current = e[position] ?? [DEFAULT];
+      const next = on
+        ? [...new Set([...current, name])]
+        : current.filter((n) => n !== name);
+      return { ...e, [position]: next };
+    });
+    setDirty(true);
+  };
+
+  const input = () => ({
+    baseVersion: props.version,
+    note,
+    templates,
+    variants,
+    enabled,
+  });
 
   const save = () =>
     startTransition(async () => {
@@ -208,7 +314,10 @@ export function TemplateEditor(props: Props) {
             role="tab"
             aria-selected={p === position}
             title={POSITION_LABELS[p]}
-            onClick={() => setPosition(p)}
+            onClick={() => {
+              setPosition(p);
+              setVariant(DEFAULT);
+            }}
             className={`rounded-md px-2.5 py-1 text-sm font-medium ${
               p === position
                 ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
@@ -218,6 +327,47 @@ export function TemplateEditor(props: Props) {
             {p}
           </button>
         ))}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <span className="text-zinc-500">{position} templates:</span>
+        {[DEFAULT, ...names].map((name) => (
+          <button
+            key={name}
+            type="button"
+            onClick={() => setVariant(name)}
+            className={`rounded-md px-2 py-0.5 ${
+              name === variant
+                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                : "border border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+            }`}
+          >
+            {name}
+            {usable(name) ? " ✓" : ""}
+          </button>
+        ))}
+        <button type="button" onClick={addVariant} className={secondary}>
+          + Add variant
+        </button>
+      </div>
+      <div className="flex flex-wrap items-center gap-4 text-sm">
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={usable(variant)}
+            onChange={(e) => toggleUsable(variant, e.target.checked)}
+          />
+          New {position}s can be given &ldquo;{variant}&rdquo;
+        </label>
+        {variant !== DEFAULT && (
+          <button type="button" onClick={deleteVariant} className={secondary}>
+            Delete &ldquo;{variant}&rdquo;
+          </button>
+        )}
+        <span className="text-zinc-500">
+          Each new player gets one of the ticked (✓) templates at random and
+          keeps it. Unticking only affects new players.
+        </span>
       </div>
 
       <div className="flex flex-col gap-6 md:flex-row">
@@ -242,7 +392,12 @@ export function TemplateEditor(props: Props) {
         </div>
 
         <div className="flex flex-1 flex-col gap-4 text-sm">
-          <h2 className="text-lg font-semibold">{POSITION_LABELS[position]}</h2>
+          <h2 className="text-lg font-semibold">
+            {POSITION_LABELS[position]}
+            {variant !== DEFAULT && (
+              <span className="text-zinc-500"> · {variant}</span>
+            )}
+          </h2>
 
           <fieldset className="flex flex-col gap-2">
             <legend className="mb-1 font-medium">Tool</legend>
@@ -303,7 +458,9 @@ export function TemplateEditor(props: Props) {
               Undo
             </button>
             <button type="button" onClick={resetPosition} className={secondary}>
-              Reset {position} to placeholder
+              {variant === DEFAULT
+                ? `Reset ${position} to placeholder`
+                : `Reset "${variant}" to ${position}'s default`}
             </button>
           </div>
 

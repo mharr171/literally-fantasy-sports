@@ -6,6 +6,7 @@ import {
   runHarness,
   soccerConfigFromValues,
   templatesToRows,
+  variantsToRows,
 } from "@lfs/sport-soccer";
 import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/lib/auth";
@@ -44,11 +45,15 @@ export async function saveTemplates(
 ): Promise<ActionResult<{ version: number }>> {
   try {
     await assertAdmin();
-    const { baseVersion, note, templates } = saveInputSchema.parse(input);
+    const { baseVersion, note, templates, variants, enabled } =
+      saveInputSchema.parse(input);
     const supabase = await createClient();
     const versions = await listSoccerVersions();
     const base = versions.find((v) => v.version === baseVersion);
-    const templateRows = templatesToRows(templates);
+    const templateRows = [
+      ...templatesToRows(templates),
+      ...variantsToRows(variants, enabled),
+    ];
 
     let version: number;
     if (base && !base.publishedAt) {
@@ -114,7 +119,8 @@ export async function testTemplates(
 ): Promise<ActionResult<TestResult>> {
   try {
     await assertAdmin();
-    const { baseVersion, templates } = saveInputSchema.parse(input);
+    const { baseVersion, templates, variants, enabled } =
+      saveInputSchema.parse(input);
     const versions = await listSoccerVersions();
     const live = liveVersion(versions);
     const liveValues = live ? await loadVersionValues(live) : {};
@@ -124,7 +130,10 @@ export async function testTemplates(
         : liveValues;
 
     const draftValues: Record<string, unknown> = { ...baseValues };
-    for (const row of templatesToRows(templatesSchema.parse(templates))) {
+    for (const row of [
+      ...templatesToRows(templatesSchema.parse(templates)),
+      ...variantsToRows(variants, enabled),
+    ]) {
       draftValues[row.key] = row.value;
     }
     const seed = "template-test";

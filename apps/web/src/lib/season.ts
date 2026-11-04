@@ -1,7 +1,10 @@
 import "server-only";
 import {
+  DEFAULT_GENERATION_SETTINGS,
   defaultSoccerConfig,
+  type GenerationSettings,
   type GhostCandidate,
+  generationSettingsFromValues,
   ghostTeam,
   type LeagueSlot,
   type MatchdaySquad,
@@ -245,4 +248,29 @@ export async function loadLeaderboard(
         b.stats.scored - a.stats.scored,
     )
     .slice(0, limit);
+}
+
+/** Settings for generating new players: the live version's enabled template variants (D84). */
+export async function liveGenerationSettings(): Promise<GenerationSettings> {
+  const db = createServiceClient();
+  const { data, error } = await db
+    .from("game_config_versions")
+    .select("version")
+    .eq("scope", SOCCER)
+    .not("published_at", "is", null)
+    .order("version", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return DEFAULT_GENERATION_SETTINGS;
+  const { data: rows, error: rowsError } = await db
+    .from("game_config")
+    .select("key, value")
+    .eq("scope", SOCCER)
+    .eq("version", data.version)
+    .like("key", "variants.%");
+  if (rowsError) throw new Error(rowsError.message);
+  return generationSettingsFromValues(
+    Object.fromEntries((rows ?? []).map((r) => [r.key as string, r.value])),
+  );
 }

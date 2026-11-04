@@ -11,7 +11,11 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth";
 import { scoutPlayer } from "@/lib/scouting";
-import { loadLatestSeason, type SeasonReview } from "@/lib/season";
+import {
+  liveGenerationSettings,
+  loadLatestSeason,
+  type SeasonReview,
+} from "@/lib/season";
 import { loadEnergySettings } from "@/lib/sport-settings";
 import {
   loadMyTeam,
@@ -84,7 +88,11 @@ async function SeasonContent() {
         <div className="mt-3 flex flex-col gap-4">
           {season.review && <Review review={season.review} />}
           <YouthIntake
-            prospects={youthIntake(season.seed).map(scoutPlayer)}
+            prospects={youthIntake(
+              season.seed,
+              undefined,
+              await liveGenerationSettings(),
+            ).map(scoutPlayer)}
             rosterSize={roster.length}
           />
         </div>
