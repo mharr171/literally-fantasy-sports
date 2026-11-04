@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/mharr171/literally-fantasy-sports/compare/v0.2.0...v0.3.0) (2026-11-04)
+
+
+### Features
+
+* buy packs with published odds, keep or sell each player, and release players ([#26](https://github.com/mharr171/literally-fantasy-sports/issues/26)) ([3c05261](https://github.com/mharr171/literally-fantasy-sports/commit/3c052612502af0d480e4a0def976e3a67e1a4605))
+* **core:** price players by overall, age and shown potential ([#23](https://github.com/mharr171/literally-fantasy-sports/issues/23)) ([f94353e](https://github.com/mharr171/literally-fantasy-sports/commit/f94353e88cd9879e926b9f2ca685c4bd00f34cc2))
+* create your team and scout your first squad from 22 starter packs ([#25](https://github.com/mharr171/literally-fantasy-sports/issues/25)) ([34e2290](https://github.com/mharr171/literally-fantasy-sports/commit/34e22904a52cf03a62d72b5c95c2e71101a5b40f))
+* **db:** add teams, players and packs, readable only by their manager ([#24](https://github.com/mharr171/literally-fantasy-sports/issues/24)) ([0e76955](https://github.com/mharr171/literally-fantasy-sports/commit/0e769555e773aff3b98c9a9ecf40eb1568b1c235))
+* pick your matchday 22 on a pitch, with a formation and a sub plan ([#27](https://github.com/mharr171/literally-fantasy-sports/issues/27)) ([c9c5c33](https://github.com/mharr171/literally-fantasy-sports/commit/c9c5c332684ff8dd1f4cfdd173cb13315bad2fd1))
+* **soccer:** generate players and starter packs ([#21](https://github.com/mharr171/literally-fantasy-sports/issues/21)) ([4cd854b](https://github.com/mharr171/literally-fantasy-sports/commit/4cd854b50fac634173ee9dc48e1a04863e321230))
+
 ## [0.2.0](https://github.com/mharr171/literally-fantasy-sports/compare/v0.1.0...v0.2.0) (2026-11-04)
 
 
