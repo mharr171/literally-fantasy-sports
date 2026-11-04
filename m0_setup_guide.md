@@ -160,6 +160,12 @@ Claude Code will try to do these itself and only ask you for the ones it can't.
   - Expiration: 1 year (set a calendar reminder to renew it)
   - Save it as a repository secret in `literally-fantasy-sports` under the name Claude Code gives (for example `BACKUP_REPO_TOKEN`).
 
+- [ ] **Release token** (for release-please, D71): **Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token**.
+  - Name: `release-please` · Expiration: 1 year (calendar reminder to renew)
+  - Repository access: **Only `literally-fantasy-sports`**
+  - Permissions: **Contents**, **Pull requests** and **Issues**: Read and write
+  - Save it as a repository secret in `literally-fantasy-sports` named `RELEASE_PLEASE_TOKEN`.
+
 **Part B is done when:** you can open www.literallyfantasysports.com, see the privacy policy and terms pages, sign in with Google or an email link, and the first PR shows green CI and a preview link. That completes M0 (`v0.1`).
 
 ## Part C: Later milestones
@@ -172,7 +178,7 @@ update public.profiles set is_admin = true where id = (select id from auth.users
 - [ ] **M3 (friends alpha):** invite a few friends and share the link.
 - [ ] **M5:** turn on two-factor (authenticator app) on your game account. The admin panel will require it.
 - [ ] **M6:** sign up at sentry.io (free Developer plan) and connect it to Vercel; turn on **Web Analytics** in the Vercel project. Claude Code adds the code.
-- [ ] **Every year:** renew the domain at Squarespace and the backup access token.
+- [ ] **Every year:** renew the domain at Squarespace, the backup access token (`BACKUP_REPO_TOKEN`) and the release token (`RELEASE_PLEASE_TOKEN`).
 
 ## Accounts summary
 

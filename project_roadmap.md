@@ -1,6 +1,6 @@
 # LiterallyFantasySports — Project Roadmap
 
-Nov 2, 2026 · @Gary · Last updated: Nov 3, 2026 (D75)
+Nov 2, 2026 · @Gary · Last updated: Nov 4, 2026 (D76)
 
 ## Review progress
 
@@ -96,6 +96,7 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D73 | Nov 3, 2026 | Deferred on purpose: player worth formula and resale percentage (M2); cross-sport bonus size and cap (when built) | 8 |
 | D74 | Nov 3, 2026 | Simple privacy policy and terms of service, published at `/privacy-policy` and `/terms-of-service` (required for Google sign-in), linked from the footer and sign-in page. Source files in `docs/legal/` | M0 |
 | D75 | Nov 3, 2026 | One project email address: `admin@literallyfantasysports.com`, forwarded by Squarespace to Gary's personal inbox; replies sent from Gmail through Resend. Used as the contact address in the privacy policy and terms | M0 |
+| D76 | Nov 4, 2026 | Release tags use full semantic versions: `v0.1.0` (M0) … `v0.6.0` (M5), then `v1.0.0`. release-please creates them when Gary merges its release PR at the end of each milestone. Refines D58 | M0 |
 
 ## 1. Vision & goals
 
