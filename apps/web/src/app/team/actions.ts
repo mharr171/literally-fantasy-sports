@@ -8,6 +8,7 @@ import {
   packPrice,
   ROSTER_MIN,
   removalError,
+  squadProblems,
   starterPackPlan,
   starterSelectionError,
 } from "@lfs/sport-soccer";
@@ -290,6 +291,51 @@ export async function removePlayer(input: {
   } catch (e) {
     if (e instanceof z.ZodError)
       return fail(new Error("That choice isn't valid."));
+    return fail(e);
+  }
+}
+
+const squadSchema = z.object({
+  formation: z.string().max(20),
+  lineup: z.array(z.uuid()).max(11),
+  bench: z.array(z.uuid()).max(11),
+  subPlan: z
+    .array(
+      z.object({
+        minute: z.number().int(),
+        outId: z.uuid(),
+        inId: z.uuid(),
+      }),
+    )
+    .max(5),
+});
+
+/** Saves the matchday squad after checking it with the engine (D88). */
+export async function saveSquad(
+  input: z.input<typeof squadSchema>,
+): Promise<ActionResult> {
+  try {
+    const squad = squadSchema.parse(input);
+    const team = await requireTeam();
+    const roster = await loadRoster(team.id);
+    const problems = squadProblems(squad, new Set(roster.map((p) => p.id)));
+    if (problems.length > 0) throw new Error(problems.join(" "));
+    const { error } = await createServiceClient()
+      .from("matchday_squads")
+      .upsert({
+        team_id: team.id,
+        formation: squad.formation,
+        lineup: squad.lineup,
+        bench: squad.bench,
+        sub_plan: squad.subPlan,
+        updated_at: new Date().toISOString(),
+      });
+    if (error) throw new Error(error.message);
+    refresh();
+    return { ok: true };
+  } catch (e) {
+    if (e instanceof z.ZodError)
+      return fail(new Error("That squad isn't valid."));
     return fail(e);
   }
 }

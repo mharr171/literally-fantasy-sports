@@ -1,7 +1,9 @@
 import "server-only";
 import type { GeneratedPlayer } from "@lfs/sport-soccer";
 import {
+  type Attributes,
   isPackFocus,
+  type MatchdaySquad,
   type PackFocus,
   type Position,
   packContents,
@@ -101,6 +103,7 @@ export async function loadOpenBoughtPack(
 export interface RosterPlayer {
   id: string;
   fromStarterPack: boolean;
+  attributes: Attributes;
   displayName: string;
   nationality: string;
   age: number;
@@ -116,13 +119,14 @@ export async function loadRoster(teamId: string): Promise<RosterPlayer[]> {
   const { data, error } = await createServiceClient()
     .from("players")
     .select(
-      "id, from_starter_pack, display_name, nationality, age, primary_position, secondary_position, overall, potential_low, potential_high, worth, chemistry_color",
+      "id, from_starter_pack, attributes, display_name, nationality, age, primary_position, secondary_position, overall, potential_low, potential_high, worth, chemistry_color",
     )
     .eq("team_id", teamId);
   if (error) throw new Error(error.message);
   return (data ?? []).map((p) => ({
     id: p.id,
     fromStarterPack: p.from_starter_pack,
+    attributes: p.attributes as Attributes,
     displayName: p.display_name,
     nationality: p.nationality,
     age: p.age,
@@ -133,4 +137,21 @@ export async function loadRoster(teamId: string): Promise<RosterPlayer[]> {
     worth: p.worth,
     chemistryColor: p.chemistry_color,
   }));
+}
+
+/** The team's saved matchday squad, if any (D88). */
+export async function loadSquad(teamId: string): Promise<MatchdaySquad | null> {
+  const { data, error } = await createServiceClient()
+    .from("matchday_squads")
+    .select("formation, lineup, bench, sub_plan")
+    .eq("team_id", teamId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+  return {
+    formation: data.formation,
+    lineup: data.lineup as string[],
+    bench: data.bench as string[],
+    subPlan: data.sub_plan as MatchdaySquad["subPlan"],
+  };
 }
