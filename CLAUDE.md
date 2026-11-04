@@ -81,7 +81,11 @@ the same.
 
 - TypeScript strict. Biome for lint and format (no ESLint/Prettier).
 - Conventional Commits in commit messages and PR titles (`feat:`, `fix:`, `docs:`,
-  `chore:`, `ci:` …); release-please builds the changelog from them (D71).
+  `chore:`, `ci:` …); release-please builds the changelog from them (D71). PRs are
+  squash-merged, so the PR title becomes the changelog line: write it for players.
+- Releases: release-please keeps a release PR open. Gary merges it at the end of
+  each milestone (M0 → `v0.1.0`, M1 → `v0.2.0`, …). Don't edit `CHANGELOG.md` or
+  version numbers by hand.
 - One issue per session or PR. Keep PRs small.
 - Never commit secrets. `.env*` is git-ignored except `.env.example`.
 - Every PR description: plain-English summary, test results, preview link, what to
