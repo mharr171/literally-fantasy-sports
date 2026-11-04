@@ -30,10 +30,13 @@ async function Overview() {
             one is live.
           </p>
         </li>
-        <li className="rounded-lg border border-dashed border-zinc-300 p-4 text-zinc-500 dark:border-zinc-700">
-          <span className="font-medium">Template editor</span>
-          <p className="mt-1 text-sm">
-            Coming next: paint each position&apos;s influence grid.
+        <li className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+          <Link href="/admin/templates" className="font-medium hover:underline">
+            Soccer templates →
+          </Link>
+          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+            Paint each position&apos;s influence on the pitch, test it, and
+            publish.
           </p>
         </li>
       </ul>
