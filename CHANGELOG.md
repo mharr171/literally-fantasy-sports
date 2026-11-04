@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.6.0](https://github.com/mharr171/literally-fantasy-sports/compare/v0.5.0...v0.6.0) (2026-11-04)
+
+
+### Features
+
+* **admin:** change match tuning, season payouts and pack prices without a deploy ([#46](https://github.com/mharr171/literally-fantasy-sports/issues/46)) ([49b2b3a](https://github.com/mharr171/literally-fantasy-sports/commit/49b2b3a56ad0a633951dfc36c2da2f5eef321310))
+* **admin:** paint template variants per position; new players get one and play with it ([#42](https://github.com/mharr171/literally-fantasy-sports/issues/42)) ([6185a99](https://github.com/mharr171/literally-fantasy-sports/commit/6185a99c84fe34693c3185bc1c940b8ade59d9bc))
+* match pages with a pitch heatmap, full play-by-play and a replay of every result ([#45](https://github.com/mharr171/literally-fantasy-sports/issues/45)) ([5b494ab](https://github.com/mharr171/literally-fantasy-sports/commit/5b494ab1eba2618a2b50ae9ebc66e9c57ac2fef0))
+* player cards and heatmaps show each player's chemistry colour and where they play ([#43](https://github.com/mharr171/literally-fantasy-sports/issues/43)) ([85331c5](https://github.com/mharr171/literally-fantasy-sports/commit/85331c58d248bd1f021890743a89524b90a92adf))
+
+
+### Documentation
+
+* mark M4 done and start M5 ([#40](https://github.com/mharr171/literally-fantasy-sports/issues/40)) ([e556099](https://github.com/mharr171/literally-fantasy-sports/commit/e5560995d3a7743a8a8245ae73019b836d8bc921))
+* put admin two-factor on the back burner and mark M5 done ([#48](https://github.com/mharr171/literally-fantasy-sports/issues/48)) ([1af4781](https://github.com/mharr171/literally-fantasy-sports/commit/1af47810fd7f48971da136bdd8de3b479b3c2ceb))
+
+
+### Build and CI
+
+* skip Vercel deploys for the release branch and for pushes that don't change the site ([#44](https://github.com/mharr171/literally-fantasy-sports/issues/44)) ([dbdf8c6](https://github.com/mharr171/literally-fantasy-sports/commit/dbdf8c6156110d46aa94b1bdbed87d7405d80f07))
+
 ## [0.5.0](https://github.com/mharr171/literally-fantasy-sports/compare/v0.4.0...v0.5.0) (2026-11-04)
 
 
