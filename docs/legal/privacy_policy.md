@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**LiterallyFantasySports** · Effective date: November 1, 2026
+**LiterallyFantasySports** · Effective date: November 4, 2026
 
 LiterallyFantasySports ("we", "the game") is a free, browser-based sports management game at www.literallyfantasysports.com. This policy explains what information we collect, how we use it, and the choices you have.
 
@@ -30,10 +30,9 @@ We do not sell your information and we do not show ads. We share information onl
 | Service | Purpose |
 | --- | --- |
 | Supabase | Database and sign-in |
-| Vercel | Website hosting and page analytics |
+| Vercel | Website hosting |
 | Google | "Continue with Google" sign-in |
 | Resend | Sign-in emails |
-| Sentry | Error reports |
 | GitHub | Backups of game data, stored in a private repository |
 
 We may also disclose information if required by law.
