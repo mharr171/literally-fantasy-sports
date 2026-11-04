@@ -39,6 +39,15 @@ async function Overview() {
             publish.
           </p>
         </li>
+        <li className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+          <Link href="/admin/balance" className="font-medium hover:underline">
+            Soccer balance →
+          </Link>
+          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+            Match tuning, season payouts and pack prices: change, test and
+            publish without a deploy.
+          </p>
+        </li>
       </ul>
     </section>
   );

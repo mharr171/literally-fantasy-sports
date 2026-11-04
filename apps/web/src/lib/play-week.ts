@@ -84,7 +84,8 @@ export async function playOneWeek(
     }
     energyAfter = spendEnergy(stored, now, energySettings);
   }
-  const { config } = await configFor(season.configVersion);
+  // The season plays and pays by the settings version it started with.
+  const { config, balance } = await configFor(season.configVersion);
   // Injured and suspended players sit out; the best fit players step in.
   const condition = new Map(roster.map((p) => [p.id, p.condition]));
   const { squad: playing } = availableSquad(squad, roster, (id) =>
@@ -116,6 +117,7 @@ export async function playOneWeek(
       ghosts: await loadGhostTeams(season.slots),
     },
     config,
+    balance.payouts,
   );
   // Kept with the manager's result so the match can be replayed (M5).
   const keptTeam: StoredManagerTeam = {

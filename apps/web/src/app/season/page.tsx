@@ -14,6 +14,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { scoutPlayer } from "@/lib/scouting";
 import {
   liveGenerationSettings,
+  liveSoccerConfig,
   loadLatestSeason,
   type SeasonReview,
 } from "@/lib/season";
@@ -52,13 +53,16 @@ async function SeasonContent() {
   const season = await loadLatestSeason(team.id);
 
   if (!season) {
+    const { payouts } = (await liveSoccerConfig()).balance;
+    const money = (n: number) => n.toLocaleString("en-US");
     return (
       <div className="flex max-w-xl flex-col gap-4">
         <h1 className="text-3xl font-semibold tracking-tight">Season 1</h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
           You&apos;ll play 7 AI clubs home and away over 14 weeks, from 300 Elo
           below yours to 300 above. The top 4 go into the playoffs. Every match
-          pays 1,000, plus 500 for a win or 200 for a draw.
+          pays {money(payouts.perMatch)}, plus {money(payouts.win)} for a win or{" "}
+          {money(payouts.draw)} for a draw.
         </p>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
           Your saved{" "}

@@ -1,5 +1,8 @@
 import "server-only";
 import {
+  type BalanceSettings,
+  balanceFromValues,
+  DEFAULT_BALANCE,
   DEFAULT_GENERATION_SETTINGS,
   defaultSoccerConfig,
   type GenerationSettings,
@@ -113,11 +116,15 @@ export async function loadLatestSeason(
   };
 }
 
-/** The live soccer settings and their label, e.g. "soccer:3", or the defaults. */
-export async function liveSoccerConfig(): Promise<{
+/** A settings version as the game uses it: match config and balance (M5). */
+export interface LoadedConfig {
   label: string;
   config: SoccerConfig;
-}> {
+  balance: BalanceSettings;
+}
+
+/** The live soccer settings and their label, e.g. "soccer:3", or the defaults. */
+export async function liveSoccerConfig(): Promise<LoadedConfig> {
   const db = createServiceClient();
   const { data, error } = await db
     .from("game_config_versions")
@@ -128,15 +135,19 @@ export async function liveSoccerConfig(): Promise<{
     .limit(1)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data) return { label: "defaults", config: defaultSoccerConfig() };
+  if (!data)
+    return {
+      label: "defaults",
+      config: defaultSoccerConfig(),
+      balance: DEFAULT_BALANCE,
+    };
   return configFor(`soccer:${data.version}`);
 }
 
 /** The settings a season was started with, so every week plays the same way. */
-export async function configFor(
-  label: string,
-): Promise<{ label: string; config: SoccerConfig }> {
-  if (label === "defaults") return { label, config: defaultSoccerConfig() };
+export async function configFor(label: string): Promise<LoadedConfig> {
+  if (label === "defaults")
+    return { label, config: defaultSoccerConfig(), balance: DEFAULT_BALANCE };
   const version = Number(label.split(":")[1]);
   const { data, error } = await createServiceClient()
     .from("game_config")
@@ -147,7 +158,11 @@ export async function configFor(
   const values = Object.fromEntries(
     (data ?? []).map((r) => [r.key as string, r.value]),
   );
-  return { label, config: soccerConfigFromValues(label, values) };
+  return {
+    label,
+    config: soccerConfigFromValues(label, values),
+    balance: balanceFromValues(values),
+  };
 }
 
 /** Ghosts that could join a new league: the latest snapshot of each team near this Elo. */

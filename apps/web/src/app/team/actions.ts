@@ -16,7 +16,7 @@ import { refresh } from "next/cache";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { playerRow } from "@/lib/scouting";
-import { liveGenerationSettings } from "@/lib/season";
+import { liveGenerationSettings, liveSoccerConfig } from "@/lib/season";
 import { createServiceClient } from "@/lib/supabase/service";
 import {
   loadMyTeam,
@@ -208,7 +208,8 @@ export async function buyPack(input: {
       p_team: team.id,
       p_focus: focus,
       p_tier: tier,
-      p_price: packPrice(tier, focus),
+      // Today's prices from the live settings version (M5).
+      p_price: packPrice(tier, focus, (await liveSoccerConfig()).balance.packs),
     });
     if (error) throw new Error(friendly(error.message));
     refresh();

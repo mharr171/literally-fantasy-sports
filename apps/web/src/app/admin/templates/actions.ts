@@ -10,13 +10,12 @@ import {
 } from "@lfs/sport-soccer";
 import { revalidatePath } from "next/cache";
 import { getCurrentProfile } from "@/lib/auth";
+import { publishDraft, saveDraftRows } from "@/lib/config-drafts";
 import {
   listSoccerVersions,
   liveVersion,
   loadVersionValues,
-  SOCCER,
 } from "@/lib/soccer-templates";
-import { createClient } from "@/lib/supabase/server";
 import { type SaveInput, saveInputSchema, templatesSchema } from "./schema";
 
 export type ActionResult<T> =
@@ -47,53 +46,13 @@ export async function saveTemplates(
     await assertAdmin();
     const { baseVersion, note, templates, variants, enabled } =
       saveInputSchema.parse(input);
-    const supabase = await createClient();
-    const versions = await listSoccerVersions();
-    const base = versions.find((v) => v.version === baseVersion);
-    const templateRows = [
+    const version = await saveDraftRows(baseVersion, note, "Template edits", [
       ...templatesToRows(templates),
       ...variantsToRows(variants, enabled),
-    ];
-
-    let version: number;
-    if (base && !base.publishedAt) {
-      version = base.version;
-      const { error } = await supabase
-        .from("game_config_versions")
-        .update({ note })
-        .eq("scope", SOCCER)
-        .eq("version", version);
-      if (error) throw new Error(error.message);
-    } else {
-      version = (versions[0]?.version ?? 0) + 1;
-      const { error } = await supabase
-        .from("game_config_versions")
-        .insert({ scope: SOCCER, version, note: note || "Template edits" });
-      if (error) throw new Error(error.message);
-      if (base) {
-        const carried = Object.entries(await loadVersionValues(base.version))
-          .filter(([key]) => !key.startsWith("templates."))
-          .map(([key, value]) => ({ scope: SOCCER, version, key, value }));
-        if (carried.length > 0) {
-          const { error: copyError } = await supabase
-            .from("game_config")
-            .insert(carried);
-          if (copyError) throw new Error(copyError.message);
-        }
-      }
-    }
-
-    const { error } = await supabase.from("game_config").upsert(
-      templateRows.map((r) => ({
-        scope: SOCCER,
-        version,
-        key: r.key,
-        value: r.value,
-      })),
-    );
-    if (error) throw new Error(error.message);
+    ]);
 
     revalidatePath("/admin/templates");
+    revalidatePath("/admin/balance");
     revalidatePath("/admin/settings");
     return { ok: true, data: { version } };
   } catch (e) {
@@ -170,17 +129,9 @@ export async function publishVersion(
 ): Promise<ActionResult<{ version: number }>> {
   try {
     await assertAdmin();
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("game_config_versions")
-      .update({ published_at: new Date().toISOString() })
-      .eq("scope", SOCCER)
-      .eq("version", version)
-      .is("published_at", null)
-      .select("version");
-    if (error) throw new Error(error.message);
-    if (!data?.length) throw new Error(`Version ${version} isn't a draft.`);
+    await publishDraft(version);
     revalidatePath("/admin/templates");
+    revalidatePath("/admin/balance");
     revalidatePath("/admin/settings");
     return { ok: true, data: { version } };
   } catch (e) {

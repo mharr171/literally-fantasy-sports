@@ -4,6 +4,7 @@ import {
   BOUGHT_TIERS,
   PACK_FOCUSES,
   type PackFocus,
+  type PackPrices,
   packPrice,
 } from "@lfs/sport-soccer";
 import { useState } from "react";
@@ -17,9 +18,12 @@ const money = (n: number) => n.toLocaleString("en-US");
 export function Shop({
   funds,
   hasOpenPack,
+  prices,
 }: {
   funds: number;
   hasOpenPack: boolean;
+  /** Today's prices, from the live settings version. */
+  prices: PackPrices;
 }) {
   const [focus, setFocus] = useState<PackFocus>("any");
   const { error, pending, run } = useAction();
@@ -31,7 +35,8 @@ export function Shop({
           <h2 className="text-xl font-semibold">Buy a pack</h2>
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
             5 players per pack. Keep the ones you want; the rest sell for 25% of
-            their worth. Focused packs cost 20% more.
+            their worth. Focused packs cost{" "}
+            {Math.round(prices.focusSurcharge * 100)}% more.
           </p>
         </div>
         <label className="flex items-center gap-2 text-sm">
@@ -61,7 +66,7 @@ export function Shop({
       )}
       <div className="grid gap-3 sm:grid-cols-3">
         {BOUGHT_TIERS.map((tier) => {
-          const price = packPrice(tier.id, focus);
+          const price = packPrice(tier.id, focus, prices);
           const short = funds < price;
           return (
             <div
