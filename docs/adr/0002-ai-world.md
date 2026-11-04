@@ -1,6 +1,6 @@
 # ADR 0002: The AI world and 12-club seasons (M9)
 
-Status: proposed (Nov 4, 2026). Covers D113–D117 and D120.
+Status: accepted (Nov 4, 2026; Gary OK'd the bonuses and the backup change). Covers D113–D117 and D120.
 
 ## Context
 
@@ -229,9 +229,7 @@ Each step below is one PR. The ones marked "migration" wait for Gary's
 
 ## Needs Gary
 
-- OK the playoff bonuses above (balance defaults).
-- OK the backup change: gzipped, with the last 30 nights plus one a month
-  for a year, instead of every night forever (D70).
+- Done: Gary OK'd the playoff bonuses and the backup change (Nov 4, 2026).
 - Add one repository secret when step 8 lands: `SUPABASE_SECRET_KEY` for
   Actions (the same value Vercel has).
 - Whether the main repo is private matters for the GitHub Actions free
