@@ -9,6 +9,7 @@ export const metadata: Metadata = {
 const NAV = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/settings", label: "Game settings" },
+  { href: "/admin/templates", label: "Templates" },
 ] as const;
 
 export default function AdminLayout({ children }: LayoutProps<"/admin">) {

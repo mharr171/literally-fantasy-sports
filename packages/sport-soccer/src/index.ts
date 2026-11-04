@@ -6,4 +6,5 @@ export * from "./overall";
 export * from "./player";
 export * from "./positions";
 export * from "./sport";
+export * from "./stored-config";
 export * from "./templates";
