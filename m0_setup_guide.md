@@ -177,7 +177,7 @@ update public.profiles set is_admin = true where id = (select id from auth.users
 ```
 - [ ] **M3 (friends alpha):** invite a few friends and share the link.
 - [ ] ~~**M5:** turn on two-factor (authenticator app) on your game account.~~ On the back burner (D103): the admin panel doesn't require it.
-- [ ] **M6:** sign up at sentry.io (free Developer plan) and connect it to Vercel; turn on **Web Analytics** in the Vercel project. Claude Code adds the code.
+- [ ] ~~**M6:** sign up at sentry.io (free Developer plan) and connect it to Vercel; turn on **Web Analytics** in the Vercel project.~~ Skipped for now (D104).
 - [ ] **Every year:** renew the domain at Squarespace, the backup access token (`BACKUP_REPO_TOKEN`) and the release token (`RELEASE_PLEASE_TOKEN`).
 
 ## Accounts summary
@@ -191,4 +191,4 @@ update public.profiles set is_admin = true where id = (select id from auth.users
 | Resend | Free | Sign-in emails |
 | Vercel | Hobby (free) | Hosting and preview deploys |
 | Squarespace | Existing domain | DNS for the site and email |
-| Sentry | Free (from M6) | Error tracking |
+| Sentry | Not needed for now (D104) | Error tracking |
