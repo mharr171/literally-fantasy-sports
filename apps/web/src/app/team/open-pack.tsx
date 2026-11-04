@@ -2,7 +2,7 @@
 
 import { resalePrice } from "@lfs/core";
 import { useState } from "react";
-import { PlayerCard } from "@/components/player/player-card";
+import { ScoutTable } from "@/components/scout-table";
 import type { ScoutedPlayer } from "@/lib/scouting";
 import { resolvePack } from "./actions";
 import { useAction } from "./use-action";
@@ -32,51 +32,17 @@ export function OpenPack({
   return (
     <fieldset className="flex flex-col gap-3 rounded-md border-2 border-zinc-900 p-3 dark:border-zinc-100">
       <legend className="px-1 font-semibold">{title}</legend>
-      <ul className="flex flex-col">
-        {players.map((p, i) => {
-          const id = `open-${i}`;
-          return (
-            // biome-ignore lint/suspicious/noArrayIndexKey: a pack's players never change order
-            <li key={i}>
-              <label
-                htmlFor={id}
-                className="grid cursor-pointer grid-cols-[auto_3.5rem_1fr_auto] items-center gap-2 rounded px-1 py-1 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900"
-              >
-                <input
-                  id={id}
-                  type="checkbox"
-                  checked={kept.includes(i)}
-                  onChange={() => toggle(i)}
-                />
-                <span className="font-medium">
-                  {p.primaryPosition}
-                  {p.secondaryPosition && (
-                    <span className="text-xs text-zinc-500">
-                      /{p.secondaryPosition}
-                    </span>
-                  )}
-                </span>
-                <span className="truncate">
-                  <PlayerCard player={p} />{" "}
-                  <span className="text-xs text-zinc-500">
-                    {p.nationality} · {p.age} · pot {p.potentialRange[0]}–
-                    {p.potentialRange[1]}
-                  </span>
-                </span>
-                <span className="text-right tabular-nums">
-                  <strong>{p.overall}</strong>
-                  <span className="text-xs text-zinc-500">
-                    {" "}
-                    {kept.includes(i)
-                      ? "keep"
-                      : `sell ${money(resalePrice(p.worth))}`}
-                  </span>
-                </span>
-              </label>
-            </li>
-          );
-        })}
-      </ul>
+      <ScoutTable
+        rows={players.map((player, i) => ({
+          key: String(i),
+          player,
+          ticked: kept.includes(i),
+          note: kept.includes(i)
+            ? "keep"
+            : `sell ${money(resalePrice(player.worth))}`,
+        }))}
+        onToggle={(key) => toggle(Number(key))}
+      />
       {rosterSize + kept.length > 30 && (
         <p className="text-sm text-amber-700 dark:text-amber-400">
           That takes you to {rosterSize + kept.length} players: you&apos;ll need

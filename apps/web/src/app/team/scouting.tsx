@@ -2,7 +2,7 @@
 
 import { type PackFocus, ROSTER_MAX, ROSTER_MIN } from "@lfs/sport-soccer";
 import { useMemo, useState, useTransition } from "react";
-import { PlayerCard } from "@/components/player/player-card";
+import { type ScoutRow, ScoutTable } from "@/components/scout-table";
 import { countByLine, FOCUS_LABELS, type ScoutedPlayer } from "@/lib/scouting";
 import { confirmStarterSquad, openPacks } from "./actions";
 
@@ -39,6 +39,15 @@ export function Scouting({ packs }: { packs: ScoutingPack[] }) {
       ),
     [packs, selection],
   );
+  // Every opened player in one table (D108), labelled with their pack.
+  const rows: ScoutRow[] = packs.flatMap((pack, n) =>
+    (pack.players ?? []).map((player, i) => ({
+      key: `${pack.id}:${i}`,
+      player,
+      ticked: (selection[pack.id] ?? []).includes(i),
+      pack: `${n + 1} · ${FOCUS_LABELS[pack.focus]}`,
+    })),
+  );
   const lines = countByLine(kept);
   const countOk = kept.length >= ROSTER_MIN && kept.length <= ROSTER_MAX;
   const canConfirm = sealed.length === 0 && countOk && !pending;
@@ -67,9 +76,10 @@ export function Scouting({ packs }: { packs: ScoutingPack[] }) {
         <h2 className="text-xl font-semibold">Scout your first squad</h2>
         <p className="max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
           Open all 22 starter packs, then tick the {ROSTER_MIN} to {ROSTER_MAX}{" "}
-          players you want to keep. Anyone you don&apos;t keep is released for
-          free. Potential is a scout&apos;s estimate: the true value lies
-          somewhere in the range.
+          players you want to keep. Every opened player is in one table: filter
+          by position or chemistry colour and click a column to sort. Anyone you
+          don&apos;t keep is released for free. Potential is a scout&apos;s
+          estimate: the true value lies somewhere in the range.
         </p>
       </div>
 
@@ -119,99 +129,33 @@ export function Scouting({ packs }: { packs: ScoutingPack[] }) {
         </p>
       )}
 
-      <div className="grid gap-3 md:grid-cols-2">
-        {packs.map((pack, n) => (
-          <PackCard
-            key={pack.id}
-            pack={pack}
-            number={n + 1}
-            picked={selection[pack.id] ?? []}
-            pending={pending}
-            onOpen={() => run(() => openPacks([pack.id]))}
-            onToggle={(i) => toggle(pack.id, i)}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function PackCard({
-  pack,
-  number,
-  picked,
-  pending,
-  onOpen,
-  onToggle,
-}: {
-  pack: ScoutingPack;
-  number: number;
-  picked: number[];
-  pending: boolean;
-  onOpen: () => void;
-  onToggle: (index: number) => void;
-}) {
-  const title = `Pack ${number} · ${FOCUS_LABELS[pack.focus]}`;
-  if (!pack.players) {
-    return (
-      <div className="flex items-center justify-between rounded-md border border-dashed border-zinc-300 p-3 dark:border-zinc-700">
-        <span className="text-sm font-medium">{title}</span>
-        <button
-          type="button"
-          disabled={pending}
-          onClick={onOpen}
-          className="rounded-md border border-zinc-300 px-3 py-1 text-sm font-medium hover:bg-zinc-100 disabled:opacity-60 dark:border-zinc-700 dark:hover:bg-zinc-900"
-        >
-          Open
-        </button>
-      </div>
-    );
-  }
-  return (
-    <fieldset className="rounded-md border border-zinc-200 p-3 dark:border-zinc-800">
-      <legend className="px-1 text-sm font-medium">{title}</legend>
-      <ul className="flex flex-col">
-        {pack.players.map((p, i) => {
-          const id = `${pack.id}-${i}`;
-          return (
-            // biome-ignore lint/suspicious/noArrayIndexKey: a pack's players never change order
-            <li key={i}>
-              <label
-                htmlFor={id}
-                className="grid cursor-pointer grid-cols-[auto_3.5rem_1fr_auto] items-center gap-2 rounded px-1 py-1 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900"
+      {sealed.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {packs.map((pack, n) =>
+            pack.players ? null : (
+              <button
+                key={pack.id}
+                type="button"
+                disabled={pending}
+                onClick={() => run(() => openPacks([pack.id]))}
+                className="rounded-md border border-dashed border-zinc-300 px-3 py-1 text-sm hover:bg-zinc-100 disabled:opacity-60 dark:border-zinc-700 dark:hover:bg-zinc-900"
               >
-                <input
-                  id={id}
-                  type="checkbox"
-                  checked={picked.includes(i)}
-                  onChange={() => onToggle(i)}
-                />
-                <span className="font-medium">
-                  {p.primaryPosition}
-                  {p.secondaryPosition && (
-                    <span className="text-xs text-zinc-500">
-                      /{p.secondaryPosition}
-                    </span>
-                  )}
-                </span>
-                <span className="truncate">
-                  <PlayerCard player={p} />{" "}
-                  <span className="text-xs text-zinc-500">
-                    {p.nationality} · {p.age}
-                  </span>
-                </span>
-                <span className="text-right tabular-nums">
-                  <strong>{p.overall}</strong>
-                  <span className="text-xs text-zinc-500">
-                    {" "}
-                    pot {p.potentialRange[0]}–{p.potentialRange[1]}
-                  </span>
-                </span>
-              </label>
-            </li>
-          );
-        })}
-      </ul>
-    </fieldset>
+                Open pack {n + 1} · {FOCUS_LABELS[pack.focus]}
+              </button>
+            ),
+          )}
+        </div>
+      )}
+
+      {rows.length > 0 && (
+        <ScoutTable
+          rows={rows}
+          onToggle={(key) => {
+            const [packId, index] = key.split(":");
+            toggle(packId as string, Number(index));
+          }}
+        />
+      )}
+    </div>
   );
 }
