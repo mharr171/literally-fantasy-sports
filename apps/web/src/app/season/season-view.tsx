@@ -27,7 +27,10 @@ export function SeasonView({
   funds,
   wrapUp,
   energy,
+  notice,
 }: {
+  /** Shown under the next match, e.g. who sits out injured or suspended. */
+  notice?: ReactNode;
   /** The manager's energy now, or null when energy is switched off (D93). */
   energy?: EnergyView | null;
   season: LoadedSeason;
@@ -116,6 +119,7 @@ export function SeasonView({
         </div>
       )}
 
+      {season.status !== "finished" && notice}
       {lastMine?.summary && (
         <MatchCard
           title={`Last match · ${lastMine.stage === "league" ? `week ${lastMine.week}` : lastMine.stage === "semi" ? "semi-final" : "final"}`}

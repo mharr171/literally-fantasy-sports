@@ -5,6 +5,7 @@ import {
   isPackFocus,
   type MatchdaySquad,
   type PackFocus,
+  type PlayerCondition,
   type Position,
   packContents,
 } from "@lfs/sport-soccer";
@@ -113,6 +114,8 @@ export async function loadOpenBoughtPack(
 export interface RosterPlayer {
   id: string;
   fromStarterPack: boolean;
+  /** Fitness, injuries, bans and yellow cards between game weeks (M4). */
+  condition: PlayerCondition;
   attributes: Attributes;
   displayName: string;
   nationality: string;
@@ -129,13 +132,19 @@ export async function loadRoster(teamId: string): Promise<RosterPlayer[]> {
   const { data, error } = await createServiceClient()
     .from("players")
     .select(
-      "id, from_starter_pack, attributes, display_name, nationality, age, primary_position, secondary_position, overall, potential_low, potential_high, worth, chemistry_color",
+      "id, from_starter_pack, attributes, fitness, injured_weeks, suspended_weeks, yellow_cards, display_name, nationality, age, primary_position, secondary_position, overall, potential_low, potential_high, worth, chemistry_color",
     )
     .eq("team_id", teamId);
   if (error) throw new Error(error.message);
   return (data ?? []).map((p) => ({
     id: p.id,
     fromStarterPack: p.from_starter_pack,
+    condition: {
+      fitness: p.fitness,
+      injuredWeeks: p.injured_weeks,
+      suspendedWeeks: p.suspended_weeks,
+      yellowCards: p.yellow_cards,
+    },
     attributes: p.attributes as Attributes,
     displayName: p.display_name,
     nationality: p.nationality,

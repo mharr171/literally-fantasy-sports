@@ -7,6 +7,9 @@ const SLOTS = [
   { slot: 0, kind: "manager", name: "Mine FC", start_rating: 1500 },
   { slot: 1, kind: "ai", name: "Ashvale City", start_rating: 1400 },
 ];
+const CONDITION = (id: string) => [
+  { id, fitness: 72, injured_weeks: 2, suspended_weeks: 1, yellow_cards: 3 },
+];
 const FIXTURES = [
   { week: 1, stage: "league", home_slot: 0, away_slot: 1 },
   { week: 2, stage: "league", home_slot: 1, away_slot: 0 },
@@ -19,6 +22,7 @@ describe.runIf(sql)("seasons, league teams and fixtures (D16)", () => {
   let owner: string;
   let other: string;
   let team: string;
+  let player: string;
 
   beforeAll(async () => {
     const users = await db<{ id: string }[]>`
@@ -29,6 +33,13 @@ describe.runIf(sql)("seasons, league teams and fixtures (D16)", () => {
       insert into teams (owner_id, sport, name) values (${owner}, 'soccer', ${`${tag} Harriers`})
       returning id`;
     team = t?.id as string;
+    const [pl] = await db<{ id: string }[]>`
+      insert into players (team_id, sport, first_name, last_name, display_name, nationality,
+        age, primary_position, attributes, overall, potential, potential_low, potential_high,
+        worth, chemistry_color)
+      values (${team}, 'soccer', 'Cy', 'Z', 'Cy Z', 'ENG', 24, 'ST', '{}', 60, 60, 55, 65, 1000, 1)
+      returning id`;
+    player = pl?.id as string;
   });
 
   afterAll(async () => {
@@ -101,12 +112,12 @@ describe.runIf(sql)("seasons, league teams and fixtures (D16)", () => {
         tx`select public.record_week(${season}, ${week}, ${tx.json(results)},
           ${tx.json({ "0": 1512, "1": 1388 })}, 1500,
           ${tx.json([{ week: 3, stage: "semi", home_slot: 0, away_slot: 1 }])}, 'playoffs', 2,
-          2, '2026-11-04T12:00:00Z')`;
+          2, '2026-11-04T12:00:00Z', ${tx.json(CONDITION(player))})`;
       await record(1);
       const twice = await attempt(tx, record(1));
       const wrongWeek = await attempt(
         tx,
-        tx`select public.record_week(${season}, 2, ${tx.json(results)}, '{}', 0, '[]', 'regular', 3, null, null)`,
+        tx`select public.record_week(${season}, 2, ${tx.json(results)}, '{}', 0, '[]', 'regular', 3, null, null, '[]')`,
       );
       const [teamRow] =
         await tx`select elo, funds, energy, energy_updated_at from teams where id = ${team}`;
@@ -118,7 +129,19 @@ describe.runIf(sql)("seasons, league teams and fixtures (D16)", () => {
         await tx`select home_score, away_score, summary from fixtures where id = ${f1?.id as string}`;
       const semis =
         await tx`select stage from fixtures where season_id = ${season} and week = 3`;
-      return { twice, wrongWeek, teamRow, seasonRow, elos, played, semis };
+      const condition =
+        await tx`select fitness, injured_weeks, suspended_weeks, yellow_cards
+        from players where id = ${player}`;
+      return {
+        twice,
+        wrongWeek,
+        teamRow,
+        seasonRow,
+        elos,
+        played,
+        semis,
+        condition,
+      };
     });
     expect(result.twice).toMatch(/already played/);
     expect(result.wrongWeek).toMatch(/do not match week 2/);
@@ -145,6 +168,9 @@ describe.runIf(sql)("seasons, league teams and fixtures (D16)", () => {
       },
     ]);
     expect(result.semis).toEqual([{ stage: "semi" }]);
+    expect(result.condition).toEqual([
+      { fitness: 72, injured_weeks: 2, suspended_weeks: 1, yellow_cards: 3 },
+    ]);
   });
 
   it("lets a manager read their season but never its seed", async () => {
@@ -198,7 +224,7 @@ describe.runIf(sql)("seasons, league teams and fixtures (D16)", () => {
       await expect(
         run(
           (tx) =>
-            tx`select public.record_week(gen_random_uuid(), 1, '[]', '{}', 99999, '[]', 'finished', 1, null, null)`,
+            tx`select public.record_week(gen_random_uuid(), 1, '[]', '{}', 99999, '[]', 'finished', 1, null, null, '[]')`,
         ),
       ).rejects.toThrow(/permission denied/);
     }

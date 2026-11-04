@@ -1,5 +1,10 @@
 import { currentEnergy } from "@lfs/core";
-import { youthIntake } from "@lfs/sport-soccer";
+import {
+  availableSquad,
+  FRESH,
+  isAvailable,
+  youthIntake,
+} from "@lfs/sport-soccer";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -8,7 +13,12 @@ import { getCurrentUser } from "@/lib/auth";
 import { scoutPlayer } from "@/lib/scouting";
 import { loadLatestSeason, type SeasonReview } from "@/lib/season";
 import { loadEnergySettings } from "@/lib/sport-settings";
-import { loadMyTeam, loadRoster, loadStarterPacks } from "@/lib/team";
+import {
+  loadMyTeam,
+  loadRoster,
+  loadSquad,
+  loadStarterPacks,
+} from "@/lib/team";
 import { StartSeasonButton } from "./season-buttons";
 import { SeasonView } from "./season-view";
 import { EndSeasonButton, YouthIntake } from "./wrap-up";
@@ -105,8 +115,63 @@ async function SeasonContent() {
       )
     : null;
 
+  let notice: React.ReactNode = null;
+  if (season.status !== "finished") {
+    const [roster, squad] = await Promise.all([
+      loadRoster(team.id),
+      loadSquad(team.id),
+    ]);
+    const out = roster.filter((p) => !isAvailable(p.condition));
+    if (squad && out.length > 0) {
+      const name = new Map(roster.map((p) => [p.id, p.displayName]));
+      let swaps: { out: string; in: string }[] = [];
+      let short = false;
+      try {
+        swaps = availableSquad(squad, roster, (id) =>
+          isAvailable(roster.find((p) => p.id === id)?.condition ?? FRESH),
+        ).replaced;
+      } catch {
+        short = true;
+      }
+      notice = (
+        <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950/40">
+          <p className="font-medium">
+            Unavailable this week:{" "}
+            {out
+              .map(
+                (p) =>
+                  `${p.displayName} (${p.condition.injuredWeeks > 0 ? `injured ${p.condition.injuredWeeks}w` : "suspended"})`,
+              )
+              .join(", ")}
+          </p>
+          {short ? (
+            <p className="text-red-700 dark:text-red-400">
+              Fewer than 11 players can play. Buy a pack or take youth players
+              to fill the squad.
+            </p>
+          ) : (
+            swaps.length > 0 && (
+              <p className="text-zinc-700 dark:text-zinc-300">
+                Stepping in:{" "}
+                {swaps
+                  .map((s) => `${name.get(s.in)} for ${name.get(s.out)}`)
+                  .join(", ")}
+                . Change it in your{" "}
+                <Link href="/team/squad" className="underline">
+                  matchday squad
+                </Link>
+                .
+              </p>
+            )
+          )}
+        </div>
+      );
+    }
+  }
+
   return (
     <SeasonView
+      notice={notice}
       energy={
         energyNow && {
           energy: energyNow.energy,
