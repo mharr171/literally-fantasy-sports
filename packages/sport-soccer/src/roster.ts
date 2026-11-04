@@ -105,11 +105,28 @@ export function boughtTier(id: string): BoughtTier {
   return tier;
 }
 
+/** Pack prices: per tier, and the surcharge for a position focus (M5: set by admins). */
+export interface PackPrices {
+  /** Price in funds by bought tier id. */
+  tiers: Record<string, number>;
+  /** Position-focused packs cost this much more (0.2 = +20%). */
+  focusSurcharge: number;
+}
+
+export const DEFAULT_PACK_PRICES: PackPrices = {
+  tiers: Object.fromEntries(BOUGHT_TIERS.map((t) => [t.id, t.price])),
+  focusSurcharge: FOCUS_SURCHARGE,
+};
+
 /** What a pack costs: the tier's price, plus the surcharge for a position focus. */
-export function packPrice(tierId: string, focus: PackFocus): number {
-  const { price } = boughtTier(tierId);
+export function packPrice(
+  tierId: string,
+  focus: PackFocus,
+  prices: PackPrices = DEFAULT_PACK_PRICES,
+): number {
+  const price = prices.tiers[tierId] ?? boughtTier(tierId).price;
   if (focus === "any") return price;
-  return Math.round((price * (1 + FOCUS_SURCHARGE)) / 50) * 50;
+  return Math.round((price * (1 + prices.focusSurcharge)) / 50) * 50;
 }
 
 /** The 22 starter packs a new team receives, in a stable order (D83). */

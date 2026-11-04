@@ -547,7 +547,7 @@ const primary =
 const danger =
   "rounded-md bg-emerald-700 px-3 py-1.5 font-medium text-white hover:bg-emerald-600 disabled:opacity-40";
 
-function TestTable({ result }: { result: TestResult }) {
+export function TestTable({ result }: { result: TestResult }) {
   const pct = (x: number) => `${(x * 100).toFixed(1)}%`;
   const rows: [string, (r: HarnessReport) => string][] = [
     ["Goals per match (target 2.5–2.8)", (r) => r.goalsPerMatch.toFixed(2)],

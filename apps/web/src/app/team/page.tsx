@@ -6,7 +6,7 @@ import { Suspense } from "react";
 import { WithTemplates } from "@/components/player/with-templates";
 import { getCurrentUser } from "@/lib/auth";
 import { FOCUS_LABELS, scoutPlayer } from "@/lib/scouting";
-import { liveGenerationSettings } from "@/lib/season";
+import { liveGenerationSettings, liveSoccerConfig } from "@/lib/season";
 import {
   loadMyTeam,
   loadOpenBoughtPack,
@@ -64,10 +64,11 @@ async function TeamContent() {
     );
   }
 
-  const [roster, openPack, squad] = await Promise.all([
+  const [roster, openPack, squad, live] = await Promise.all([
     loadRoster(team.id),
     loadOpenBoughtPack(team.id),
     loadSquad(team.id),
+    liveSoccerConfig(),
   ]);
   const squadReady =
     squad !== null &&
@@ -110,7 +111,11 @@ async function TeamContent() {
         />
       )}
       <Roster players={roster} />
-      <Shop funds={team.funds} hasOpenPack={openPack !== null} />
+      <Shop
+        funds={team.funds}
+        hasOpenPack={openPack !== null}
+        prices={live.balance.packs}
+      />
     </>
   );
 }

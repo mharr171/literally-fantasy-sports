@@ -3,7 +3,8 @@
  * (D59): plain JSON, one row per key.
  *
  * Keys used:
- * - "tuning": a partial MatchTuning; missing values use the defaults.
+ * - "tuning", "payouts", "packs": balance settings (see balance.ts); missing
+ *   values use the defaults.
  * - "templates.<position>": a 25 × 17 grid (rows from own goal line to the
  *   opponent's), e.g. "templates.st".
  * - "variants.<position>": named extra templates for a position (D82), as
@@ -12,17 +13,13 @@
  *   { position: names }, where "default" is the position's main template.
  */
 import { type InfluenceMap, influenceMapFromRows } from "@lfs/core";
+import { balanceFromValues } from "./balance";
 import {
   DEFAULT_GENERATION_SETTINGS,
   DEFAULT_TEMPLATE_VARIANT,
   type GenerationSettings,
 } from "./generation";
-import {
-  DEFAULT_MATCH_TUNING,
-  defaultSoccerConfig,
-  type MatchTuning,
-  type SoccerConfig,
-} from "./match";
+import { defaultSoccerConfig, type SoccerConfig } from "./match";
 import { POSITIONS, type Position } from "./positions";
 import { placeholderTemplates, SOCCER_GRID } from "./templates";
 
@@ -243,9 +240,6 @@ export function soccerConfigFromValues(
       ]),
     );
   }
-  const tuning: MatchTuning = {
-    ...DEFAULT_MATCH_TUNING,
-    ...((values.tuning as Partial<MatchTuning> | undefined) ?? {}),
-  };
+  const { tuning } = balanceFromValues(values);
   return { ...base, version, templates, variants, tuning };
 }
