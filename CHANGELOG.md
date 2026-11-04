@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.1.0](https://github.com/mharr171/literally-fantasy-sports/compare/v1.0.0...v1.1.0) (2026-11-04)
+
+
+### Features
+
+* a Rotated squad button rests tired starters, and the squad builder shows a squad score ([#61](https://github.com/mharr171/literally-fantasy-sports/issues/61)) ([dfb3fc9](https://github.com/mharr171/literally-fantasy-sports/commit/dfb3fc9aa8bf72c2bd6a89d453eebf6875a536df))
+* click any club in your league or on the leaderboard to see its roster, squad and chemistry colors ([#64](https://github.com/mharr171/literally-fantasy-sports/issues/64)) ([e51ec5c](https://github.com/mharr171/literally-fantasy-sports/commit/e51ec5c129a953f020a293e9dfb0ab467f6ccc41))
+* energy now holds up to 6 points ([#62](https://github.com/mharr171/literally-fantasy-sports/issues/62)) ([13e3823](https://github.com/mharr171/literally-fantasy-sports/commit/13e3823affa8eb1fdb3b391922ea30554d08a205))
+* one scouting table for opened packs, with filters by position and chemistry colour and sortable columns ([#60](https://github.com/mharr171/literally-fantasy-sports/issues/60)) ([088a0fd](https://github.com/mharr171/literally-fantasy-sports/commit/088a0fdfe43fdcd5af040c3188c81491ba408ac4))
+* pick 2 or 3 club colors when you name your club, shown next to club names across the game ([#63](https://github.com/mharr171/literally-fantasy-sports/issues/63)) ([3174305](https://github.com/mharr171/literally-fantasy-sports/commit/3174305bc80941aaf5d901b92771097eeb2abfa4))
+* sort the roster by any column and see who is in your matchday squad ([#59](https://github.com/mharr171/literally-fantasy-sports/issues/59)) ([cd5ad77](https://github.com/mharr171/literally-fantasy-sports/commit/cd5ad7772957b5e4aa672bd12cfab66db31454a7))
+
+
+### Documentation
+
+* mark M7 done and start M8 ([#65](https://github.com/mharr171/literally-fantasy-sports/issues/65)) ([e82a353](https://github.com/mharr171/literally-fantasy-sports/commit/e82a353356c6318d89dfa1251b1f265bee55e9f1))
+* roadmap for after v1.0.0: M7 to M11 and decisions D107 to D121 ([#57](https://github.com/mharr171/literally-fantasy-sports/issues/57)) ([1f334e9](https://github.com/mharr171/literally-fantasy-sports/commit/1f334e9ae0a005680aa558b22113202da05af27a))
+
 ## [1.0.0](https://github.com/mharr171/literally-fantasy-sports/compare/v0.6.0...v1.0.0) (2026-11-04)
 
 
