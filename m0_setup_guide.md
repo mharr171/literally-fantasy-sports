@@ -176,7 +176,7 @@ Claude Code will try to do these itself and only ask you for the ones it can't.
 update public.profiles set is_admin = true where id = (select id from auth.users where email = 'you@example.com');
 ```
 - [ ] **M3 (friends alpha):** invite a few friends and share the link.
-- [ ] **M5:** turn on two-factor (authenticator app) on your game account. The admin panel will require it.
+- [ ] ~~**M5:** turn on two-factor (authenticator app) on your game account.~~ On the back burner (D103): the admin panel doesn't require it.
 - [ ] **M6:** sign up at sentry.io (free Developer plan) and connect it to Vercel; turn on **Web Analytics** in the Vercel project. Claude Code adds the code.
 - [ ] **Every year:** renew the domain at Squarespace, the backup access token (`BACKUP_REPO_TOKEN`) and the release token (`RELEASE_PLEASE_TOKEN`).
 
