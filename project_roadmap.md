@@ -97,7 +97,7 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D74 | Nov 3, 2026 | Simple privacy policy and terms of service, published at `/privacy-policy` and `/terms-of-service` (required for Google sign-in), linked from the footer and sign-in page. Source files in `docs/legal/` | M0 |
 | D75 | Nov 3, 2026 | One project email address: `admin@literallyfantasysports.com`, forwarded by Squarespace to Gary's personal inbox; replies sent from Gmail through Resend. Used as the contact address in the privacy policy and terms | M0 |
 | D76 | Nov 4, 2026 | Release tags use full semantic versions: `v0.1.0` (M0) … `v0.6.0` (M5), then `v1.0.0`. release-please creates them when Gary merges its release PR at the end of each milestone. Refines D58 | M0 |
-| D77 | Nov 4, 2026 | Soccer positions: GK; CB, LB, RB; DM, CM, AM, LM, RM; ST (10 positions, no separate wingers) | M1 |
+| D77 | Nov 4, 2026 | Soccer positions: GK; CB, LB, RB; DM, CM, AM, LM, RM; LW, RW, ST (12 positions: wide midfielders and wingers are separate) | M1 |
 | D78 | Nov 4, 2026 | Soccer attributes, each 1–99: pace, passing, shooting, defending, physical, stamina, plus goalkeeping (GK only). Overall is a position-weighted average, tuned in admin | M1 |
 | D79 | Nov 4, 2026 | A chemistry colour group needs at least 2 players on the field to earn any boost; smaller groups don't rank. Refines D43/D52 | M1 |
 
