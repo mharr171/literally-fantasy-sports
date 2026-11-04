@@ -9,6 +9,8 @@ on:
     branches: [main]
     paths:
       - packages/db/migrations/**
+      - packages/db/scripts/**
+      - .github/workflows/db-migrate.yml
   workflow_dispatch:
 
 concurrency:

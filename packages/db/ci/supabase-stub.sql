@@ -2,9 +2,20 @@
 -- can test migrations and row-level security on a plain Postgres database.
 -- Never run this against lfs-dev or lfs-prod: they already have all of this.
 
-CREATE ROLE anon NOLOGIN NOINHERIT;
-CREATE ROLE authenticated NOLOGIN NOINHERIT;
-CREATE ROLE service_role NOLOGIN NOINHERIT BYPASSRLS;
+-- Roles are shared by every database on a server, so create them only once.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'anon') THEN
+    CREATE ROLE anon NOLOGIN NOINHERIT;
+  END IF;
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'authenticated') THEN
+    CREATE ROLE authenticated NOLOGIN NOINHERIT;
+  END IF;
+  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'service_role') THEN
+    CREATE ROLE service_role NOLOGIN NOINHERIT BYPASSRLS;
+  END IF;
+END
+$$;
 
 CREATE SCHEMA auth;
 GRANT USAGE ON SCHEMA auth TO anon, authenticated, service_role;
