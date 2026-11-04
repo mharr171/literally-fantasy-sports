@@ -2,8 +2,12 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  foreignKey,
+  integer,
+  jsonb,
   pgPolicy,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uuid,
@@ -47,3 +51,114 @@ export const profiles = pgTable(
 ).enableRLS();
 
 export type Profile = typeof profiles.$inferSelect;
+
+/** Calls the public.is_admin() function (migration 0002). */
+const isAdmin = sql`(select public.is_admin())`;
+
+/** Sports that can have their own settings, plus settings shared by all. */
+export const CONFIG_SCOPES = [
+  "global",
+  "soccer",
+  "baseball",
+  "paintball",
+  "football",
+  "basketball",
+  "hockey",
+] as const;
+
+/**
+ * Versions of the game settings (D9, D59). Each sport has its own numbered
+ * versions. A draft can be edited by admins; once published it is frozen, so
+ * every match that recorded a config version can be replayed exactly.
+ * The newest published version of a sport is the one new matches use.
+ */
+export const gameConfigVersions = pgTable(
+  "game_config_versions",
+  {
+    scope: text().notNull(),
+    version: integer().notNull(),
+    note: text().notNull().default(""),
+    createdBy: uuid().references(() => authUsers.id, { onDelete: "set null" }),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    publishedAt: timestamp({ withTimezone: true }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.scope, t.version] }),
+    check(
+      "game_config_versions_scope",
+      sql`${t.scope} in ('global', 'soccer', 'baseball', 'paintball', 'football', 'basketball', 'hockey')`,
+    ),
+    check("game_config_versions_version_positive", sql`${t.version} > 0`),
+    pgPolicy("game_config_versions_select", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`${t.publishedAt} is not null or ${isAdmin}`,
+    }),
+    pgPolicy("game_config_versions_insert_admin", {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: isAdmin,
+    }),
+    pgPolicy("game_config_versions_update_admin", {
+      for: "update",
+      to: authenticatedRole,
+      using: isAdmin,
+      withCheck: isAdmin,
+    }),
+    pgPolicy("game_config_versions_delete_admin", {
+      for: "delete",
+      to: authenticatedRole,
+      using: isAdmin,
+    }),
+  ],
+).enableRLS();
+
+/**
+ * The settings in each version: one row per key, e.g. "tuning" or
+ * "templates", holding JSON. Readable when its version is published.
+ */
+export const gameConfig = pgTable(
+  "game_config",
+  {
+    scope: text().notNull(),
+    version: integer().notNull(),
+    key: text().notNull(),
+    value: jsonb().notNull(),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.scope, t.version, t.key] }),
+    foreignKey({
+      columns: [t.scope, t.version],
+      foreignColumns: [gameConfigVersions.scope, gameConfigVersions.version],
+    }).onDelete("cascade"),
+    check("game_config_key_format", sql`${t.key} ~ '^[a-z][a-z0-9_.]{0,63}$'`),
+    pgPolicy("game_config_select", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`${isAdmin} or exists (
+        select 1 from public.game_config_versions v
+        where v.scope = ${t.scope} and v.version = ${t.version} and v.published_at is not null
+      )`,
+    }),
+    pgPolicy("game_config_insert_admin", {
+      for: "insert",
+      to: authenticatedRole,
+      withCheck: isAdmin,
+    }),
+    pgPolicy("game_config_update_admin", {
+      for: "update",
+      to: authenticatedRole,
+      using: isAdmin,
+      withCheck: isAdmin,
+    }),
+    pgPolicy("game_config_delete_admin", {
+      for: "delete",
+      to: authenticatedRole,
+      using: isAdmin,
+    }),
+  ],
+).enableRLS();
+
+export type GameConfigVersion = typeof gameConfigVersions.$inferSelect;
+export type GameConfigRow = typeof gameConfig.$inferSelect;
