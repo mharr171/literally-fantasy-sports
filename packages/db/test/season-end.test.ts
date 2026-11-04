@@ -8,6 +8,12 @@ const SLOTS = [
   { slot: 1, kind: "ai", name: "Ashvale City", start_rating: 1400 },
 ];
 const FIXTURES = [{ week: 1, stage: "league", home_slot: 0, away_slot: 1 }];
+const SNAPSHOT = {
+  players: [{ id: "p1", displayName: "Al Y" }],
+  squad: { formation: "4-4-2", lineup: [], bench: [], subPlan: [] },
+  stats: { position: 2, points: 30, playoffs: "final" },
+  game_version: "0.4.0",
+};
 const prospect = (name: string) => ({
   first_name: name,
   last_name: "Young",
@@ -83,7 +89,7 @@ describe.runIf(sql)("season end and youth intake (D35, D53)", () => {
       const close = () =>
         tx`select public.close_season(${season},
           ${tx.json([{ id: young, age: 20, attributes: { passing: 61 }, overall: 61, worth: 2600 }])},
-          ${tx.json([old])}, ${tx.json({ retired: [{ name: "Bo O", age: 37 }] })})`;
+          ${tx.json([old])}, ${tx.json({ retired: [{ name: "Bo O", age: 37 }] })}, ${tx.json(SNAPSHOT)})`;
       await close();
       const twice = await attempt(tx, close());
       const players =
@@ -107,7 +113,7 @@ describe.runIf(sql)("season end and youth intake (D35, D53)", () => {
       asService(db, async (tx) => {
         const [s] = await tx<{ id: string }[]>`
           select public.start_season(${team}, 'seed', 'defaults', ${tx.json(SLOTS)}, ${tx.json(FIXTURES)}) as id`;
-        await tx`select public.close_season(${s?.id as string}, '[]', '[]', '{}')`;
+        await tx`select public.close_season(${s?.id as string}, '[]', '[]', '{}', ${tx.json(SNAPSHOT)})`;
       }),
     ).rejects.toThrow(/cannot be closed/);
   });
@@ -123,7 +129,7 @@ describe.runIf(sql)("season end and youth intake (D35, D53)", () => {
         tx,
         tx`select public.start_season(${team}, 's2', 'defaults', ${tx.json(SLOTS)}, ${tx.json(FIXTURES)})`,
       );
-      await tx`select public.close_season(${season}, '[]', '[]', '{}')`;
+      await tx`select public.close_season(${season}, '[]', '[]', '{}', ${tx.json(SNAPSHOT)})`;
       await tx`select public.resolve_youth_intake(${season},
         ${tx.json([prospect("Cy"), prospect("Di")])}, ${tx.json([3, 7])})`;
       const twice = await attempt(
@@ -160,7 +166,7 @@ describe.runIf(sql)("season end and youth intake (D35, D53)", () => {
       await expect(
         run(
           (tx) =>
-            tx`select public.close_season(gen_random_uuid(), '[]', '[]', '{}')`,
+            tx`select public.close_season(gen_random_uuid(), '[]', '[]', '{}', '{}')`,
         ),
       ).rejects.toThrow(/permission denied/);
       await expect(

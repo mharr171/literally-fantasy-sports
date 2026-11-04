@@ -113,6 +113,20 @@
       "when": 1793771397065,
       "tag": "0015_season_end_functions",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1793772568300,
+      "tag": "0016_team_snapshots",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793772569192,
+      "tag": "0017_team_snapshots_functions",
+      "breakpoints": true
     }
   ]
 }

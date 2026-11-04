@@ -1,10 +1,15 @@
 import "server-only";
 import {
   defaultSoccerConfig,
+  type GhostCandidate,
+  ghostTeam,
   type LeagueSlot,
+  type MatchdaySquad,
   type MatchSummary,
   type SeasonFixture,
+  type SeasonStats,
   type SeasonStatus,
+  type SnapshotPlayer,
   type SoccerConfig,
   type Stage,
   soccerConfigFromValues,
@@ -58,7 +63,7 @@ export async function loadLatestSeason(
   const [slots, fixtures] = await Promise.all([
     db
       .from("season_teams")
-      .select("slot, kind, name, start_rating, elo")
+      .select("slot, kind, name, start_rating, elo, snapshot_id")
       .eq("season_id", season.id)
       .order("slot"),
     db
@@ -88,6 +93,7 @@ export async function loadLatestSeason(
       name: s.name,
       startRating: s.start_rating,
       elo: s.elo,
+      ghostId: s.snapshot_id as string | null,
     })),
     fixtures: (fixtures.data ?? []).map((f) => ({
       id: f.id,
@@ -138,4 +144,105 @@ export async function configFor(
     (data ?? []).map((r) => [r.key as string, r.value]),
   );
   return { label, config: soccerConfigFromValues(label, values) };
+}
+
+/** Ghosts that could join a new league: the latest snapshot of each team near this Elo. */
+export async function loadGhostCandidates(
+  elo: number,
+  window: number,
+): Promise<GhostCandidate[]> {
+  const { data, error } = await createServiceClient()
+    .from("team_snapshots")
+    .select("id, team_id, team_name, elo")
+    .eq("sport", SOCCER)
+    .gte("elo", elo - window)
+    .lte("elo", elo + window)
+    .order("completed_at", { ascending: false })
+    .limit(300);
+  if (error) throw new Error(error.message);
+  const latest = new Map<string, GhostCandidate>();
+  for (const s of data ?? [])
+    if (!latest.has(s.team_id))
+      latest.set(s.team_id, {
+        id: s.id,
+        teamId: s.team_id,
+        name: s.team_name,
+        elo: s.elo,
+      });
+  return [...latest.values()];
+}
+
+/** The rosters of the ghosts in a season, by slot. */
+export async function loadGhostTeams(
+  slots: readonly LeagueSlot[],
+): Promise<Map<number, ReturnType<typeof ghostTeam>>> {
+  const wanted = slots.filter((s) => s.kind === "ghost" && s.ghostId);
+  const result = new Map<number, ReturnType<typeof ghostTeam>>();
+  if (wanted.length === 0) return result;
+  const { data, error } = await createServiceClient()
+    .from("team_snapshots")
+    .select("id, players, squad")
+    .in(
+      "id",
+      wanted.map((s) => s.ghostId as string),
+    );
+  if (error) throw new Error(error.message);
+  for (const slot of wanted) {
+    const snap = (data ?? []).find((d) => d.id === slot.ghostId);
+    if (snap)
+      result.set(
+        slot.slot,
+        ghostTeam(`ghost-${slot.slot}`, {
+          players: snap.players as SnapshotPlayer[],
+          squad: snap.squad as MatchdaySquad,
+        }),
+      );
+  }
+  return result;
+}
+
+export interface LeaderboardEntry {
+  id: string;
+  teamId: string;
+  teamName: string;
+  seasonNumber: number;
+  elo: number;
+  stats: SeasonStats;
+  completedAt: string;
+}
+
+/**
+ * The soccer leaderboard (D19): finished seasons ranked by Elo, then by
+ * that season's points, goal difference and goals.
+ */
+export async function loadLeaderboard(
+  limit = 100,
+): Promise<LeaderboardEntry[]> {
+  const { data, error } = await createServiceClient()
+    .from("team_snapshots")
+    .select("id, team_id, team_name, season_number, elo, stats, completed_at")
+    .eq("sport", SOCCER)
+    .order("elo", { ascending: false })
+    .limit(limit * 3);
+  if (error) throw new Error(error.message);
+  return (data ?? [])
+    .map((s) => ({
+      id: s.id as string,
+      teamId: s.team_id as string,
+      teamName: s.team_name as string,
+      seasonNumber: s.season_number as number,
+      elo: s.elo as number,
+      stats: s.stats as SeasonStats,
+      completedAt: s.completed_at as string,
+    }))
+    .sort(
+      (a, b) =>
+        b.elo - a.elo ||
+        b.stats.points - a.stats.points ||
+        b.stats.scored -
+          b.stats.conceded -
+          (a.stats.scored - a.stats.conceded) ||
+        b.stats.scored - a.stats.scored,
+    )
+    .slice(0, limit);
 }

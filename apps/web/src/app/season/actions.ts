@@ -2,11 +2,14 @@
 
 import { playerWorth } from "@lfs/core";
 import {
+  DEFAULT_GHOST_SETTINGS,
   endOfSeason,
   MANAGER_SLOT,
   newLeague,
   playWeek,
   rosterWarning,
+  seasonStats,
+  snapshotTeam,
   squadProblems,
   squadToTeam,
   youthIntake,
@@ -15,7 +18,13 @@ import { refresh } from "next/cache";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { playerRow } from "@/lib/scouting";
-import { configFor, liveSoccerConfig, loadLatestSeason } from "@/lib/season";
+import {
+  configFor,
+  liveSoccerConfig,
+  loadGhostCandidates,
+  loadGhostTeams,
+  loadLatestSeason,
+} from "@/lib/season";
 import { createServiceClient } from "@/lib/supabase/service";
 import {
   loadAgingPlayers,
@@ -70,7 +79,15 @@ export async function startSeason(): Promise<ActionResult> {
       );
     const seed = crypto.randomUUID();
     const { label } = await liveSoccerConfig();
-    const league = newLeague(seed, { name: team.name, elo: team.elo });
+    const ghosts = await loadGhostCandidates(
+      team.elo,
+      DEFAULT_GHOST_SETTINGS.eloWindow,
+    );
+    const league = newLeague(
+      seed,
+      { name: team.name, elo: team.elo, teamId: team.id },
+      ghosts,
+    );
     const { error } = await createServiceClient().rpc("start_season", {
       p_team: team.id,
       p_seed: seed,
@@ -80,6 +97,7 @@ export async function startSeason(): Promise<ActionResult> {
         kind: s.kind,
         name: s.name,
         start_rating: s.startRating,
+        snapshot_id: s.ghostId ?? null,
       })),
       p_fixtures: league.fixtures.map((f) => ({
         week: f.week,
@@ -133,6 +151,7 @@ export async function playNextWeek(): Promise<ActionResult> {
           new Map(roster.map((p) => [p.id, p])),
         ),
         names: new Map(roster.map((p) => [p.id, p.displayName])),
+        ghosts: await loadGhostTeams(season.slots),
       },
       config,
     );
@@ -191,7 +210,30 @@ export async function endSeason(): Promise<ActionResult> {
     if (!season || season.status !== "finished")
       throw new Error("Finish the season first.");
     if (season.closed) throw new Error("This season is already wrapped up.");
-    const players = await loadAgingPlayers(team.id);
+    const [players, roster, squad] = await Promise.all([
+      loadAgingPlayers(team.id),
+      loadRoster(team.id),
+      loadSquad(team.id),
+    ]);
+    // Freeze the team as it finished the season: its ghost and leaderboard entry (D59).
+    const ghost = snapshotTeam(
+      roster.map((p) => ({
+        id: p.id,
+        displayName: p.displayName,
+        attributes: p.attributes,
+        primaryPosition: p.primaryPosition,
+        secondaryPosition: p.secondaryPosition,
+        chemistryColor: p.chemistryColor,
+        overall: p.overall,
+      })),
+      squad,
+    );
+    const snapshot = {
+      players: ghost.players,
+      squad: ghost.squad,
+      stats: seasonStats(season.slots, season.fixtures),
+      game_version: process.env.GAME_VERSION ?? "unknown",
+    };
     const result = endOfSeason(season.seed, players);
     const byId = new Map(players.map((p) => [p.id, p]));
     const updates = result.aged.map((a) => {
@@ -237,6 +279,7 @@ export async function endSeason(): Promise<ActionResult> {
       p_updates: updates,
       p_retired: result.retired,
       p_review: review,
+      p_snapshot: snapshot,
     });
     if (error) {
       if (error.message.includes("cannot be closed"))
