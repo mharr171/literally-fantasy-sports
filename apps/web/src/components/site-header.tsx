@@ -34,6 +34,9 @@ async function AccountMenu() {
 
   return (
     <div className="flex min-w-0 items-center gap-3 text-sm">
+      <Link href="/team" className="font-medium hover:underline">
+        My team
+      </Link>
       {user.isAdmin && (
         <Link href="/admin" className="font-medium hover:underline">
           Admin

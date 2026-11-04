@@ -1,0 +1,766 @@
+{
+  "id": "24de914c-372a-4f5d-85c7-86635a7ca7d6",
+  "prevId": "f5cad9f1-9ec4-4b56-9c0b-47394c3cc839",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.game_config": {
+      "name": "game_config",
+      "schema": "",
+      "columns": {
+        "scope": {
+          "name": "scope",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "game_config_scope_version_game_config_versions_scope_version_fk": {
+          "name": "game_config_scope_version_game_config_versions_scope_version_fk",
+          "tableFrom": "game_config",
+          "columnsFrom": ["scope", "version"],
+          "tableTo": "game_config_versions",
+          "columnsTo": ["scope", "version"],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {
+        "game_config_scope_version_key_pk": {
+          "name": "game_config_scope_version_key_pk",
+          "columns": ["scope", "version", "key"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "game_config_select": {
+          "name": "game_config_select",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": ["authenticated"],
+          "using": "(select public.is_admin()) or exists (\n        select 1 from public.game_config_versions v\n        where v.scope = \"game_config\".\"scope\" and v.version = \"game_config\".\"version\" and v.published_at is not null\n      )"
+        },
+        "game_config_insert_admin": {
+          "name": "game_config_insert_admin",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": ["authenticated"],
+          "withCheck": "(select public.is_admin())"
+        },
+        "game_config_update_admin": {
+          "name": "game_config_update_admin",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": ["authenticated"],
+          "using": "(select public.is_admin())",
+          "withCheck": "(select public.is_admin())"
+        },
+        "game_config_delete_admin": {
+          "name": "game_config_delete_admin",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": ["authenticated"],
+          "using": "(select public.is_admin())"
+        }
+      },
+      "checkConstraints": {
+        "game_config_key_format": {
+          "name": "game_config_key_format",
+          "value": "\"game_config\".\"key\" ~ '^[a-z][a-z0-9_.]{0,63}$'"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.game_config_versions": {
+      "name": "game_config_versions",
+      "schema": "",
+      "columns": {
+        "scope": {
+          "name": "scope",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "published_at": {
+          "name": "published_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "game_config_versions_created_by_users_id_fk": {
+          "name": "game_config_versions_created_by_users_id_fk",
+          "tableFrom": "game_config_versions",
+          "columnsFrom": ["created_by"],
+          "tableTo": "users",
+          "schemaTo": "auth",
+          "columnsTo": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "set null"
+        }
+      },
+      "compositePrimaryKeys": {
+        "game_config_versions_scope_version_pk": {
+          "name": "game_config_versions_scope_version_pk",
+          "columns": ["scope", "version"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "game_config_versions_select": {
+          "name": "game_config_versions_select",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": ["authenticated"],
+          "using": "\"game_config_versions\".\"published_at\" is not null or (select public.is_admin())"
+        },
+        "game_config_versions_insert_admin": {
+          "name": "game_config_versions_insert_admin",
+          "as": "PERMISSIVE",
+          "for": "INSERT",
+          "to": ["authenticated"],
+          "withCheck": "(select public.is_admin())"
+        },
+        "game_config_versions_update_admin": {
+          "name": "game_config_versions_update_admin",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": ["authenticated"],
+          "using": "(select public.is_admin())",
+          "withCheck": "(select public.is_admin())"
+        },
+        "game_config_versions_delete_admin": {
+          "name": "game_config_versions_delete_admin",
+          "as": "PERMISSIVE",
+          "for": "DELETE",
+          "to": ["authenticated"],
+          "using": "(select public.is_admin())"
+        }
+      },
+      "checkConstraints": {
+        "game_config_versions_scope": {
+          "name": "game_config_versions_scope",
+          "value": "\"game_config_versions\".\"scope\" in ('global', 'soccer', 'baseball', 'paintball', 'football', 'basketball', 'hockey')"
+        },
+        "game_config_versions_version_positive": {
+          "name": "game_config_versions_version_positive",
+          "value": "\"game_config_versions\".\"version\" > 0"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.packs": {
+      "name": "packs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "team_id": {
+          "name": "team_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sport": {
+          "name": "sport",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "focus": {
+          "name": "focus",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tier": {
+          "name": "tier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "seed": {
+          "name": "seed",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "opened_at": {
+          "name": "opened_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resolved_at": {
+          "name": "resolved_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kept": {
+          "name": "kept",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "packs_team": {
+          "name": "packs_team",
+          "columns": [
+            {
+              "expression": "team_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "packs_team_id_teams_id_fk": {
+          "name": "packs_team_id_teams_id_fk",
+          "tableFrom": "packs",
+          "columnsFrom": ["team_id"],
+          "tableTo": "teams",
+          "columnsTo": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "packs_select_own": {
+          "name": "packs_select_own",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": ["authenticated"],
+          "using": "exists (select 1 from public.teams tm where tm.id = \"packs\".\"team_id\" and tm.owner_id = (select auth.uid()))"
+        }
+      },
+      "checkConstraints": {
+        "packs_sport": {
+          "name": "packs_sport",
+          "value": "\"packs\".\"sport\" in ('soccer', 'baseball', 'paintball', 'football', 'basketball', 'hockey')"
+        },
+        "packs_kind": {
+          "name": "packs_kind",
+          "value": "\"packs\".\"kind\" in ('starter', 'bought')"
+        },
+        "packs_focus": {
+          "name": "packs_focus",
+          "value": "\"packs\".\"focus\" in ('attack', 'midfield', 'defence', 'goal', 'any')"
+        },
+        "packs_resolved_after_opened": {
+          "name": "packs_resolved_after_opened",
+          "value": "\"packs\".\"resolved_at\" is null or (\"packs\".\"opened_at\" is not null and \"packs\".\"resolved_at\" >= \"packs\".\"opened_at\")"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.players": {
+      "name": "players",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "team_id": {
+          "name": "team_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sport": {
+          "name": "sport",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "first_name": {
+          "name": "first_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_name": {
+          "name": "last_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nationality": {
+          "name": "nationality",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "age": {
+          "name": "age",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "primary_position": {
+          "name": "primary_position",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "secondary_position": {
+          "name": "secondary_position",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "attributes": {
+          "name": "attributes",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "overall": {
+          "name": "overall",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "potential": {
+          "name": "potential",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "potential_low": {
+          "name": "potential_low",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "potential_high": {
+          "name": "potential_high",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "worth": {
+          "name": "worth",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "chemistry_color": {
+          "name": "chemistry_color",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "template_variant": {
+          "name": "template_variant",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'default'"
+        },
+        "from_starter_pack": {
+          "name": "from_starter_pack",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "players_team": {
+          "name": "players_team",
+          "columns": [
+            {
+              "expression": "team_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "players_team_id_teams_id_fk": {
+          "name": "players_team_id_teams_id_fk",
+          "tableFrom": "players",
+          "columnsFrom": ["team_id"],
+          "tableTo": "teams",
+          "columnsTo": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "players_select_own": {
+          "name": "players_select_own",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": ["authenticated"],
+          "using": "exists (select 1 from public.teams tm where tm.id = \"players\".\"team_id\" and tm.owner_id = (select auth.uid()))"
+        }
+      },
+      "checkConstraints": {
+        "players_sport": {
+          "name": "players_sport",
+          "value": "\"players\".\"sport\" in ('soccer', 'baseball', 'paintball', 'football', 'basketball', 'hockey')"
+        },
+        "players_overall_range": {
+          "name": "players_overall_range",
+          "value": "\"players\".\"overall\" between 1 and 99 and \"players\".\"potential\" between 1 and 99"
+        },
+        "players_potential_range": {
+          "name": "players_potential_range",
+          "value": "\"players\".\"potential_low\" <= \"players\".\"potential_high\" and \"players\".\"potential_high\" <= 99"
+        },
+        "players_age_range": {
+          "name": "players_age_range",
+          "value": "\"players\".\"age\" between 14 and 50"
+        },
+        "players_worth_nonnegative": {
+          "name": "players_worth_nonnegative",
+          "value": "\"players\".\"worth\" >= 0"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.profiles": {
+      "name": "profiles",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_admin": {
+          "name": "is_admin",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "profiles_id_users_id_fk": {
+          "name": "profiles_id_users_id_fk",
+          "tableFrom": "profiles",
+          "columnsFrom": ["id"],
+          "tableTo": "users",
+          "schemaTo": "auth",
+          "columnsTo": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "profiles_select_own": {
+          "name": "profiles_select_own",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": ["authenticated"],
+          "using": "(select auth.uid()) = \"profiles\".\"id\""
+        },
+        "profiles_update_own": {
+          "name": "profiles_update_own",
+          "as": "PERMISSIVE",
+          "for": "UPDATE",
+          "to": ["authenticated"],
+          "using": "(select auth.uid()) = \"profiles\".\"id\"",
+          "withCheck": "(select auth.uid()) = \"profiles\".\"id\""
+        }
+      },
+      "checkConstraints": {
+        "profiles_display_name_length": {
+          "name": "profiles_display_name_length",
+          "value": "char_length(\"profiles\".\"display_name\") between 1 and 40"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.teams": {
+      "name": "teams",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sport": {
+          "name": "sport",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "elo": {
+          "name": "elo",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1500
+        },
+        "funds": {
+          "name": "funds",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "energy": {
+          "name": "energy",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 3
+        },
+        "energy_updated_at": {
+          "name": "energy_updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "teams_owner_sport": {
+          "name": "teams_owner_sport",
+          "columns": [
+            {
+              "expression": "owner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "sport",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "teams_sport_name": {
+          "name": "teams_sport_name",
+          "columns": [
+            {
+              "expression": "sport",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "lower(\"name\")",
+              "isExpression": true,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "teams_owner_id_users_id_fk": {
+          "name": "teams_owner_id_users_id_fk",
+          "tableFrom": "teams",
+          "columnsFrom": ["owner_id"],
+          "tableTo": "users",
+          "schemaTo": "auth",
+          "columnsTo": ["id"],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "teams_select_own": {
+          "name": "teams_select_own",
+          "as": "PERMISSIVE",
+          "for": "SELECT",
+          "to": ["authenticated"],
+          "using": "\"teams\".\"owner_id\" = (select auth.uid())"
+        }
+      },
+      "checkConstraints": {
+        "teams_sport": {
+          "name": "teams_sport",
+          "value": "\"teams\".\"sport\" in ('soccer', 'baseball', 'paintball', 'football', 'basketball', 'hockey')"
+        },
+        "teams_name_length": {
+          "name": "teams_name_length",
+          "value": "char_length(btrim(\"teams\".\"name\")) between 3 and 30"
+        },
+        "teams_funds_nonnegative": {
+          "name": "teams_funds_nonnegative",
+          "value": "\"teams\".\"funds\" >= 0"
+        },
+        "teams_energy_nonnegative": {
+          "name": "teams_energy_nonnegative",
+          "value": "\"teams\".\"energy\" >= 0"
+        }
+      },
+      "isRLSEnabled": true
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "views": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

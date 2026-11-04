@@ -50,6 +50,13 @@
       "when": 1793765656267,
       "tag": "0006_teams_players_packs_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793766525956,
+      "tag": "0007_starter_squad_functions",
+      "breakpoints": true
     }
   ]
 }

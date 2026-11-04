@@ -80,6 +80,15 @@ describe.runIf(sql)("teams, players and packs", () => {
     ).rejects.toThrow(/permission denied/);
   });
 
+  it("hides pack seeds, which would reveal the players inside (D48)", async () => {
+    await expect(
+      asUser(db, owner, (tx) => tx`select seed from packs`),
+    ).rejects.toThrow(/permission denied/);
+    await expect(
+      asUser(db, owner, (tx) => tx`select * from packs`),
+    ).rejects.toThrow(/permission denied/);
+  });
+
   it("refuses every direct write from players", async () => {
     const attempts = [
       (tx: Parameters<Parameters<typeof asUser>[2]>[0]) =>
