@@ -226,6 +226,8 @@ export interface WeekOutcome {
   week: number;
   /** How each of the manager's players got on this week (empty if they had no match). */
   managerReports: Record<string, PlayerMatchReport>;
+  /** The manager's result this week, or null if they had no match. */
+  managerResult: "win" | "draw" | "loss" | null;
 }
 
 export interface ManagerSide {
@@ -290,6 +292,7 @@ export function playWeek(
   const elo = { ...state.elo };
   let managerFunds = 0;
   const managerReports: Record<string, PlayerMatchReport> = {};
+  let managerResult: WeekOutcome["managerResult"] = null;
   const played: PlayedFixture[] = [];
   for (const f of fixtures) {
     const knockout = f.stage !== "league";
@@ -328,6 +331,13 @@ export function playWeek(
             : "loss",
         payouts,
       );
+    if (managerSide)
+      managerResult =
+        result.winner === null
+          ? "draw"
+          : result.winner === managerSide
+            ? "win"
+            : "loss";
     if (managerSide)
       for (const [id, r] of Object.entries(result.players))
         if (r.side === managerSide) managerReports[id] = r;
@@ -409,6 +419,7 @@ export function playWeek(
     status,
     week,
     managerReports,
+    managerResult,
   };
 }
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth";
+import { pickOptions } from "@/lib/pick-options";
 import {
   loadMyTeam,
   loadRoster,
@@ -54,7 +55,7 @@ async function SquadContent() {
       </div>
       <SquadBuilder
         roster={roster}
-        initial={saved ?? autoPickSquad(roster)}
+        initial={saved ?? autoPickSquad(roster, undefined, pickOptions(roster))}
         saved={saved !== null}
       />
     </>

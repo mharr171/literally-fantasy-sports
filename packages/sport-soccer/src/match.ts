@@ -69,6 +69,11 @@ export interface SoccerTeam {
   subPlan?: PlannedSub[];
   /** Match fitness at kickoff, 0–100, by player id (default 100). Carried between game weeks in M4. */
   fitness?: Record<string, number>;
+  /**
+   * Extra skill modifiers by player id, as fractions (+0.04 = +4%): form and
+   * morale (M4). Missing players get 0.
+   */
+  modifiers?: Record<string, number>;
 }
 
 /** Tuning values. Balance defaults: changed only with Gary's OK. */
@@ -216,6 +221,8 @@ export interface PlayerMatchReport {
   redCard: boolean;
   /** Weeks out injured, 0 if not injured. */
   injuryWeeks: number;
+  /** Goals scored in open play (not shoot-out penalties). */
+  goals: number;
 }
 
 export interface SoccerResult extends MatchResult {
@@ -378,9 +385,10 @@ function refreshTeam(state: MatchState, team: TeamState): void {
   team.onField.forEach((p, i) => {
     const energy = report(state, p.player.id).energyNow;
     const tiredness = tuning.fatiguePenalty * ((100 - energy) / 100);
+    const extra = team.team.modifiers?.[p.player.id] ?? 0;
     p.skill = Math.max(
       0,
-      p.base * (1 + p.fit + (chemistry[i] as number) - tiredness),
+      p.base * (1 + p.fit + (chemistry[i] as number) + extra - tiredness),
     );
     const z = state.zones[p.slot];
     zones.defence += z.defence * p.skill;
@@ -693,6 +701,7 @@ function playAttack(state: MatchState, side: Side, minute: number): void {
   if (rng.finishing.chance(pGoal)) {
     score[side]++;
     events.push({ minute, type: "goal", side, playerId });
+    report(state, playerId).goals++;
   } else {
     events.push({ minute, type: "saved", side, playerId });
   }
@@ -805,6 +814,7 @@ function prepareTeam(
       yellowCards: 0,
       redCard: false,
       injuryWeeks: 0,
+      goals: 0,
     };
   }
   const t: TeamState = {

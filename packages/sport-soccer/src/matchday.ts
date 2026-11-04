@@ -240,17 +240,36 @@ export interface PickablePlayer extends SoccerPlayer {
   overall: number;
 }
 
+/** What auto-pick should know about a player's state this week (M4). */
+export interface PickOptions {
+  /** False for injured or suspended players; they're only used to fill gaps. */
+  available?: (id: string) => boolean;
+  /**
+   * Multiplies a player's rating when choosing, e.g. lower for tired or
+   * out-of-form players (1 = no change).
+   */
+  weight?: (id: string) => number;
+}
+
 /**
- * A sensible starting squad: fills the formation's slots, scarcest first
- * (the keeper), with the best available rating in each, then puts the next
- * best 11 on the bench, making sure a spare keeper is among them.
+ * A sensible squad: fills the formation's slots, scarcest first (the
+ * keeper), with the best available rating in each, then puts the next best
+ * 11 on the bench, making sure a spare keeper is among them. Unavailable
+ * players (injured, suspended) are never picked over available ones; they
+ * only fill places nobody else can, so the squad can still be saved.
  */
 export function autoPickSquad(
   players: readonly PickablePlayer[],
   formationId: string = DEFAULT_FORMATION,
+  options: PickOptions = {},
 ): MatchdaySquad {
   const shape =
     formation(formationId) ?? (formation(DEFAULT_FORMATION) as Formation);
+  const available = options.available ?? (() => true);
+  const weight = options.weight ?? (() => 1);
+  // Available players always outrank unavailable ones, then by weighted rating.
+  const score = (p: PickablePlayer, rating: number) =>
+    (available(p.id) ? 1_000 : 0) + rating * weight(p.id);
   const free = new Map(players.map((p) => [p.id, p]));
   const order = shape.slots
     .map((s, i) => ({ s, i }))
@@ -261,15 +280,23 @@ export function autoPickSquad(
   for (const { s, i } of order) {
     let best: PickablePlayer | undefined;
     for (const p of free.values())
-      if (!best || slotRating(p, s.position) > slotRating(best, s.position))
+      if (
+        !best ||
+        score(p, slotRating(p, s.position)) >
+          score(best, slotRating(best, s.position))
+      )
         best = p;
     if (!best) break;
     lineup[i] = best.id;
     free.delete(best.id);
   }
-  const rest = [...free.values()].sort((a, b) => b.overall - a.overall);
+  const rest = [...free.values()].sort(
+    (a, b) => score(b, b.overall) - score(a, a.overall),
+  );
   const bench = rest.slice(0, BENCH_SIZE);
-  const spareKeeper = rest.find((p) => p.primaryPosition === "GK");
+  const spareKeeper = rest.find(
+    (p) => p.primaryPosition === "GK" && available(p.id),
+  );
   if (
     spareKeeper &&
     !bench.includes(spareKeeper) &&

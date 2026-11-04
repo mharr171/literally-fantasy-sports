@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  doublePrecision,
   foreignKey,
   index,
   integer,
@@ -186,6 +187,8 @@ export const teams = pgTable(
     funds: integer().notNull().default(10_000),
     energy: integer().notNull().default(3),
     energyUpdatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    /** Team morale after recent results, −1 to 1 (M4). */
+    morale: doublePrecision().notNull().default(0),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -198,6 +201,7 @@ export const teams = pgTable(
     ),
     check("teams_funds_nonnegative", sql`${t.funds} >= 0`),
     check("teams_energy_nonnegative", sql`${t.energy} >= 0`),
+    check("teams_morale_range", sql`${t.morale} between -1 and 1`),
     pgPolicy("teams_select_own", {
       for: "select",
       to: authenticatedRole,
@@ -243,6 +247,8 @@ export const players = pgTable(
     suspendedWeeks: integer().notNull().default(0),
     /** Yellow cards this season (every 5th earns a ban). */
     yellowCards: integer().notNull().default(0),
+    /** Recent form, −1 to 1 (M4). */
+    form: doublePrecision().notNull().default(0),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -260,7 +266,7 @@ export const players = pgTable(
     check("players_worth_nonnegative", sql`${t.worth} >= 0`),
     check(
       "players_condition",
-      sql`${t.fitness} between 0 and 100 and ${t.injuredWeeks} >= 0 and ${t.suspendedWeeks} >= 0 and ${t.yellowCards} >= 0`,
+      sql`${t.fitness} between 0 and 100 and ${t.injuredWeeks} >= 0 and ${t.suspendedWeeks} >= 0 and ${t.yellowCards} >= 0 and ${t.form} between -1 and 1`,
     ),
     pgPolicy("players_select_own", {
       for: "select",

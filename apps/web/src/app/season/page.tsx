@@ -172,6 +172,7 @@ async function SeasonContent() {
   return (
     <SeasonView
       notice={notice}
+      morale={team.morale}
       energy={
         energyNow && {
           energy: energyNow.energy,

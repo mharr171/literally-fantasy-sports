@@ -3,9 +3,12 @@ import { currentEnergy, spendEnergy } from "@lfs/core";
 import {
   availableSquad,
   FRESH,
+  formModifier,
   isAvailable,
   MANAGER_SLOT,
   nextCondition,
+  nextForm,
+  nextMorale,
   playWeek,
   rosterWarning,
   squadProblems,
@@ -97,6 +100,10 @@ export async function playOneWeek(
         fitness: Object.fromEntries(
           roster.map((p) => [p.id, p.condition.fitness]),
         ),
+        // Form and morale nudge skill a little (M4).
+        modifiers: Object.fromEntries(
+          roster.map((p) => [p.id, formModifier(p.form, team.morale)]),
+        ),
       },
       names: new Map(roster.map((p) => [p.id, p.displayName])),
       ghosts: await loadGhostTeams(season.slots),
@@ -127,6 +134,7 @@ export async function playOneWeek(
     p_next_week: outcome.week,
     p_energy: energyAfter?.energy ?? null,
     p_energy_updated_at: energyAfter?.updatedAt.toISOString() ?? null,
+    p_morale: nextMorale(team.morale, outcome.managerResult),
     p_players: roster.map((p) => {
       const next = nextCondition(p.condition, outcome.managerReports[p.id]);
       return {
@@ -135,6 +143,11 @@ export async function playOneWeek(
         injured_weeks: next.injuredWeeks,
         suspended_weeks: next.suspendedWeeks,
         yellow_cards: next.yellowCards,
+        form: nextForm(
+          p.form,
+          outcome.managerReports[p.id],
+          outcome.managerResult,
+        ),
       };
     }),
   });

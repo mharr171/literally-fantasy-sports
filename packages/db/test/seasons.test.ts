@@ -8,7 +8,14 @@ const SLOTS = [
   { slot: 1, kind: "ai", name: "Ashvale City", start_rating: 1400 },
 ];
 const CONDITION = (id: string) => [
-  { id, fitness: 72, injured_weeks: 2, suspended_weeks: 1, yellow_cards: 3 },
+  {
+    id,
+    fitness: 72,
+    injured_weeks: 2,
+    suspended_weeks: 1,
+    yellow_cards: 3,
+    form: 0.25,
+  },
 ];
 const FIXTURES = [
   { week: 1, stage: "league", home_slot: 0, away_slot: 1 },
@@ -112,15 +119,15 @@ describe.runIf(sql)("seasons, league teams and fixtures (D16)", () => {
         tx`select public.record_week(${season}, ${week}, ${tx.json(results)},
           ${tx.json({ "0": 1512, "1": 1388 })}, 1500,
           ${tx.json([{ week: 3, stage: "semi", home_slot: 0, away_slot: 1 }])}, 'playoffs', 2,
-          2, '2026-11-04T12:00:00Z', ${tx.json(CONDITION(player))})`;
+          2, '2026-11-04T12:00:00Z', ${tx.json(CONDITION(player))}, 0.3)`;
       await record(1);
       const twice = await attempt(tx, record(1));
       const wrongWeek = await attempt(
         tx,
-        tx`select public.record_week(${season}, 2, ${tx.json(results)}, '{}', 0, '[]', 'regular', 3, null, null, '[]')`,
+        tx`select public.record_week(${season}, 2, ${tx.json(results)}, '{}', 0, '[]', 'regular', 3, null, null, '[]', null)`,
       );
       const [teamRow] =
-        await tx`select elo, funds, energy, energy_updated_at from teams where id = ${team}`;
+        await tx`select elo, funds, energy, energy_updated_at, morale from teams where id = ${team}`;
       const [seasonRow] =
         await tx`select status, week, finished_at from seasons where id = ${season}`;
       const elos =
@@ -130,7 +137,7 @@ describe.runIf(sql)("seasons, league teams and fixtures (D16)", () => {
       const semis =
         await tx`select stage from fixtures where season_id = ${season} and week = 3`;
       const condition =
-        await tx`select fitness, injured_weeks, suspended_weeks, yellow_cards
+        await tx`select fitness, injured_weeks, suspended_weeks, yellow_cards, form
         from players where id = ${player}`;
       return {
         twice,
@@ -150,6 +157,7 @@ describe.runIf(sql)("seasons, league teams and fixtures (D16)", () => {
       funds: 10_000 + 1_500,
       energy: 2,
       energy_updated_at: new Date("2026-11-04T12:00:00Z"),
+      morale: 0.3,
     });
     expect(result.seasonRow).toEqual({
       status: "playoffs",
@@ -169,7 +177,13 @@ describe.runIf(sql)("seasons, league teams and fixtures (D16)", () => {
     ]);
     expect(result.semis).toEqual([{ stage: "semi" }]);
     expect(result.condition).toEqual([
-      { fitness: 72, injured_weeks: 2, suspended_weeks: 1, yellow_cards: 3 },
+      {
+        fitness: 72,
+        injured_weeks: 2,
+        suspended_weeks: 1,
+        yellow_cards: 3,
+        form: 0.25,
+      },
     ]);
   });
 
@@ -224,7 +238,7 @@ describe.runIf(sql)("seasons, league teams and fixtures (D16)", () => {
       await expect(
         run(
           (tx) =>
-            tx`select public.record_week(gen_random_uuid(), 1, '[]', '{}', 99999, '[]', 'finished', 1, null, null, '[]')`,
+            tx`select public.record_week(gen_random_uuid(), 1, '[]', '{}', 99999, '[]', 'finished', 1, null, null, '[]', null)`,
         ),
       ).rejects.toThrow(/permission denied/);
     }

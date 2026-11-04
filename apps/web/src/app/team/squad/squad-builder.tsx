@@ -15,6 +15,7 @@ import {
 } from "@lfs/sport-soccer";
 import { type DragEvent, useMemo, useState } from "react";
 import { ConditionBadge } from "@/components/condition-badge";
+import { pickOptions } from "@/lib/pick-options";
 import type { RosterPlayer } from "@/lib/team";
 import { saveSquad } from "../actions";
 import { useAction } from "../use-action";
@@ -161,7 +162,7 @@ export function SquadBuilder({
   });
 
   function autoPick() {
-    const squad = autoPickSquad(roster, formationId);
+    const squad = autoPickSquad(roster, formationId, pickOptions(roster));
     setLineup(pad(squad.lineup, 11));
     setBench(pad(squad.bench, BENCH_SIZE));
     setPlan([]);
