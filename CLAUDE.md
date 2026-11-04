@@ -23,7 +23,7 @@ pnpm + Turborepo monorepo.
 | `packages/config` | Shared tsconfig (`@lfs/config/tsconfig.base.json`) |
 | `packages/core` *(M1)* | Sport-agnostic engine: seeded RNG, Elo, seasons, `Sport` interface |
 | `packages/sport-*` *(M1+)* | One package per sport, e.g. `sport-soccer` |
-| `packages/db` *(M0/M1)* | Drizzle schema, migrations, seed |
+| `packages/db` | Drizzle schema (`src/schema.ts`), SQL migrations (`migrations/`), database tests |
 | `docs/` | Architecture notes, ADRs, legal sources |
 
 ## Architecture rules
@@ -53,10 +53,29 @@ pnpm lint          # Biome lint + format check (pnpm lint:fix to fix)
 pnpm typecheck     # TypeScript in every package
 pnpm test          # Vitest (engine packages, from M1)
 pnpm build         # production build
+pnpm db:generate   # after editing packages/db/src/schema.ts: write a new migration
+pnpm test:db       # database tests (needs DATABASE_URL, see below)
 ```
 
 Run `pnpm lint && pnpm typecheck && pnpm test && pnpm build` before pushing; CI runs
 the same.
+
+## Database
+
+- Schema lives in `packages/db/src/schema.ts` (Drizzle, snake_case columns).
+  Change it, run `pnpm db:generate`, and commit the generated SQL. For things
+  Drizzle can't express (triggers, functions, grants) use
+  `pnpm --filter @lfs/db drizzle-kit generate --custom --name=<what>`.
+- Never edit a migration that has reached `main`; add a new one.
+- Every table: row-level security on, explicit policies, and grants narrowed
+  from Supabase's defaults. Add tests in `packages/db/test/` proving what each
+  role can and can't do.
+- CI applies migrations to a throwaway Postgres (prepared with
+  `packages/db/ci/supabase-stub.sql`) and runs the database tests. After merge,
+  `.github/workflows/db-migrate.yml` applies them to `lfs-dev`, then to
+  `lfs-prod` once Gary approves the `production` environment.
+- To run database tests locally: start Postgres, run `ci/supabase-stub.sql`,
+  then `DATABASE_URL=… pnpm --filter @lfs/db migrate && DATABASE_URL=… pnpm test:db`.
 
 ## Conventions
 

@@ -135,7 +135,7 @@ Supabase only sends people back to addresses on its allow list, so set these in 
 - [ ] `lfs-prod`: **Site URL** `https://www.literallyfantasysports.com`. **Redirect URLs → Add URL:** `https://www.literallyfantasysports.com/**`
 - [ ] `lfs-dev`: **Site URL** `http://localhost:3000`. **Redirect URLs → Add URL** for each of:
   - `http://localhost:3000/**`
-  - `https://literally-fantasy-sports-*-<your-vercel-team>.vercel.app/**` (your team slug is the part of a preview link just before `.vercel.app`, e.g. `…-gary-projects.vercel.app`)
+  - `https://*-live-full-stack.vercel.app/**` (any preview deploy from the `live-full-stack` Vercel team)
 
 So that email sign-in links work even when opened in a different browser or on another device (e.g. requested on the PC, opened on the phone), change two email templates in **both** projects under **Authentication → Emails → Templates**:
 
@@ -164,7 +164,11 @@ Claude Code will try to do these itself and only ask you for the ones it can't.
 
 ## Part C: Later milestones
 
-- [ ] **M1:** after the admin flag exists, Claude Code gives you one command or click to mark your account as admin.
+- [ ] **Make yourself admin** (once the profiles migration has reached `lfs-prod`): in Supabase open **`lfs-prod` → SQL Editor**, paste the line below with your sign-in email, and click **Run**. It should report 1 row updated. Repeat in `lfs-dev` if you want admin there too.
+
+```sql
+update public.profiles set is_admin = true where id = (select id from auth.users where email = 'you@example.com');
+```
 - [ ] **M3 (friends alpha):** invite a few friends and share the link.
 - [ ] **M5:** turn on two-factor (authenticator app) on your game account. The admin panel will require it.
 - [ ] **M6:** sign up at sentry.io (free Developer plan) and connect it to Vercel; turn on **Web Analytics** in the Vercel project. Claude Code adds the code.
