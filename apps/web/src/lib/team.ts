@@ -21,6 +21,8 @@ export interface MyTeam {
   funds: number;
   energy: number;
   energyUpdatedAt: string;
+  /** Team morale after recent results, −1 to 1 (M4). */
+  morale: number;
 }
 
 /**
@@ -34,6 +36,7 @@ const toTeam = (data: {
   funds: number;
   energy: number;
   energy_updated_at: string;
+  morale: number;
 }): MyTeam => ({
   id: data.id,
   name: data.name,
@@ -41,13 +44,14 @@ const toTeam = (data: {
   funds: data.funds,
   energy: data.energy,
   energyUpdatedAt: data.energy_updated_at,
+  morale: data.morale,
 });
 
 /** Any team, by id (admin tools). */
 export async function loadTeamById(teamId: string): Promise<MyTeam | null> {
   const { data, error } = await createServiceClient()
     .from("teams")
-    .select("id, name, elo, funds, energy, energy_updated_at")
+    .select("id, name, elo, funds, energy, energy_updated_at, morale")
     .eq("id", teamId)
     .eq("sport", SOCCER)
     .maybeSingle();
@@ -69,7 +73,7 @@ export async function listTeams(): Promise<{ id: string; name: string }[]> {
 export async function loadMyTeam(ownerId: string): Promise<MyTeam | null> {
   const { data, error } = await createServiceClient()
     .from("teams")
-    .select("id, name, elo, funds, energy, energy_updated_at")
+    .select("id, name, elo, funds, energy, energy_updated_at, morale")
     .eq("owner_id", ownerId)
     .eq("sport", SOCCER)
     .maybeSingle();
@@ -82,6 +86,7 @@ export async function loadMyTeam(ownerId: string): Promise<MyTeam | null> {
     funds: data.funds,
     energy: data.energy,
     energyUpdatedAt: data.energy_updated_at,
+    morale: data.morale,
   };
 }
 
@@ -155,6 +160,8 @@ export interface RosterPlayer {
   fromStarterPack: boolean;
   /** Fitness, injuries, bans and yellow cards between game weeks (M4). */
   condition: PlayerCondition;
+  /** Recent form, −1 to 1 (M4). */
+  form: number;
   attributes: Attributes;
   displayName: string;
   nationality: string;
@@ -171,7 +178,7 @@ export async function loadRoster(teamId: string): Promise<RosterPlayer[]> {
   const { data, error } = await createServiceClient()
     .from("players")
     .select(
-      "id, from_starter_pack, attributes, fitness, injured_weeks, suspended_weeks, yellow_cards, display_name, nationality, age, primary_position, secondary_position, overall, potential_low, potential_high, worth, chemistry_color",
+      "id, from_starter_pack, attributes, fitness, injured_weeks, suspended_weeks, yellow_cards, form, display_name, nationality, age, primary_position, secondary_position, overall, potential_low, potential_high, worth, chemistry_color",
     )
     .eq("team_id", teamId);
   if (error) throw new Error(error.message);
@@ -185,6 +192,7 @@ export async function loadRoster(teamId: string): Promise<RosterPlayer[]> {
       yellowCards: p.yellow_cards,
     },
     attributes: p.attributes as Attributes,
+    form: p.form,
     displayName: p.display_name,
     nationality: p.nationality,
     age: p.age,

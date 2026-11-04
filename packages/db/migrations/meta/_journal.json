@@ -169,6 +169,20 @@
       "when": 1793776472670,
       "tag": "0023_admin_actions_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793777498795,
+      "tag": "0024_form_and_morale",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1793777499810,
+      "tag": "0025_form_and_morale_functions",
+      "breakpoints": true
     }
   ]
 }

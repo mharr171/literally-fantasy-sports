@@ -2,6 +2,7 @@ export * from "./ai-team";
 export * from "./attributes";
 export * from "./condition";
 export * from "./effective-skill";
+export * from "./form";
 export * from "./generation";
 export * from "./ghosts";
 export * from "./harness";

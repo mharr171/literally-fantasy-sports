@@ -228,3 +228,42 @@ describe("playing a squad", () => {
     expect(Math.max(...boosts)).toBeGreaterThan(0);
   });
 });
+
+describe("autoPickSquad with injuries, bans, fitness and form (M4)", () => {
+  const base = autoPickSquad(players);
+  const keeper = base.lineup[0] as string;
+  const striker = base.lineup[10] as string;
+
+  it("never starts an unavailable player when a fit one can play", () => {
+    const out = new Set([keeper, striker]);
+    const squad = autoPickSquad(players, DEFAULT_FORMATION, {
+      available: (id) => !out.has(id),
+    });
+    expect(squad.lineup).not.toContain(keeper);
+    expect(squad.lineup).not.toContain(striker);
+    expect(byId.get(squad.lineup[0] as string)?.primaryPosition).toBe("GK");
+    // They don't take bench places from fit players either.
+    expect(squad.bench).not.toContain(keeper);
+    expect(squadProblems(squad, ids)).toEqual([]);
+  });
+
+  it("fills the squad with unavailable players only when it must", () => {
+    const few = players.slice(0, 22);
+    const out = new Set(few.slice(0, 3).map((p) => p.id));
+    const squad = autoPickSquad(few, DEFAULT_FORMATION, {
+      available: (id) => !out.has(id),
+    });
+    expect(squad.lineup.some((id) => out.has(id))).toBe(false);
+    expect([...squad.lineup, ...squad.bench]).toHaveLength(22);
+    expect(squad.bench.slice(-3).every((id) => out.has(id))).toBe(true);
+  });
+
+  it("prefers a fresher or in-form player when ratings are close", () => {
+    const tired = new Set(base.lineup.slice(1));
+    const squad = autoPickSquad(players, DEFAULT_FORMATION, {
+      weight: (id) => (tired.has(id) ? 0.7 : 1),
+    });
+    const changed = squad.lineup.filter((id) => !base.lineup.includes(id));
+    expect(changed.length).toBeGreaterThan(0);
+  });
+});

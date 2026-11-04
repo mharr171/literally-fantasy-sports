@@ -6,6 +6,7 @@ import {
 } from "@lfs/sport-soccer";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { moraleLabel } from "@/components/form-label";
 import type { LoadedSeason } from "@/lib/season";
 import { type EnergyView, PlayWeekButton } from "./season-buttons";
 
@@ -28,7 +29,10 @@ export function SeasonView({
   wrapUp,
   energy,
   notice,
+  morale,
 }: {
+  /** Team morale, −1 to 1 (M4). */
+  morale?: number;
   /** Shown under the next match, e.g. who sits out injured or suspended. */
   notice?: ReactNode;
   /** The manager's energy now, or null when energy is switched off (D93). */
@@ -69,7 +73,8 @@ export function SeasonView({
             Season {season.number}
           </h1>
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            {teamName} · {stageLabel(season)} · Elo {elo} · Funds{" "}
+            {teamName} · {stageLabel(season)} · Elo {elo}
+            {morale !== undefined && ` · Morale ${moraleLabel(morale)}`} · Funds{" "}
             {funds.toLocaleString("en-US")}
           </p>
         </div>
