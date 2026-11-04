@@ -176,10 +176,14 @@ export function SeasonView({
                   >
                     <td className="px-3 py-1.5">{i + 1}</td>
                     <td className="px-3 py-1.5">
-                      <span className="inline-flex items-center gap-1.5">
+                      <Link
+                        href={`/season/club/${slot}`}
+                        className="inline-flex items-center gap-1.5 hover:underline"
+                        title="See this club's roster"
+                      >
                         {badge(slot)}
                         {info?.name}
-                      </span>
+                      </Link>
                       {info?.kind === "ghost" && (
                         <span
                           className="ml-1.5 rounded bg-violet-100 px-1 text-xs font-normal text-violet-800 dark:bg-violet-950 dark:text-violet-300"

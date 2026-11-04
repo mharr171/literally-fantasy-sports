@@ -68,3 +68,29 @@ export function squadScore(
   });
   return { base: base / slots, today: today / slots };
 }
+
+export interface ColorShare {
+  color: number;
+  count: number;
+  /** 0–1 of the players given. */
+  share: number;
+}
+
+/**
+ * How a group of players splits across chemistry colors (D111), biggest
+ * first, ties by color. Colors nobody has are left out.
+ */
+export function chemistryShares(
+  players: readonly { chemistryColor: number }[],
+): ColorShare[] {
+  const counts = new Map<number, number>();
+  for (const p of players)
+    counts.set(p.chemistryColor, (counts.get(p.chemistryColor) ?? 0) + 1);
+  return [...counts]
+    .map(([color, count]) => ({
+      color,
+      count,
+      share: players.length ? count / players.length : 0,
+    }))
+    .sort((a, b) => b.count - a.count || a.color - b.color);
+}

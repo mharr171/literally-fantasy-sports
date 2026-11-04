@@ -3,6 +3,7 @@ import { STARTER_PACKS } from "../src/generation";
 import { autoPickSquad, formation, type PickablePlayer } from "../src/matchday";
 import { packContents } from "../src/roster";
 import {
+  chemistryShares,
   pickWeight,
   ROTATION_FITNESS_EMPHASIS,
   squadScore,
@@ -88,5 +89,19 @@ describe("squadScore (D110)", () => {
     const one = squadScore([{ player: player(), slot: "CM" }]);
     const full = squadScore([{ player: player(), slot: "CM" }], 1);
     expect(one.base).toBeCloseTo(full.base / 11);
+  });
+});
+
+describe("chemistryShares (D111)", () => {
+  it("splits players by color, biggest first", () => {
+    const shares = chemistryShares(
+      [0, 2, 2, 1, 2, 0].map((chemistryColor) => ({ chemistryColor })),
+    );
+    expect(shares).toEqual([
+      { color: 2, count: 3, share: 0.5 },
+      { color: 0, count: 2, share: 2 / 6 },
+      { color: 1, count: 1, share: 1 / 6 },
+    ]);
+    expect(chemistryShares([])).toEqual([]);
   });
 });
