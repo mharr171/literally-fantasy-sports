@@ -9,6 +9,7 @@ export * from "./overall";
 export * from "./player";
 export * from "./positions";
 export * from "./roster";
+export * from "./season-end";
 export * from "./season-play";
 export * from "./sport";
 export * from "./stored-config";

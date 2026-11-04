@@ -5,6 +5,7 @@ import {
   table,
 } from "@lfs/sport-soccer";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import type { LoadedSeason } from "@/lib/season";
 import { PlayWeekButton } from "./season-buttons";
 
@@ -24,11 +25,14 @@ export function SeasonView({
   teamName,
   elo,
   funds,
+  wrapUp,
 }: {
   season: LoadedSeason;
   teamName: string;
   elo: number;
   funds: number;
+  /** Season-end steps, shown once the season is finished. */
+  wrapUp?: ReactNode;
 }) {
   const name = (slot: number) =>
     season.slots.find((s) => s.slot === slot)?.name ?? "?";
@@ -78,10 +82,7 @@ export function SeasonView({
               ? "Champions! You won the playoff final."
               : `${name(champion ?? 0)} won the title.`}
           </p>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            The next season opens once season-end (ageing and youth intake) is
-            ready.
-          </p>
+          {wrapUp}
         </div>
       ) : (
         <div className="flex flex-wrap items-center gap-4 rounded-md border border-zinc-200 p-4 dark:border-zinc-800">
