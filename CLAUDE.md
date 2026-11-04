@@ -21,7 +21,7 @@ pnpm + Turborepo monorepo.
 | --- | --- |
 | `apps/web` | Next.js (App Router) app: UI, server actions, auth, admin |
 | `packages/config` | Shared tsconfig (`@lfs/config/tsconfig.base.json`) |
-| `packages/core` | Sport-agnostic engine: seeded RNG, Elo, influence grids, `Sport` interface (ADR 0001) |
+| `packages/core` | Sport-agnostic engine: seeded RNG, Elo, influence grids, chemistry, name pools, `Sport` interface (ADR 0001) |
 | `packages/sport-*` | One package per sport. `sport-soccer`: positions (D77), attributes and overall (D78), effective skill, match sim, tuning harness |
 | `packages/db` | Drizzle schema (`src/schema.ts`), SQL migrations (`migrations/`), database tests |
 | `docs/` | Architecture notes, ADRs, legal sources |
