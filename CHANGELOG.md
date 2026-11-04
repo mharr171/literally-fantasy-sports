@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.0.0](https://github.com/mharr171/literally-fantasy-sports/compare/v0.6.0...v1.0.0) (2026-11-04)
+
+
+### Features
+
+* a getting-started checklist walks new managers from naming their club to playing their first week ([#51](https://github.com/mharr171/literally-fantasy-sports/issues/51)) ([eed7791](https://github.com/mharr171/literally-fantasy-sports/commit/eed7791f660178cdee8940b9b195fac8e407c2db))
+* a What's new page lists every update to the game ([#53](https://github.com/mharr171/literally-fantasy-sports/issues/53)) ([4130fbd](https://github.com/mharr171/literally-fantasy-sports/commit/4130fbd7b1fa9e43a8d525e56024ae4320c9e9d5))
+* friendly pages when a page doesn't exist or fails to load, and clearer empty screens ([#52](https://github.com/mharr171/literally-fantasy-sports/issues/52)) ([e95c1a2](https://github.com/mharr171/literally-fantasy-sports/commit/e95c1a2a5778cf37e2c78ee9a5cc16164dad6856))
+
+
+### Documentation
+
+* README with screenshots, and M3 and M6 marked done for v1.0.0 ([#55](https://github.com/mharr171/literally-fantasy-sports/issues/55)) ([e78f150](https://github.com/mharr171/literally-fantasy-sports/commit/e78f1503d88a35020f762de83a5a044595001d1e))
+* ship the end of M6 as v1.0.0 ([#56](https://github.com/mharr171/literally-fantasy-sports/issues/56)) ([12f5ff1](https://github.com/mharr171/literally-fantasy-sports/commit/12f5ff13acfe0998d218cae777bdc2c382360e3e))
+* skip Sentry and Vercel Analytics for now, and drop them from the privacy policy ([#49](https://github.com/mharr171/literally-fantasy-sports/issues/49)) ([a5c07cb](https://github.com/mharr171/literally-fantasy-sports/commit/a5c07cb2f6c00c33a427ace8f582c248e30cda2d))
+
 ## [0.6.0](https://github.com/mharr171/literally-fantasy-sports/compare/v0.5.0...v0.6.0) (2026-11-04)
 
 
