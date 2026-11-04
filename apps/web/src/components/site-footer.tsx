@@ -5,7 +5,10 @@ export function SiteFooter() {
     <footer className="border-t border-zinc-200 dark:border-zinc-800">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-3 px-4 py-6 text-sm text-zinc-600 sm:flex-row sm:items-center sm:justify-between sm:px-6 dark:text-zinc-400">
         <p>© 2026 LiterallyFantasySports</p>
-        <nav aria-label="Legal" className="flex gap-4">
+        <nav aria-label="About" className="flex flex-wrap gap-x-4 gap-y-1">
+          <Link className="hover:underline" href="/whats-new">
+            What&apos;s new
+          </Link>
           <Link className="hover:underline" href="/privacy-policy">
             Privacy policy
           </Link>
