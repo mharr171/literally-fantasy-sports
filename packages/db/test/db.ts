@@ -27,6 +27,14 @@ export async function asAnon<T>(
   return asRole(db, "anon", null, fn);
 }
 
+/** Runs `fn` as the server's service role inside a transaction that is rolled back. */
+export async function asService<T>(
+  db: postgres.Sql,
+  fn: (tx: Tx) => Promise<T>,
+): Promise<T> {
+  return asRole(db, "service_role", null, fn);
+}
+
 class Rollback<T> extends Error {
   constructor(readonly value: T) {
     super("rollback");
@@ -35,7 +43,7 @@ class Rollback<T> extends Error {
 
 async function asRole<T>(
   db: postgres.Sql,
-  role: "anon" | "authenticated",
+  role: "anon" | "authenticated" | "service_role",
   userId: string | null,
   fn: (tx: Tx) => Promise<T>,
 ): Promise<T> {

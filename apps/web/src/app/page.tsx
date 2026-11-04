@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Home() {
   return (
     <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-6 px-4 py-16 sm:px-6">
@@ -9,9 +11,14 @@ export default function Home() {
         against AI teams and the ghosts of other managers&apos; finished
         seasons. Soccer comes first.
       </p>
-      <p className="text-sm font-medium uppercase tracking-wide text-zinc-500">
-        Coming soon
-      </p>
+      <div>
+        <Link
+          href="/team"
+          className="inline-block rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+        >
+          Build your team
+        </Link>
+      </div>
     </section>
   );
 }
