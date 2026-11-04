@@ -1,15 +1,17 @@
 /**
- * The soccer match simulation, first version (roadmap Step 4):
+ * The soccer match simulation (roadmap Step 4):
  *
- * 1. Each player's effective skill (position fit + chemistry).
- * 2. Each team's influence map = Σ position template × effective skill.
+ * 1. Each player's effective skill: position fit, chemistry and tiredness.
+ * 2. Each team's influence = Σ position template × effective skill.
  * 3. ~30 possession phases. Midfield control decides who attacks; the
  *    attacking team's influence in the final third against the defenders'
  *    influence in their own third sets the odds of a chance, then a shot,
  *    then a goal weighed against the keeper.
- * 4. Knockout matches that end level go to extra time, then penalties (D30).
+ * 4. Between phases players tire, pick up cards and injuries, and the bench
+ *    comes on: the manager's sub plan first, then automatic subs for injuries
+ *    and tiredness (D36, D45).
+ * 5. Knockout matches that end level go to extra time, then penalties (D30).
  *
- * Fatigue, substitutions, injuries and cards come in the next M1 PRs.
  * Everything random comes from the seed, so a match always replays exactly.
  */
 import {
@@ -32,8 +34,9 @@ import {
 import {
   DEFAULT_EFFECTIVE_SKILL_CONFIG,
   type EffectiveSkillConfig,
-  effectiveSkill,
+  positionFit,
 } from "./effective-skill";
+import { overallAt } from "./overall";
 import type { SoccerPlayer } from "./player";
 import type { Position } from "./positions";
 import {
@@ -50,13 +53,25 @@ export interface LineupSlot {
   slot: Position;
 }
 
+/** A planned substitution: from `minute` on, swap `outId` for `inId` (D45). */
+export interface PlannedSub {
+  minute: number;
+  outId: string;
+  inId: string;
+}
+
 export interface SoccerTeam {
   id: string;
   /** The 11 starters and the positions they fill. */
   lineup: LineupSlot[];
+  /** Substitutes (up to 11, D15). The engine picks the best one for each slot. */
+  bench?: SoccerPlayer[];
+  subPlan?: PlannedSub[];
+  /** Match fitness at kickoff, 0–100, by player id (default 100). Carried between game weeks in M4. */
+  fitness?: Record<string, number>;
 }
 
-/** Tuning values for the possession model. Balance defaults: changed only with Gary's OK. */
+/** Tuning values. Balance defaults: changed only with Gary's OK. */
 export interface MatchTuning {
   /** Possession phases in 90 minutes. */
   phases: number;
@@ -76,6 +91,27 @@ export interface MatchTuning {
   penaltyRate: number;
   /** Rows (from a team's own goal line) that count as its defensive third. */
   thirdRows: number;
+
+  /** Energy an average-stamina outfielder loses per phase (energy runs 0–100). */
+  fatiguePerPhase: number;
+  /** Keepers tire this much slower. */
+  keeperFatigueFactor: number;
+  /** Skill lost at zero energy (0.3 = −30%), scaled linearly with tiredness. */
+  fatiguePenalty: number;
+  /** Auto-sub a player whose energy falls below this. */
+  autoSubEnergy: number;
+  /** Earliest minute for a tiredness auto-sub. */
+  autoSubFromMinute: number;
+  maxSubs: number;
+  /** Separate stoppages in which subs can be made. */
+  maxSubWindows: number;
+
+  /** Chance per player per phase of an injury, before tiredness. */
+  injuryRate: number;
+  /** Chance per phase that the defending team gets a yellow card. */
+  yellowRate: number;
+  /** Chance per phase that the defending team gets a straight red. */
+  redRate: number;
 }
 
 export const DEFAULT_MATCH_TUNING: MatchTuning = {
@@ -88,6 +124,18 @@ export const DEFAULT_MATCH_TUNING: MatchTuning = {
   goalRate: 0.45,
   penaltyRate: 0.76,
   thirdRows: 8,
+
+  fatiguePerPhase: 1,
+  keeperFatigueFactor: 0.3,
+  fatiguePenalty: 0.3,
+  autoSubEnergy: 80,
+  autoSubFromMinute: 55,
+  maxSubs: 5,
+  maxSubWindows: 3,
+
+  injuryRate: 0.0004,
+  yellowRate: 0.12,
+  redRate: 0.0015,
 };
 
 export interface SoccerConfig {
@@ -100,13 +148,15 @@ export interface SoccerConfig {
 
 export function defaultSoccerConfig(): SoccerConfig {
   return {
-    version: "default-1",
+    version: "default-2",
     skill: DEFAULT_EFFECTIVE_SKILL_CONFIG,
     chemistry: DEFAULT_CHEMISTRY_BOOSTS,
     templates: placeholderTemplates(),
     tuning: DEFAULT_MATCH_TUNING,
   };
 }
+
+export type SubReason = "plan" | "injury" | "tired" | "keeper";
 
 export type SoccerEvent =
   | { minute: number; type: "chance"; side: Side }
@@ -115,6 +165,36 @@ export type SoccerEvent =
       type: "goal" | "saved" | "missed";
       side: Side;
       playerId: string;
+    }
+  | {
+      minute: number;
+      type: "sub";
+      side: Side;
+      outId: string;
+      inId: string;
+      reason: SubReason;
+    }
+  | {
+      minute: number;
+      type: "position_change";
+      side: Side;
+      playerId: string;
+      slot: Position;
+    }
+  | {
+      minute: number;
+      type: "injury";
+      side: Side;
+      playerId: string;
+      weeks: number;
+    }
+  | { minute: number; type: "yellow"; side: Side; playerId: string }
+  | {
+      minute: number;
+      type: "red";
+      side: Side;
+      playerId: string;
+      secondYellow: boolean;
     }
   | { minute: number; type: "extra_time" }
   | {
@@ -126,6 +206,18 @@ export type SoccerEvent =
     }
   | { minute: number; type: "full_time" };
 
+/** What happened to each player, for fitness, injuries and suspensions later (M4). */
+export interface PlayerMatchReport {
+  side: Side;
+  minutes: number;
+  /** Energy at the final whistle (or when they went off), 0–100. */
+  energy: number;
+  yellowCards: number;
+  redCard: boolean;
+  /** Weeks out injured, 0 if not injured. */
+  injuryWeeks: number;
+}
+
 export interface SoccerResult extends MatchResult {
   decidedBy?: "extra_time" | "penalties";
   /** Shoot-out score, only when decided on penalties. */
@@ -133,76 +225,22 @@ export interface SoccerResult extends MatchResult {
   /** Share of possession phases won (0–1). */
   possession: Record<Side, number>;
   shots: Record<Side, number>;
+  players: Record<string, PlayerMatchReport>;
 }
 
-/** Per-team numbers the match uses, worked out once at kickoff. */
-interface TeamState {
-  side: Side;
-  /** Influence in the team's own attacking direction. */
-  map: InfluenceMap;
+// ---------------------------------------------------------------------------
+// Template zones, worked out once per template set.
+
+interface Zones {
+  defence: number;
   midfield: number;
   attack: number;
-  defence: number;
-  /** Outfield players weighted by how likely they are to take a shot. */
-  shooters: { id: string; weight: number; skill: number }[];
-  keeper: { id: string; skill: number };
 }
 
-function prepareTeam(
-  team: SoccerTeam,
-  side: Side,
-  config: SoccerConfig,
-): TeamState {
-  if (team.lineup.length !== PLAYERS_ON_FIELD) {
-    throw new RangeError(
-      `Team ${team.id} has ${team.lineup.length} starters, expected 11`,
-    );
-  }
-  const colorCount = chemistryColorCount(PLAYERS_ON_FIELD);
-  const chemistry = chemistryBoostsByPlayer(
-    team.lineup.map((s) => s.player.chemistryColor),
-    colorCount,
-    config.chemistry,
-  );
-  const map = createInfluenceMap(SOCCER_GRID);
-  const { rows } = SOCCER_GRID;
-  const third = config.tuning.thirdRows;
-  const shooters: TeamState["shooters"] = [];
-  let keeper: TeamState["keeper"] | undefined;
-
-  team.lineup.forEach(({ player, slot }, i) => {
-    const skill = effectiveSkill(
-      { player, slot, chemistryBoost: chemistry[i] as number },
-      config.skill,
-    );
-    const template = config.templates[slot];
-    addScaled(map, template, skill);
-    if (slot === "GK") {
-      keeper = { id: player.id, skill };
-    } else {
-      // Shooters: presence in the final third × finishing ability.
-      const presence = sumRows(template, rows - third, rows);
-      shooters.push({
-        id: player.id,
-        weight: presence * player.attributes.shooting,
-        skill: skill * (0.5 + player.attributes.shooting / 198),
-      });
-    }
-  });
-
-  if (!keeper) throw new RangeError(`Team ${team.id} has no goalkeeper`);
-  return {
-    side,
-    map,
-    midfield: sumRows(map, third, rows - third),
-    attack: sumRows(map, rows - third, rows),
-    defence: sumRows(map, 0, third),
-    shooters,
-    keeper,
-  };
-}
-
-const other = (side: Side): Side => (side === "home" ? "away" : "home");
+const zoneCache = new WeakMap<
+  PositionTemplates,
+  { zones: Record<Position, Zones>; baseline: number }
+>();
 
 /** The reference shape: a flat 4-4-2 where every player is equally good. */
 const REFERENCE_SLOTS: Position[] = [
@@ -219,28 +257,88 @@ const REFERENCE_SLOTS: Position[] = [
   "ST",
 ];
 
-const referenceCache = new WeakMap<PositionTemplates, number>();
-
 /**
- * How much final-third influence a balanced team has compared with a
- * balanced defence. Defences always crowd their own third, so attack and
- * defence are compared relative to this baseline: an "even" contest is one
- * that looks like a balanced 4-4-2 against a balanced 4-4-2.
+ * Each template's share of each third, plus the baseline ratio of attack to
+ * defence for a balanced 4-4-2. Defences always crowd their own third, so a
+ * contest counts as "even" when it looks like balanced 4-4-2 against
+ * balanced 4-4-2.
  */
-function referenceAttackToDefence(
-  templates: PositionTemplates,
-  thirdRows: number,
-): number {
-  const cached = referenceCache.get(templates);
-  if (cached !== undefined) return cached;
-  const map = createInfluenceMap(SOCCER_GRID);
-  for (const slot of REFERENCE_SLOTS) addScaled(map, templates[slot], 1);
+function templateZones(templates: PositionTemplates, thirdRows: number) {
+  const cached = zoneCache.get(templates);
+  if (cached) return cached;
   const { rows } = SOCCER_GRID;
-  const ratio =
-    sumRows(map, rows - thirdRows, rows) / sumRows(map, 0, thirdRows);
-  referenceCache.set(templates, ratio);
-  return ratio;
+  const zones = {} as Record<Position, Zones>;
+  for (const [position, t] of Object.entries(templates) as [
+    Position,
+    InfluenceMap,
+  ][]) {
+    zones[position] = {
+      defence: sumRows(t, 0, thirdRows),
+      midfield: sumRows(t, thirdRows, rows - thirdRows),
+      attack: sumRows(t, rows - thirdRows, rows),
+    };
+  }
+  let attack = 0;
+  let defence = 0;
+  for (const slot of REFERENCE_SLOTS) {
+    attack += zones[slot].attack;
+    defence += zones[slot].defence;
+  }
+  const result = { zones, baseline: attack / defence };
+  zoneCache.set(templates, result);
+  return result;
 }
+
+// ---------------------------------------------------------------------------
+// Match state.
+
+interface OnField {
+  player: SoccerPlayer;
+  slot: Position;
+  /** Overall at this slot, and the position-fit bonus there. */
+  base: number;
+  fit: number;
+  /** Skill this phase, after chemistry and tiredness. */
+  skill: number;
+  /** Sum of skill over the phases played in this slot, for the heatmap. */
+  skillTotal: number;
+}
+
+interface TeamState {
+  side: Side;
+  team: SoccerTeam;
+  onField: OnField[];
+  bench: SoccerPlayer[];
+  subsUsed: number;
+  windowsUsed: number;
+  planDone: Set<number>;
+  /** Slot-skill totals of players who have left, for the heatmap. */
+  pastContributions: { slot: Position; skillTotal: number }[];
+  zones: Zones;
+}
+
+interface MatchState {
+  config: SoccerConfig;
+  tuning: MatchTuning;
+  teams: Record<Side, TeamState>;
+  reports: Record<string, PlayerMatchReport & { energyNow: number }>;
+  zones: Record<Position, Zones>;
+  baseline: number;
+  score: Record<Side, number>;
+  tally: { possession: Record<Side, number>; shots: Record<Side, number> };
+  events: SoccerEvent[];
+  rng: {
+    possession: Rng;
+    chances: Rng;
+    shooters: Rng;
+    finishing: Rng;
+    penalties: Rng;
+    injuries: Rng;
+    cards: Rng;
+  };
+}
+
+const other = (side: Side): Side => (side === "home" ? "away" : "home");
 
 /** Chance of `a` beating `b`, sharpened: 0.5 when equal, towards 0 or 1 as they differ. */
 function edge(a: number, b: number, sharpness: number): number {
@@ -249,97 +347,405 @@ function edge(a: number, b: number, sharpness: number): number {
   return x + y === 0 ? 0.5 : x / (x + y);
 }
 
-interface Streams {
-  possession: Rng;
-  chances: Rng;
-  shooters: Rng;
-  finishing: Rng;
-  penalties: Rng;
+function enterField(
+  state: MatchState,
+  player: SoccerPlayer,
+  slot: Position,
+): OnField {
+  const base = overallAt(
+    player.attributes,
+    slot,
+    state.config.skill.overallWeights,
+  );
+  const fitKind = positionFit(player, slot);
+  const fit = fitKind === "other" ? 0 : state.config.skill.positionFit[fitKind];
+  return { player, slot, base, fit, skill: base, skillTotal: 0 };
+}
+
+function report(state: MatchState, id: string) {
+  return state.reports[id] as MatchState["reports"][string];
+}
+
+/** Recomputes every on-field player's skill and the team's zone totals. */
+function refreshTeam(state: MatchState, team: TeamState): void {
+  const { tuning } = state;
+  const chemistry = chemistryBoostsByPlayer(
+    team.onField.map((p) => p.player.chemistryColor),
+    chemistryColorCount(PLAYERS_ON_FIELD),
+    state.config.chemistry,
+  );
+  const zones: Zones = { defence: 0, midfield: 0, attack: 0 };
+  team.onField.forEach((p, i) => {
+    const energy = report(state, p.player.id).energyNow;
+    const tiredness = tuning.fatiguePenalty * ((100 - energy) / 100);
+    p.skill = Math.max(
+      0,
+      p.base * (1 + p.fit + (chemistry[i] as number) - tiredness),
+    );
+    const z = state.zones[p.slot];
+    zones.defence += z.defence * p.skill;
+    zones.midfield += z.midfield * p.skill;
+    zones.attack += z.attack * p.skill;
+  });
+  team.zones = zones;
+}
+
+function keeperOf(team: TeamState): OnField | undefined {
+  return team.onField.find((p) => p.slot === "GK");
+}
+
+/** Takes a player off (sub, injury or red card); returns the slot they left. */
+function removeFromField(team: TeamState, id: string): Position {
+  const idx = team.onField.findIndex((p) => p.player.id === id);
+  const [gone] = team.onField.splice(idx, 1) as [OnField];
+  team.pastContributions.push({ slot: gone.slot, skillTotal: gone.skillTotal });
+  return gone.slot;
+}
+
+/** The bench player who would rate highest in `slot`. */
+function bestForSlot(
+  state: MatchState,
+  team: TeamState,
+  slot: Position,
+): SoccerPlayer | undefined {
+  let best: SoccerPlayer | undefined;
+  let bestScore = -1;
+  for (const p of team.bench) {
+    const candidate = enterField(state, p, slot);
+    const energy = report(state, p.id).energyNow;
+    const score = candidate.base * (1 + candidate.fit) * (energy / 100);
+    if (score > bestScore) {
+      best = p;
+      bestScore = score;
+    }
+  }
+  return best;
+}
+
+/** Whether a sub can be made now; opens a new window if this minute hasn't used one. */
+function canSub(
+  state: MatchState,
+  team: TeamState,
+  windowOpen: { value: boolean },
+): boolean {
+  if (team.subsUsed >= state.tuning.maxSubs) return false;
+  if (!windowOpen.value && team.windowsUsed >= state.tuning.maxSubWindows)
+    return false;
+  return true;
+}
+
+function makeSub(
+  state: MatchState,
+  team: TeamState,
+  outId: string,
+  inPlayer: SoccerPlayer,
+  minute: number,
+  reason: SubReason,
+  windowOpen: { value: boolean },
+): void {
+  const slot = removeFromField(team, outId);
+  team.bench = team.bench.filter((p) => p.id !== inPlayer.id);
+  team.onField.push(enterField(state, inPlayer, slot));
+  team.subsUsed++;
+  if (!windowOpen.value) {
+    team.windowsUsed++;
+    windowOpen.value = true;
+  }
+  state.events.push({
+    minute,
+    type: "sub",
+    side: team.side,
+    outId,
+    inId: inPlayer.id,
+    reason,
+  });
+}
+
+/** If the keeper has gone and nobody replaced them, the best outfield keeper goes in goal. */
+function ensureKeeper(
+  state: MatchState,
+  team: TeamState,
+  minute: number,
+): void {
+  if (keeperOf(team) || team.onField.length === 0) return;
+  let pick = team.onField[0] as OnField;
+  for (const p of team.onField) {
+    if (p.player.attributes.goalkeeping > pick.player.attributes.goalkeeping)
+      pick = p;
+  }
+  team.pastContributions.push({ slot: pick.slot, skillTotal: pick.skillTotal });
+  const replacement = enterField(state, pick.player, "GK");
+  team.onField[team.onField.indexOf(pick)] = replacement;
+  state.events.push({
+    minute,
+    type: "position_change",
+    side: team.side,
+    playerId: pick.player.id,
+    slot: "GK",
+  });
+}
+
+/** Sub plan first, then forced and tiredness subs (D45). */
+function handleSubs(
+  state: MatchState,
+  team: TeamState,
+  minute: number,
+  forced: string[],
+): void {
+  const { tuning } = state;
+  const windowOpen = { value: false };
+
+  // 1. The manager's plan.
+  (team.team.subPlan ?? []).forEach((plan, i) => {
+    if (team.planDone.has(i) || minute < plan.minute) return;
+    const out = team.onField.find((p) => p.player.id === plan.outId);
+    const sub = team.bench.find((p) => p.id === plan.inId);
+    if (!out || !sub) {
+      team.planDone.add(i); // Player already off, sent off or used: skip this line.
+      return;
+    }
+    if (!canSub(state, team, windowOpen)) return;
+    team.planDone.add(i);
+    makeSub(state, team, plan.outId, sub, minute, "plan", windowOpen);
+  });
+
+  // 2. Players who must come off (injured).
+  for (const id of forced) {
+    if (!team.onField.some((p) => p.player.id === id)) continue;
+    const slot = team.onField.find((p) => p.player.id === id)?.slot as Position;
+    const sub = canSub(state, team, windowOpen)
+      ? bestForSlot(state, team, slot)
+      : undefined;
+    if (sub) {
+      makeSub(
+        state,
+        team,
+        id,
+        sub,
+        minute,
+        slot === "GK" ? "keeper" : "injury",
+        windowOpen,
+      );
+    } else {
+      removeFromField(team, id);
+    }
+  }
+
+  // 3. Tired players, most tired first.
+  if (minute >= tuning.autoSubFromMinute) {
+    const tired = team.onField
+      .filter(
+        (p) => report(state, p.player.id).energyNow < tuning.autoSubEnergy,
+      )
+      .sort(
+        (a, b) =>
+          report(state, a.player.id).energyNow -
+          report(state, b.player.id).energyNow,
+      );
+    for (const p of tired) {
+      if (!canSub(state, team, windowOpen)) break;
+      const sub = bestForSlot(state, team, p.slot);
+      if (!sub) break;
+      // Only worth it if the substitute would actually play better.
+      const fresh = enterField(state, sub, p.slot);
+      const subEnergy = report(state, sub.id).energyNow;
+      const nowTired =
+        p.base *
+        (1 +
+          p.fit -
+          tuning.fatiguePenalty *
+            ((100 - report(state, p.player.id).energyNow) / 100));
+      const incoming =
+        fresh.base *
+        (1 + fresh.fit - tuning.fatiguePenalty * ((100 - subEnergy) / 100));
+      if (incoming <= nowTired) continue;
+      makeSub(state, team, p.player.id, sub, minute, "tired", windowOpen);
+    }
+  }
+
+  ensureKeeper(state, team, minute);
+}
+
+/** Tiredness, cards and injuries at the end of a phase. */
+function betweenPhases(
+  state: MatchState,
+  minute: number,
+  phaseMinutes: number,
+  defending: Side,
+): void {
+  const { tuning, rng } = state;
+  for (const side of ["home", "away"] as const) {
+    const team = state.teams[side];
+    const forced: string[] = [];
+
+    for (const p of team.onField) {
+      const r = report(state, p.player.id);
+      r.minutes += phaseMinutes;
+      p.skillTotal += p.skill;
+      const stamina = p.player.attributes.stamina;
+      const keeperFactor = p.slot === "GK" ? tuning.keeperFatigueFactor : 1;
+      r.energyNow = Math.max(
+        0,
+        r.energyNow -
+          tuning.fatiguePerPhase * (1.5 - stamina / 100) * keeperFactor,
+      );
+      // Tired players get hurt more often (up to 3× when exhausted).
+      const risk = tuning.injuryRate * (1 + (2 * (100 - r.energyNow)) / 100);
+      if (rng.injuries.chance(risk)) {
+        r.injuryWeeks = rng.injuries.int(1, 4);
+        forced.push(p.player.id);
+        state.events.push({
+          minute,
+          type: "injury",
+          side,
+          playerId: p.player.id,
+          weeks: r.injuryWeeks,
+        });
+      }
+    }
+
+    // Fouls come from the side without the ball. Players already on a
+    // yellow play more carefully.
+    if (side === defending && team.onField.length > 0) {
+      const weights = team.onField.map((p) => {
+        const base =
+          p.slot === "GK" ? 0.05 : 0.6 + (state.zones[p.slot] as Zones).defence;
+        return report(state, p.player.id).yellowCards > 0 ? base * 0.25 : base;
+      });
+      if (rng.cards.chance(tuning.redRate)) {
+        const p = team.onField[rng.cards.weightedIndex(weights)] as OnField;
+        sendOff(state, team, p.player.id, minute, false);
+      } else if (rng.cards.chance(tuning.yellowRate)) {
+        const p = team.onField[rng.cards.weightedIndex(weights)] as OnField;
+        const r = report(state, p.player.id);
+        r.yellowCards++;
+        state.events.push({
+          minute,
+          type: "yellow",
+          side,
+          playerId: p.player.id,
+        });
+        if (r.yellowCards === 2)
+          sendOff(state, team, p.player.id, minute, true);
+      }
+    }
+
+    handleSubs(state, team, minute, forced);
+    refreshTeam(state, team);
+  }
+}
+
+function sendOff(
+  state: MatchState,
+  team: TeamState,
+  id: string,
+  minute: number,
+  secondYellow: boolean,
+): void {
+  report(state, id).redCard = true;
+  state.events.push({
+    minute,
+    type: "red",
+    side: team.side,
+    playerId: id,
+    secondYellow,
+  });
+  removeFromField(team, id);
+}
+
+/** One attack: maybe a chance, maybe a shot, maybe a goal. */
+function playAttack(state: MatchState, side: Side, minute: number): void {
+  const { tuning, teams, rng, events, score, tally } = state;
+  const att = teams[side];
+  const def = teams[other(side)];
+  const pChance = Math.min(
+    0.95,
+    tuning.chanceRate *
+      2 *
+      edge(
+        att.zones.attack,
+        def.zones.defence * state.baseline,
+        tuning.chanceSharpness,
+      ),
+  );
+  if (!rng.chances.chance(pChance)) return;
+  events.push({ minute, type: "chance", side });
+
+  const shooters = att.onField.filter((p) => p.slot !== "GK");
+  if (shooters.length === 0) return;
+  const weights = shooters.map(
+    (p) => (state.zones[p.slot] as Zones).attack * p.player.attributes.shooting,
+  );
+  const shooter = shooters[rng.shooters.weightedIndex(weights)] as OnField;
+  const playerId = shooter.player.id;
+  if (!rng.finishing.chance(tuning.shotRate)) {
+    events.push({ minute, type: "missed", side, playerId });
+    return;
+  }
+  tally.shots[side]++;
+  const keeper = keeperOf(def);
+  const finishing =
+    shooter.skill * (0.5 + shooter.player.attributes.shooting / 198);
+  const pGoal = Math.min(
+    0.95,
+    tuning.goalRate * 2 * edge(finishing, keeper ? keeper.skill : 0, 1),
+  );
+  if (rng.finishing.chance(pGoal)) {
+    score[side]++;
+    events.push({ minute, type: "goal", side, playerId });
+  } else {
+    events.push({ minute, type: "saved", side, playerId });
+  }
 }
 
 function playPhases(
-  teams: Record<Side, TeamState>,
-  templates: PositionTemplates,
-  tuning: MatchTuning,
-  rng: Streams,
+  state: MatchState,
   count: number,
   startMinute: number,
   minutes: number,
-  score: Record<Side, number>,
-  tally: { possession: Record<Side, number>; shots: Record<Side, number> },
-  events: SoccerEvent[],
 ): void {
-  const baseline = referenceAttackToDefence(templates, tuning.thirdRows);
-  const homePossession = edge(
-    teams.home.midfield,
-    teams.away.midfield,
-    tuning.possessionSharpness,
-  );
+  const { tuning, teams, rng, tally } = state;
   for (let i = 0; i < count; i++) {
     const minute =
       startMinute +
       Math.min(minutes, Math.floor(((i + 0.5) * minutes) / count) + 1);
+    const homePossession = edge(
+      teams.home.zones.midfield,
+      teams.away.zones.midfield,
+      tuning.possessionSharpness,
+    );
     const side: Side = rng.possession.chance(homePossession) ? "home" : "away";
     tally.possession[side]++;
-    const att = teams[side];
-    const def = teams[other(side)];
-
-    const pChance = Math.min(
-      0.95,
-      tuning.chanceRate *
-        2 *
-        edge(att.attack, def.defence * baseline, tuning.chanceSharpness),
-    );
-    if (!rng.chances.chance(pChance)) continue;
-    events.push({ minute, type: "chance", side });
-
-    const shooter =
-      att.shooters[
-        rng.shooters.weightedIndex(att.shooters.map((s) => s.weight))
-      ];
-    /* v8 ignore next */
-    if (!shooter) continue;
-    if (!rng.finishing.chance(tuning.shotRate)) {
-      events.push({ minute, type: "missed", side, playerId: shooter.id });
-      continue;
-    }
-    tally.shots[side]++;
-    const pGoal = Math.min(
-      0.95,
-      tuning.goalRate * 2 * edge(shooter.skill, def.keeper.skill, 1),
-    );
-    if (rng.finishing.chance(pGoal)) {
-      score[side]++;
-      events.push({ minute, type: "goal", side, playerId: shooter.id });
-    } else {
-      events.push({ minute, type: "saved", side, playerId: shooter.id });
-    }
+    playAttack(state, side, minute);
+    betweenPhases(state, minute, minutes / count, other(side));
   }
 }
 
-function shootout(
-  teams: Record<Side, TeamState>,
-  tuning: MatchTuning,
-  rng: Rng,
-  events: SoccerEvent[],
-): Record<Side, number> {
+function shootout(state: MatchState): Record<Side, number> {
+  const { tuning, teams, events } = state;
+  const rng = state.rng.penalties;
   const pens: Record<Side, number> = { home: 0, away: 0 };
   const takers = (side: Side) =>
-    [...teams[side].shooters].sort(
-      (a, b) => b.skill - a.skill || a.id.localeCompare(b.id),
-    );
-  const order: Record<Side, TeamState["shooters"]> = {
+    teams[side].onField
+      .filter((p) => p.slot !== "GK")
+      .map((p) => ({
+        id: p.player.id,
+        skill: p.skill * (0.5 + p.player.attributes.shooting / 198),
+      }))
+      .sort((a, b) => b.skill - a.skill || a.id.localeCompare(b.id));
+  const order: Record<Side, { id: string; skill: number }[]> = {
     home: takers("home"),
     away: takers("away"),
   };
   const kick = (side: Side, n: number) => {
     const list = order[side];
-    const taker = list[n % list.length] as TeamState["shooters"][number];
+    const taker = list[n % list.length] as { id: string; skill: number };
+    const keeper = keeperOf(teams[other(side)]);
     const p = Math.min(
       0.98,
       tuning.penaltyRate *
         2 *
-        edge(taker.skill, teams[other(side)].keeper.skill, 0.5),
+        edge(taker.skill, keeper ? keeper.skill : 0, 0.5),
     );
     const scored = rng.chance(p);
     if (scored) pens[side]++;
@@ -373,63 +779,115 @@ function shootout(
   return pens;
 }
 
+function prepareTeam(
+  state: MatchState,
+  team: SoccerTeam,
+  side: Side,
+): TeamState {
+  if (team.lineup.length !== PLAYERS_ON_FIELD) {
+    throw new RangeError(
+      `Team ${team.id} has ${team.lineup.length} starters, expected 11`,
+    );
+  }
+  if (!team.lineup.some((s) => s.slot === "GK")) {
+    throw new RangeError(`Team ${team.id} has no goalkeeper`);
+  }
+  const everyone = [...team.lineup.map((s) => s.player), ...(team.bench ?? [])];
+  for (const p of everyone) {
+    if (state.reports[p.id])
+      throw new RangeError(`Player ${p.id} appears more than once`);
+    const fitness = team.fitness?.[p.id] ?? 100;
+    state.reports[p.id] = {
+      side,
+      minutes: 0,
+      energy: fitness,
+      energyNow: fitness,
+      yellowCards: 0,
+      redCard: false,
+      injuryWeeks: 0,
+    };
+  }
+  const t: TeamState = {
+    side,
+    team,
+    onField: team.lineup.map(({ player, slot }) =>
+      enterField(state, player, slot),
+    ),
+    bench: [...(team.bench ?? [])],
+    subsUsed: 0,
+    windowsUsed: 0,
+    planDone: new Set(),
+    pastContributions: [],
+    zones: { defence: 0, midfield: 0, attack: 0 },
+  };
+  refreshTeam(state, t);
+  return t;
+}
+
+/** Average influence over the match, from everyone who played in each slot. */
+function teamMap(
+  state: MatchState,
+  team: TeamState,
+  phases: number,
+): InfluenceMap {
+  const map = createInfluenceMap(SOCCER_GRID);
+  const parts = [
+    ...team.pastContributions,
+    ...team.onField.map((p) => ({ slot: p.slot, skillTotal: p.skillTotal })),
+  ];
+  for (const { slot, skillTotal } of parts) {
+    addScaled(map, state.config.templates[slot], skillTotal / phases);
+  }
+  return map;
+}
+
 /** Plays one match. Pure and deterministic for a given input and seed. */
 export function simulateMatch(
   input: MatchInput<SoccerTeam, SoccerConfig>,
   seed: Seed,
 ): MatchOutput<SoccerEvent, SoccerResult> {
   const { config } = input;
-  const { tuning } = config;
   const root = createRng(seed);
-  const rng: Streams = {
-    possession: root.fork("possession"),
-    chances: root.fork("chances"),
-    shooters: root.fork("shooters"),
-    finishing: root.fork("finishing"),
-    penalties: root.fork("penalties"),
-  };
-  const teams: Record<Side, TeamState> = {
-    home: prepareTeam(input.home, "home", config),
-    away: prepareTeam(input.away, "away", config),
-  };
-  const score: Record<Side, number> = { home: 0, away: 0 };
-  const tally = {
-    possession: { home: 0, away: 0 },
-    shots: { home: 0, away: 0 },
-  };
-  const events: SoccerEvent[] = [];
-
-  playPhases(
-    teams,
+  const { zones, baseline } = templateZones(
     config.templates,
-    tuning,
-    rng,
-    tuning.phases,
-    0,
-    90,
-    score,
-    tally,
-    events,
+    config.tuning.thirdRows,
   );
+  const state = {
+    config,
+    tuning: config.tuning,
+    reports: {},
+    zones,
+    baseline,
+    score: { home: 0, away: 0 },
+    tally: { possession: { home: 0, away: 0 }, shots: { home: 0, away: 0 } },
+    events: [],
+    rng: {
+      possession: root.fork("possession"),
+      chances: root.fork("chances"),
+      shooters: root.fork("shooters"),
+      finishing: root.fork("finishing"),
+      penalties: root.fork("penalties"),
+      injuries: root.fork("injuries"),
+      cards: root.fork("cards"),
+    },
+  } as unknown as MatchState;
+  state.teams = {
+    home: prepareTeam(state, input.home, "home"),
+    away: prepareTeam(state, input.away, "away"),
+  };
+  const { score, tally, events, tuning } = state;
+
+  playPhases(state, tuning.phases, 0, 90);
+  let phasesPlayed = tuning.phases;
 
   let decidedBy: SoccerResult["decidedBy"];
   let penalties: SoccerResult["penalties"];
   if (input.mode === "knockout" && score.home === score.away) {
     events.push({ minute: 90, type: "extra_time" });
-    playPhases(
-      teams,
-      config.templates,
-      tuning,
-      rng,
-      tuning.extraTimePhases,
-      90,
-      30,
-      score,
-      tally,
-      events,
-    );
+    playPhases(state, tuning.extraTimePhases, 90, 30);
+    phasesPlayed += tuning.extraTimePhases;
     if (score.home === score.away) {
-      penalties = shootout(teams, tuning, rng.penalties, events);
+      penalties = shootout(state);
       decidedBy = "penalties";
     } else {
       decidedBy = "extra_time";
@@ -449,6 +907,16 @@ export function simulateMatch(
             : "away"
           : null;
 
+  const players: Record<string, PlayerMatchReport> = {};
+  for (const [id, r] of Object.entries(state.reports)) {
+    const { energyNow, ...rest } = r;
+    players[id] = {
+      ...rest,
+      minutes: Math.round(rest.minutes),
+      energy: Math.round(energyNow * 10) / 10,
+    };
+  }
+
   const result: SoccerResult = {
     score,
     winner,
@@ -457,6 +925,7 @@ export function simulateMatch(
       away: tally.possession.away / totalPhases,
     },
     shots: tally.shots,
+    players,
   };
   if (decidedBy) result.decidedBy = decidedBy;
   if (penalties) result.penalties = penalties;
@@ -465,6 +934,9 @@ export function simulateMatch(
     result,
     events,
     // Both maps in the home team's frame, ready to overlay on one pitch.
-    influence: { home: teams.home.map, away: flipMap(teams.away.map) },
+    influence: {
+      home: teamMap(state, state.teams.home, phasesPlayed),
+      away: flipMap(teamMap(state, state.teams.away, phasesPlayed)),
+    },
   };
 }

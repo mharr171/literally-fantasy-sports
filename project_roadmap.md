@@ -1,6 +1,6 @@
 # LiterallyFantasySports — Project Roadmap
 
-Nov 2, 2026 · @Gary · Last updated: Nov 4, 2026 (D79)
+Nov 2, 2026 · @Gary · Last updated: Nov 4, 2026 (D81)
 
 ## Review progress
 
@@ -100,6 +100,8 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D77 | Nov 4, 2026 | Soccer positions: GK; CB, LB, RB; DM, CM, AM, LM, RM; LW, RW, ST (12 positions: wide midfielders and wingers are separate) | M1 |
 | D78 | Nov 4, 2026 | Soccer attributes, each 1–99: pace, passing, shooting, defending, physical, stamina, plus goalkeeping (GK only). Overall is a position-weighted average, tuned in admin | M1 |
 | D79 | Nov 4, 2026 | A chemistry colour group needs at least 2 players on the field to earn any boost; smaller groups don't rank. Refines D43/D52 | M1 |
+| D80 | Nov 4, 2026 | No home advantage for now: every match is played as if on neutral ground. Can be added later as a tuning value | M1 |
+| D81 | Nov 4, 2026 | Soccer match-day squad rules: up to 5 subs in up to 3 stoppages; the manager's sub plan runs first, then automatic subs for injuries and for tiredness (from 55'); red cards are never replaced; if the keeper goes with no subs left, the best outfield keeper moves in goal. Starting rates tuned with the harness (≈3.6 yellows, 0.13 reds, 0.33 injuries and 8 subs per match) | M1 |
 
 ## 1. Vision & goals
 

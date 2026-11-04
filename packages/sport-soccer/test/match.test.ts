@@ -15,6 +15,8 @@ const config = defaultSoccerConfig();
 const rng = createRng("fixtures");
 const teamA = generateTeam(rng, "a", 65);
 const teamB = generateTeam(rng, "b", 60);
+// An equally rated opponent with different player ids, for even knockout ties.
+const twin = generateTeam(createRng("twin"), "twin", 65);
 
 const play = (
   seed: string,
@@ -73,7 +75,7 @@ describe("simulateMatch", () => {
   it("always finds a winner in knockout matches (D30)", () => {
     const seen = new Set<string | undefined>();
     for (let i = 0; i < 300; i++) {
-      const { result, events } = play(`ko-${i}`, "knockout", teamA, teamA);
+      const { result, events } = play(`ko-${i}`, "knockout", teamA, twin);
       expect(result.winner).not.toBeNull();
       seen.add(result.decidedBy);
       if (result.decidedBy === "penalties") {
@@ -97,7 +99,7 @@ describe("simulateMatch", () => {
     let early = false;
     let suddenDeath = false;
     for (let i = 0; i < 400 && !(early && suddenDeath); i++) {
-      const { result, events } = play(`pens-${i}`, "knockout", teamA, teamA);
+      const { result, events } = play(`pens-${i}`, "knockout", teamA, twin);
       if (result.decidedBy !== "penalties") continue;
       const kicks = events.filter(
         (e): e is Extract<SoccerEvent, { type: "penalty" }> =>
