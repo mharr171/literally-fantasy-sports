@@ -1,10 +1,10 @@
 # LiterallyFantasySports — Project Roadmap
 
-Nov 2, 2026 · @Gary · Last updated: Nov 4, 2026 (D85)
+Nov 2, 2026 · @Gary · Last updated: Nov 4, 2026 (D121)
 
 ## Review progress
 
-The roadmap review is complete: all 8 steps are agreed. New decisions are added to the decision log as they are made. **M0 is done (`v0.1.0`). Now:** M1 Match engine.
+The roadmap review is complete: all 8 steps are agreed. New decisions are added to the decision log as they are made. **v1.0.0 is released (Nov 4, 2026). Now:** M7 Quality of life (`v1.1.0`). Gary's notes after playing v1 are recorded as D107–D121 and planned as M7–M11 in section 5.
 
 - [x] **Step 1: Vision & goals** (agreed Nov 2, 2026)
 - [x] **Step 2: Scope decisions** (agreed Nov 2, 2026)
@@ -28,7 +28,7 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D5 | Nov 2, 2026 | One account manages at most one team per sport | 1 |
 | D6 | Nov 2, 2026 | Progress in each sport can grant small bonuses that apply to every sport | 1 |
 | D7 | Nov 2, 2026 | Every sport visualizes players with heatmaps; each sport sets its own grid size (soccer stays 17×25) | 1 |
-| D8 | Nov 2, 2026 | Opponents are AI teams scaled to the player's Elo at season start, plus "ghost" teams saved from other players' finished seasons | 1 |
+| D8 | Nov 2, 2026 | Opponents are AI teams scaled to the player's Elo at season start, plus "ghost" teams saved from other players' finished seasons (replaced by the AI world, D113–D116) | 1 |
 | D9 | Nov 2, 2026 | Admin panel to adjust game settings live; season length varies by sport and league size | 1 |
 | D10 | Nov 2, 2026 | Generated player names are random but styled by nationality | 1 |
 | D11 | Nov 2, 2026 | Brand: LiterallyFantasySports at www.literallyfantasysports.com, one section per sport (e.g. `/soccer`) | 1 |
@@ -36,7 +36,7 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D13 | Nov 2, 2026 | $0 hosting: Vercel Hobby + Supabase free tier. Any paid service needs an ADR | 1 |
 | D14 | Nov 2, 2026 | Funds in v1: fixed amount per match played, plus bonuses for wins, playoff placement and championships | 2 |
 | D15 | Nov 2, 2026 | Soccer roster: 30 max; matchday squad of 22 (11 starters + 11 subs) | 2 |
-| D16 | Nov 2, 2026 | Soccer league: 8 teams, double round-robin (14 match weeks), then playoffs | 2 |
+| D16 | Nov 2, 2026 | Soccer league: 8 teams, double round-robin (14 match weeks), then playoffs (now 12 clubs, D115, D117) | 2 |
 | D17 | Nov 2, 2026 | 1 energy = 1 game week (your next scheduled match). Default 1 energy per 2 hours, max 3; adjustable in admin (refill changed by D93) | 2 |
 | D18 | Nov 2, 2026 | Seasons mark in-game time (one in-game year). Roster and Elo carry over; nothing resets | 2 |
 | D19 | Nov 2, 2026 | Per-sport leaderboard of saved season-end entries, ranked by Elo, then by that season's stats | 2 |
@@ -50,10 +50,10 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D27 | Nov 2, 2026 | Sentry (free) for error tracking and Vercel Web Analytics (free) for page views, both added in M6 before launch (skipped for now, D104) | 3 |
 | D28 | Nov 2, 2026 | Two Supabase cloud projects: `lfs-prod` (live site) and `lfs-dev` (development and preview deploys). No Docker on Gary's PC. CI creates a throwaway database on each PR to test migrations | 3 |
 | D29 | Nov 2, 2026 | All sports share one database (rows carry a `sport` column). A new sport is built on a Git branch as a new `packages/sport-*` folder, tested against `lfs-dev`; no extra Supabase project needed | 3 |
-| D30 | Nov 3, 2026 | Playoffs: top 4 of 8, single-match ties; draws go to extra time, then penalties | 4 |
+| D30 | Nov 3, 2026 | Playoffs: top 4 of 8, single-match ties; draws go to extra time, then penalties (now top 7 plus a play-in, D117) | 4 |
 | D31 | Nov 3, 2026 | New teams start with 22 players; packs grow the roster toward 30 | 4 |
-| D32 | Nov 3, 2026 | AI teams in a league are spread above and below the manager's Elo at season start | 4 |
-| D33 | Nov 3, 2026 | At most 1 ghost per manager in a league. A manager's own ghost may appear in their own league under a disguised name | 4 |
+| D32 | Nov 3, 2026 | AI teams in a league are spread above and below the manager's Elo at season start (replaced by D113) | 4 |
+| D33 | Nov 3, 2026 | At most 1 ghost per manager in a league. A manager's own ghost may appear in their own league under a disguised name (own ghost now excluded, D115) | 4 |
 | D34 | Nov 3, 2026 | Players have several attributes per sport; an overall rating is calculated from them | 4 |
 | D35 | Nov 3, 2026 | Players age at season end: young players grow toward potential, older players decline and eventually retire | 4 |
 | D36 | Nov 3, 2026 | The bench matters: automatic substitutions for fatigue and injuries, plus other squad mechanics (see Step 4 questions) | 4 |
@@ -109,11 +109,11 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D86 | Nov 4, 2026 | Initial scouting: a manager opens starter packs (one at a time or all at once), then picks their 22–30 from every opened player together, not pack by pack. Pack seeds are hidden from managers, since a seed reveals true potential | M2 |
 | D87 | Nov 4, 2026 | Bought packs (proposed defaults, Gary approves): Basic 5,000 (overall 40–49 25%, 50–59 50%, 60–69 20%, 70–79 5%), Silver 12,000 (50–59 35%, 60–69 45%, 70–79 17%, 80–89 3%), Gold 30,000 (60–69 40%, 70–79 45%, 80–89 13%, 90–99 2%). Position-focused packs cost 20% more. A bought pack opens at once and must be sorted (keep or bulk-sell each player) before buying another. New teams start with 10,000 funds. Release and resale stop at 22 players; starter-pack players can be released but not sold | M2 |
 | D88 | Nov 4, 2026 | Matchday squad: the manager picks a formation preset (4-4-2, 4-3-3, 4-2-3-1, 4-1-4-1, 3-5-2, 5-3-2), drags 11 starters into its slots and 11 substitutes onto the bench, and can plan up to 5 subs in up to 3 different minutes. One saved squad per team; it must be fixed if a picked player leaves. Formations only set positions; tactics and mentality stay in the backlog | M2 |
-| D89 | Nov 4, 2026 | Season defaults (proposed, Gary approves): playoff bonuses 2,000 for reaching the playoffs, +3,000 for reaching the final, +5,000 for winning it (a champion earns 10,000 in bonuses on top of match pay). The 7 AI opponents' ratings are spread evenly from 300 below to 300 above the manager's Elo at season start. An AI team's starters average overall 55 at Elo 1500, +1 per 20 Elo (1700 → 65, 1300 → 45), substitutes 4 lower. League tables rank by points (3/1/0), goal difference, goals scored, then wins | M3 |
+| D89 | Nov 4, 2026 | Season defaults (proposed, Gary approves): playoff bonuses 2,000 for reaching the playoffs, +3,000 for reaching the final, +5,000 for winning it (a champion earns 10,000 in bonuses on top of match pay). The 7 AI opponents' ratings are spread evenly from 300 below to 300 above the manager's Elo at season start. An AI team's starters average overall 55 at Elo 1500, +1 per 20 Elo (1700 → 65, 1300 → 45), substitutes 4 lower. League tables rank by points (3/1/0), goal difference, goals scored, then wins (AI spread and ratings replaced by D113; playoff bonuses to be reset for 8 clubs, D117) | M3 |
 | D90 | Nov 4, 2026 | Playing a season (M3): a "Play week" button plays the manager's match with their saved matchday squad and the rest of the league's matches at once; energy starts gating it in M4. AI clubs never share a place name. A season's seed (which decides every match) is hidden from managers. The next season opens once season-end processing (ageing, retirement, youth intake) exists | M3 |
 | D91 | Nov 4, 2026 | Season end (proposed defaults, Gary approves): players up to 27 close 25–60% of the gap to their true potential each year (at least 1 point while below it, never past it); 28–30 move −1 to +1; from 31 they lose 1–3 a year (31–32), 2–4 (33–34), then 3–6. Retirement chance at the new age: 33 10%, 34 20%, 35 40%, 36 60%, 37+ 85%. Youth intake: 22 prospects aged 16–18, overall around 45 (35–58), always including 2 keepers. Worth is recalculated after ageing. The manager ends the season, sees who improved, declined and retired, answers the intake, then starts the next season | M3 |
-| D92 | Nov 4, 2026 | Ghosts and leaderboard (proposed defaults, Gary approves): ending a season freezes the team as it finished (roster, matchday squad, Elo, league record, playoff result, game version, date) before ageing. A new league takes up to 4 ghosts within 300 Elo of the manager, the latest snapshot of each team and at most one per team, each in the AI place nearest its Elo; AI clubs fill the rest. The manager's own ghost can appear under a made-up name. If a ghost's team is deleted, its place plays on as an AI club. The leaderboard lists every finished season by Elo, then points, goal difference and goals; rosters stay private | M3 |
-| D93 | Nov 4, 2026 | Energy (Gary): 1 point back every 15 minutes, up to 3 (replaces D17's 1 per 2 hours). Admins can switch the energy requirement off server-wide for each sport, and change the refill time and maximum, on the Game settings page; changes apply at once, without a new settings version. Every played week costs 1 energy, including playoff rounds the manager isn't in | M4 |
+| D92 | Nov 4, 2026 | Ghosts and leaderboard (proposed defaults, Gary approves): ending a season freezes the team as it finished (roster, matchday squad, Elo, league record, playoff result, game version, date) before ageing. A new league takes up to 4 ghosts within 300 Elo of the manager, the latest snapshot of each team and at most one per team, each in the AI place nearest its Elo; AI clubs fill the rest. The manager's own ghost can appear under a made-up name. If a ghost's team is deleted, its place plays on as an AI club. The leaderboard lists every finished season by Elo, then points, goal difference and goals; rosters stay private (rosters now visible, D111; ghost rules changed by D115, D116) | M3 |
+| D93 | Nov 4, 2026 | Energy (Gary): 1 point back every 15 minutes, up to 3 (replaces D17's 1 per 2 hours). Admins can switch the energy requirement off server-wide for each sport, and change the refill time and maximum, on the Game settings page; changes apply at once, without a new settings version. Every played week costs 1 energy, including playoff rounds the manager isn't in (maximum raised to 6, D118) | M4 |
 | D94 | Nov 4, 2026 | Player condition between game weeks (proposed defaults, Gary approves): match fitness carries over and recovers 20 a week, up to 100 (a full match costs about 25, so an unrotated 11 starts week 8 at about 71). Injuries count down one game week at a time. A red card bans the player for 1 match; every 5th yellow card in a season bans them for 1 match. Unavailable players are swapped out automatically for the best fit player (bench first, then the rest of the roster), and the Season page says who. Each new season starts fit with no bans or cards; injuries carry over | M4 |
 | D95 | Nov 4, 2026 | Admin testing tools (Gary): admins can refill a team's energy, add funds, heal its squad, play weeks ahead without energy, or delete a team so its manager starts over. Every use is written to an admin action log that admins can read | M4 |
 | D96 | Nov 4, 2026 | Form and morale (proposed defaults, Gary approves): each player gets a simple 1–10 match rating (6 base, +1 a goal, +0.5 win / −0.5 loss, −0.5 a yellow, −2 a red; cameos under 30 minutes count half). Form (−1 to 1) keeps 60% of its old value and takes 40% from the latest rating, and fades by 20% a week when the player doesn't play. Team morale (−1 to 1) keeps 70% and adds +0.3 for a win or −0.3 for a loss. In matches, form changes a player's skill by up to ±5% and morale by up to ±3% (±8% at most): an even team at +8% wins about 43% instead of 36% | M4 |
@@ -127,10 +127,25 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D104 | Nov 4, 2026 | Sentry error tracking and Vercel Web Analytics are skipped for now (Gary): with a personal project and a handful of players, Vercel's own logs and a message from a friend are enough. Either can be added later without other changes (D27) | M6 |
 | D105 | Nov 4, 2026 | M3 and M6 are done (Gary): onboarding checklist, error and empty pages, What's new and the README are in, so v1.0.0 can ship. Inviting friends (M3's alpha, M6's "a friend can sign up and play without help") is welcome but no longer a gate, since this is mainly a personal project. Next is the post-MVP backlog (section 6) | M6 |
 | D106 | Nov 4, 2026 | The end of M6 ships as `v1.0.0` (D76): release-please only bumps the minor version below 1.0, so the commit that closes M6 carries a `Release-As: 1.0.0` footer. After that, features bump the minor version and fixes the patch as usual | M6 |
+| D107 | Nov 4, 2026 | Club colors (Gary): when naming a club, the manager picks 2–3 club colors, used across the UI to make each club feel personal. Display only, completely separate from chemistry colors. Can be changed later from the team page (proposed) | M7 |
+| D108 | Nov 4, 2026 | Scouting table (Gary): all selectable players from every opened pack (starter or bought, one or many) appear in one table with filters and sorting by primary and secondary position, chemistry color, age, overall and potential floor and ceiling (the shown range, never the hidden value). Chemistry colors are always shown | M7 |
+| D109 | Nov 4, 2026 | Roster (Gary): the roster table is sortable and marks who is in the current matchday squad, as a starter or on the bench | M7 |
+| D110 | Nov 4, 2026 | Squad builder (Gary): a "Rotated squad" button picks a fresh 22 (auto-pick from D97, weighted much more toward fitness, resting tired starters), and a total squad score is shown for the current selection | M7 |
+| D111 | Nov 4, 2026 | Viewing other clubs (Gary): any club in your league can be clicked to see its roster, score and chemistry colors as percentages. Rosters are visible everywhere, including leaderboard entries and ghosts (players are generated, so no personal data). The privacy policy gains a line saying rosters and lineups are visible to other players. Replaces D92's private rosters | M7 |
+| D112 | Nov 4, 2026 | Heatmaps (Gary): Claude Code generates 3 starting variants for each of the 12 positions, which Gary then adjusts in the template editor. When a formation has two players in the same position (ST, AM, CM, DM, CB), its slots are marked left and right (e.g. LCB and RCB) and each player uses a left or right version of their heatmap. The player card still shows the base position (CB). Three in one position (e.g. 3 CB) use left, default and right (proposed) | M8 |
+| D113 | Nov 4, 2026 | AI world (Gary): a persistent pool of AI clubs (250 to start, adjustable in admin) replaces AI teams generated to match each manager's Elo (D8, D32, D89's AI spread). AI clubs run like real teams: ageing, retirement, youth intake, packs, releases and squad picks, through an AI manager module with varied personalities. To anyone but admins they are indistinguishable from real clubs: names, club colors, manager display names, leaderboard entries. Their Elo changes only through their own results | M9 |
+| D114 | Nov 4, 2026 | AI pace (Gary): scheduled GitHub Actions runs several times a day; in each run every AI club has a chance to spend some or all of its energy. Roughly human speed, some slower and some faster: activity profiles default to about 0.5, 1 and 2 seasons a day (proposed defaults, adjustable in admin) | M9 |
+| D115 | Nov 4, 2026 | Leagues (Gary): 12 clubs, the manager plus the 11 clubs nearest their Elo at season start. AI clubs are cloned as they are at that moment; real players take part through their best ghost (D116). A manager's own ghost never appears in their league (replaces D33). Opponents are frozen clones for the whole season: later changes to the real clubs (roster, Elo) never affect it. Replaces D16's 8 teams | M9 |
+| D116 | Nov 4, 2026 | Ghosts (Gary): each real player has one ghost per sport, from their best season by Elo. At season end it is replaced only if the club's Elo is now higher than the ghost's. Frozen as the team finished, before ageing (as D92) | M9 |
+| D117 | Nov 4, 2026 | Season shape (Gary): 22 weeks of double round-robin, then a play-in week where 8th plays 9th, then an 8-club bracket (quarterfinals, semifinals, final): 26 weeks in all. The play-in week costs no energy for clubs that finish 7th or higher; they skip it and get two weeks of recovery before the quarterfinals. Fixed bracket: 1 v play-in winner, 2 v 7, 3 v 6, 4 v 5 (proposed). Playoff bonuses (D89) are reset for the 8-club bracket (proposed values to come). Replaces D30's top 4 | M9 |
+| D118 | Nov 4, 2026 | Energy maximum raised to 6 (Gary); refill stays 1 point every 15 minutes (D93) | M7 |
+| D119 | Nov 4, 2026 | Color matchups (Gary): each chemistry color is strong against some colors and weak against others, all balanced (soccer's 5 colors: each beats 2 and loses to 2). Matchups count at team level (each team's dominant and second colors) and between individual players on the field: stronger individual matchups raise a team's influence in that area of the pitch. Stacks with the chemistry boost; strengths are tuning values in admin, set with the harness. Baseball's 4 colors can't be fully balanced and are settled when baseball is built | M10 |
+| D120 | Nov 4, 2026 | Data kept (Gary), to stay within Supabase's free 500 MB and keep backups small. Forever: a one-line record per club per season (place, W/D/L, goals, Elo before and after, playoff result), one leaderboard row per season (split from the ghost snapshot), each real player's best ghost, and a career record for every retired player (seasons, appearances, goals, best overall, clubs). Current and previous season: the manager's own fixtures in full with replays; scores only for the rest of the league. Older seasons keep each match's summary (score, possession, shots, goals, cards, injuries) but no replay. Deleted when done: league clones once their season's replays go, pack rows once sorted. AI clubs never store replay details (admins can compute one on demand). Nightly backups cover only the permanent records and real players' data | M9 |
+| D121 | Nov 4, 2026 | Season history and hall of fame (Gary) move from the backlog (#10–#12) into M11: a page per past season, a hall of fame both global and per club (a club's all-time greats), and retirement tributes, all built on D120's permanent records | M11 |
 
 ## 1. Vision & goals
 
-LiterallyFantasySports is a browser-based sports management platform. You collect generated players, set lineups, and play seasons against AI teams and the saved teams of other managers. It starts with soccer and is built as a framework that later sports plug into.
+LiterallyFantasySports is a browser-based sports management platform. You collect generated players, set lineups, and play seasons in leagues of AI clubs and the saved teams of other managers. It starts with soccer and is built as a framework that later sports plug into.
 
 It is a spiritual successor to LiterallyFantasySports (Rails 5, 2018). It keeps that game's best ideas (positional heatmaps, chemistry colors, Elo, energy-gated matches) and fixes its main weakness: logic in hand-written, unrolled code in one 2,000-line controller.
 
@@ -160,7 +175,7 @@ v1 is a soccer web app with async play. You play seasons against a league of AI 
 | --- | --- | --- |
 | Platform | Web app, desktop-first, always mobile-friendly | Fastest to ship, easy to share a link |
 | Sign-in | Google or email magic link (Supabase Auth) | Least intrusive: no passwords |
-| Competition | Seasons vs AI teams (scaled to your Elo) and ghost teams (saved from finished seasons) | No scheduling or presence problems |
+| Competition | Seasons vs AI teams (scaled to your Elo) and ghost teams (saved from finished seasons); from M9, a persistent world of AI clubs (D113) | No scheduling or presence problems |
 | Stack | TypeScript full-stack | One language, strong portfolio signal |
 | Sim engine | Shared core + one module per sport; seeded and deterministic | Sports plug in; replays come free |
 | Budget | $0 beyond the domain | Vercel Hobby + Supabase free tier |
@@ -283,6 +298,7 @@ Examples (soccer): 5/3/2/1 → +25% and +10%. 4/4/2/1 → both 4s get +15%, the 
 
 - At season start, a league is built around your team: ghost teams from other managers' finished seasons, filled out with AI teams whose strength scales to your Elo at that moment.
 - When you finish a season, your roster, lineup and Elo are frozen into a ghost snapshot that can appear in other managers' leagues.
+- **From M9 (D113–D117):** a persistent world of 250 AI clubs plays its own seasons at human-like pace. A league is you plus frozen clones of the 11 clubs nearest your Elo (AI clubs as they are, real players as their best ghost, never your own). 22 weeks, a play-in (8th v 9th) and an 8-club bracket.
 
 **Core data model (draft)**
 
@@ -317,13 +333,23 @@ The engine (M1) comes before any game UI because everything else depends on it. 
 - [x] **M5 Admin and visualization (~4 wks) → `v0.6`:** *Released as `v0.6.0` on Nov 4, 2026.* full admin panel (two-factor sign-in on the back burner, D103), template variants (several templates per position, with checkboxes for which are available, D82), pitch heatmaps on result pages, play-by-play log, replay from the seed and stored config version. *Done when:* an admin changes a setting without a deploy, and every result page shows the replay.
 - [x] **M6 Polish and launch (~2 wks) → `v1.0.0`:** onboarding, empty and error states, in-game "What's new" page, README with screenshots (Sentry and Vercel Analytics skipped for now, D104). *Done when:* a friend can sign up and play without help.
 
-Total: about 22 weeks of effort.
+Total: about 22 weeks of effort (finished in two days).
+
+### After v1.0.0
+
+Gary's notes after playing v1 (D107–D121). Each milestone ends with Gary merging the release-please PR, which bumps the minor version. Sizes are rough.
+
+- [ ] **M7 Quality of life (S–M) → `v1.1.0`:** club colors at club creation (D107), one filterable, sortable scouting table for opened packs (D108), sortable roster with matchday markers (D109), rotated squad button and total squad score (D110), clickable clubs in your league with visible rosters and color percentages, plus the privacy policy line (D111), energy maximum 6 (D118). *Done when:* a new club has its colors across the UI, you can sort and filter a multi-pack opening, and you can inspect any club in your league.
+- [ ] **M8 Heatmaps (M) → `v1.2.0`:** 3 generated variants per position for Gary to adjust, left and right slots for shared positions in every formation preset (D112). *Done when:* every position offers 3 variants to new players, and a 4-4-2 shows distinct LCB/RCB, LCM/RCM and LST/RST heatmaps.
+- [ ] **M9 AI world and 12-club seasons (L, high-risk) → `v1.3.0`:** data retention first (D120), then the AI manager module and the pool of 250 clubs (D113), scheduled AI runs (D114), Elo-nearest 12-club leagues of frozen clones (D115), one best ghost per real player (D116), 26-week seasons with play-in and 8-club bracket (D117), new playoff bonuses. Needs an ADR. *Done when:* AI clubs play seasons on their own for a week, a new season draws the 11 nearest clubs, database size holds steady, and backups stay small.
+- [ ] **M10 Color matchups (M, high-risk) → `v1.4.0`:** team-level and individual matchups in the soccer engine (D119), tuned with the harness, strengths in admin. *Done when:* harness metrics stay on target and matchups visibly shift influence on the heatmap.
+- [ ] **M11 History and hall of fame (M) → `v1.5.0`:** season history pages, hall of fame global and per club, retirement tributes (D121). *Done when:* you can browse every past season and see your club's all-time greats.
 
 ## 6. Post-MVP backlog
 
 *[x] Agreed in Step 6 (D60–D64).*
 
-These wait until v1 is live. They are listed in build order; check each one off as it ships.
+These wait until M7–M11 ship. They are listed in build order; check each one off as it ships. Items 10–12 moved into M11 (D121).
 
 | Done | # | Feature | What it adds | Size | Depends on |
 | --- | --- | --- | --- | --- | --- |
@@ -336,9 +362,9 @@ These wait until v1 is live. They are listed in build order; check each one off 
 | [ ] | 7 | Training | Train between matches to grow toward potential (aging is already in v1) | M | v1 |
 | [ ] | 8 | Tactics | Formation presets, mentality that shifts influence maps | M | Engine |
 | [ ] | 9 | Achievements & notifications | Goals to chase, "your energy is full" alerts | S | v1 |
-| [ ] | 10 | Season history | A page per past season: standings, results, top players | S | v1 |
-| [ ] | 11 | Hall of fame | The best ghost teams of all time, per sport | S | Season history |
-| [ ] | 12 | Retirement tributes | A career summary when a player retires | S | v1 |
+| → M11 | 10 | Season history | A page per past season: standings, results, top players | S | v1 |
+| → M11 | 11 | Hall of fame | The best ghost teams of all time, per sport | S | Season history |
+| → M11 | 12 | Retirement tributes | A career summary when a player retires | S | v1 |
 | [ ] | 13 | Paintball (sport #3) | Speedball, 5-player, varied tournament formats | L | Baseball |
 | [ ] | 14 | Football (sport #4) | Offense, defense and special-teams units; play-by-play downs | L | Baseball |
 | [ ] | 15 | Basketball (sport #5) | 5 players, rotations, many short possessions | L | Baseball |
@@ -401,6 +427,10 @@ Work as if there were a team: every change goes through an issue, a branch, a PR
 | Too few ghosts at launch | AI teams fill empty league slots |
 | Free-tier limits (Supabase pausing, Vercel non-commercial, Resend email cap) | Keep-alive ping, no monetization, check usage before any public promotion |
 | Next.js conventions keep changing | Engine and database stay framework-free and portable |
+| The AI world fills Supabase's free 500 MB (thousands of fixtures a day) | Data tiers in D120; AI clubs store no replays; check database size weekly after M9 ships |
+| Backups grow too large for a GitHub repo | Back up only permanent records and real players' data (D120) |
+| GitHub disables scheduled workflows in public repos after 60 days without commits, stopping AI runs and the keep-alive ping | Watch for GitHub's warning email; any commit (or re-enabling the workflow) restarts them |
+| The AI world and color matchups change balance at the same time | Ship them as separate milestones (M9, M10), each retuned with the harness |
 
 **Open questions**
 
@@ -423,3 +453,6 @@ Work as if there were a team: every change goes through an issue, a branch, a PR
 - [x] Player worth formula and bulk resale percentage → D85
 - [ ] Cross-sport bonus size and cap → decide when the feature is built (D73)
 - [x] Template variants: each player gets one at generation and keeps it (D84)
+- [ ] Gary to approve the proposed defaults in D87, D89, D91, D92, D94 and D96
+- [ ] Playoff bonuses for the 8-club bracket (D117) → decide in M9
+- [ ] AI manager personalities: what kinds, and how they differ → decide at the start of M9
