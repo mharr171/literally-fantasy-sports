@@ -1,0 +1,27 @@
+{
+  "name": "@lfs/db",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "generate": "drizzle-kit generate",
+    "migrate": "drizzle-kit migrate",
+    "typecheck": "tsc --noEmit",
+    "test:db": "vitest run"
+  },
+  "dependencies": {
+    "drizzle-orm": "0.45.4"
+  },
+  "devDependencies": {
+    "@lfs/config": "workspace:*",
+    "@types/node": "^22.20.5",
+    "drizzle-kit": "0.31.11",
+    "postgres": "3.4.9",
+    "typescript": "5.9.3",
+    "vitest": "5.1.0"
+  }
+}
