@@ -520,6 +520,32 @@ export const sportSettings = pgTable(
   ],
 ).enableRLS();
 
+/**
+ * Every admin testing action (refill energy, add funds, play ahead, ...),
+ * so test boosts stay visible. Written by the server; admins can read it.
+ */
+export const adminActions = pgTable(
+  "admin_actions",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    adminId: uuid().references(() => authUsers.id, { onDelete: "set null" }),
+    /** The team acted on; kept as text so the log survives the team's deletion. */
+    teamId: uuid(),
+    teamName: text().notNull(),
+    action: text().notNull(),
+    details: jsonb().notNull().default({}),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("admin_actions_created").on(t.createdAt),
+    pgPolicy("admin_actions_select_admin", {
+      for: "select",
+      to: authenticatedRole,
+      using: isAdmin,
+    }),
+  ],
+).enableRLS();
+
 export type Team = typeof teams.$inferSelect;
 export type Player = typeof players.$inferSelect;
 export type Pack = typeof packs.$inferSelect;

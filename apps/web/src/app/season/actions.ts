@@ -1,44 +1,33 @@
 "use server";
 
-import { currentEnergy, playerWorth, spendEnergy } from "@lfs/core";
+import { playerWorth } from "@lfs/core";
 import {
-  availableSquad,
   DEFAULT_GHOST_SETTINGS,
   endOfSeason,
   FRESH,
-  isAvailable,
-  MANAGER_SLOT,
   newLeague,
-  nextCondition,
   type PlayerCondition,
-  playWeek,
-  rosterWarning,
   seasonReset,
   seasonStats,
   snapshotTeam,
-  squadProblems,
-  squadToTeam,
   youthIntake,
 } from "@lfs/sport-soccer";
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
+import { playOneWeek, readyToPlay } from "@/lib/play-week";
 import { playerRow } from "@/lib/scouting";
 import {
-  configFor,
   liveSoccerConfig,
   loadGhostCandidates,
-  loadGhostTeams,
   loadLatestSeason,
 } from "@/lib/season";
-import { loadEnergySettings } from "@/lib/sport-settings";
 import { createServiceClient } from "@/lib/supabase/service";
 import {
   loadAgingPlayers,
   loadMyTeam,
   loadRoster,
   loadSquad,
-  loadStarterPacks,
 } from "@/lib/team";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
@@ -48,29 +37,13 @@ const fail = (e: unknown): { ok: false; error: string } => ({
   error: e instanceof Error ? e.message : "Something went wrong.",
 });
 
-/**
- * Everything a match needs from the manager: a picked starting squad, a
- * roster of 22–30 (D54) and a valid matchday squad (D88).
- */
+/** The signed-in manager's team, ready to play (see readyToPlay). */
 async function readyTeam() {
   const user = await getCurrentUser();
   if (!user) throw new Error("Sign in first.");
   const team = await loadMyTeam(user.id);
   if (!team) throw new Error("Create your team first.");
-  const packs = await loadStarterPacks(team.id);
-  if (packs.some((p) => !p.resolved))
-    throw new Error("Pick your starting squad first.");
-  const [roster, squad] = await Promise.all([
-    loadRoster(team.id),
-    loadSquad(team.id),
-  ]);
-  const warning = rosterWarning(roster.length);
-  if (warning) throw new Error(warning);
-  if (!squad) throw new Error("Save a matchday squad first.");
-  const problems = squadProblems(squad, new Set(roster.map((p) => p.id)));
-  if (problems.length > 0)
-    throw new Error(`Fix your matchday squad first: ${problems.join(" ")}`);
-  return { team, roster, squad };
+  return readyToPlay(team);
 }
 
 /** Starts the team's first season: a league of 7 AI teams and 14 weeks (D16, D32). */
@@ -135,106 +108,11 @@ export async function startSeason(): Promise<ActionResult> {
  */
 export async function playNextWeek(): Promise<ActionResult> {
   try {
-    const { team, roster, squad } = await readyTeam();
-    const season = await loadLatestSeason(team.id);
-    if (!season || season.status === "finished")
-      throw new Error("Start a season first.");
-    // 1 energy = 1 game week (D17, D93), unless an admin has switched it off.
-    const energySettings = await loadEnergySettings("soccer");
-    const now = new Date();
-    const stored = {
-      energy: team.energy,
-      updatedAt: new Date(team.energyUpdatedAt),
-    };
-    let energyAfter: { energy: number; updatedAt: Date } | null = null;
-    if (energySettings.enabled) {
-      const current = currentEnergy(stored, now, energySettings);
-      if (current.energy < 1) {
-        const minutes = Math.max(
-          1,
-          Math.ceil(
-            ((current.nextAt as Date).getTime() - now.getTime()) / 60_000,
-          ),
-        );
-        throw new Error(
-          `Out of energy: the next point comes back in ${minutes} minute${minutes === 1 ? "" : "s"}.`,
-        );
-      }
-      energyAfter = spendEnergy(stored, now, energySettings);
-    }
-    const { config } = await configFor(season.configVersion);
-    // Injured and suspended players sit out; the best fit players step in.
-    const condition = new Map(roster.map((p) => [p.id, p.condition]));
-    const { squad: playing } = availableSquad(squad, roster, (id) =>
-      isAvailable(condition.get(id) ?? FRESH),
-    );
-    const elo = Object.fromEntries(season.slots.map((s) => [s.slot, s.elo]));
-    elo[MANAGER_SLOT] = team.elo;
-    const outcome = playWeek(
-      {
-        seed: season.seed,
-        status: season.status,
-        week: season.week,
-        slots: season.slots,
-        elo,
-        fixtures: season.fixtures,
-      },
-      {
-        team: {
-          ...squadToTeam(
-            team.id,
-            playing,
-            new Map(roster.map((p) => [p.id, p])),
-          ),
-          fitness: Object.fromEntries(
-            roster.map((p) => [p.id, p.condition.fitness]),
-          ),
-        },
-        names: new Map(roster.map((p) => [p.id, p.displayName])),
-        ghosts: await loadGhostTeams(season.slots),
-      },
-      config,
-    );
-    const { error } = await createServiceClient().rpc("record_week", {
-      p_season: season.id,
-      p_week: season.week,
-      p_results: outcome.played.map((p) => ({
-        id: p.id,
-        home_score: p.homeScore,
-        away_score: p.awayScore,
-        winner: p.winner,
-        summary: p.summary,
-      })),
-      p_elo: Object.fromEntries(
-        Object.entries(outcome.elo).map(([slot, rating]) => [slot, rating]),
-      ),
-      p_funds: outcome.managerFunds,
-      p_new_fixtures: outcome.newFixtures.map((f) => ({
-        week: f.week,
-        stage: f.stage,
-        home_slot: f.homeSlot,
-        away_slot: f.awaySlot,
-      })),
-      p_status: outcome.status,
-      p_next_week: outcome.week,
-      p_energy: energyAfter?.energy ?? null,
-      p_energy_updated_at: energyAfter?.updatedAt.toISOString() ?? null,
-      p_players: roster.map((p) => {
-        const next = nextCondition(p.condition, outcome.managerReports[p.id]);
-        return {
-          id: p.id,
-          fitness: next.fitness,
-          injured_weeks: next.injuredWeeks,
-          suspended_weeks: next.suspendedWeeks,
-          yellow_cards: next.yellowCards,
-        };
-      }),
-    });
-    if (error) {
-      if (error.message.includes("already played"))
-        throw new Error("That week has already been played.");
-      throw new Error(error.message);
-    }
+    const user = await getCurrentUser();
+    if (!user) throw new Error("Sign in first.");
+    const team = await loadMyTeam(user.id);
+    if (!team) throw new Error("Create your team first.");
+    await playOneWeek(team, { useEnergy: true });
     refresh();
     return { ok: true };
   } catch (e) {

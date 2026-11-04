@@ -10,6 +10,7 @@ const NAV = [
   { href: "/admin", label: "Overview" },
   { href: "/admin/settings", label: "Game settings" },
   { href: "/admin/templates", label: "Templates" },
+  { href: "/admin/tools", label: "Testing tools" },
 ] as const;
 
 export default function AdminLayout({ children }: LayoutProps<"/admin">) {
