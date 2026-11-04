@@ -116,7 +116,7 @@ Claude Code will tell you when the repo has a working app. Then:
 ### B1. Vercel (hosting)
 
 - [ ] Sign up at vercel.com with **Continue with GitHub** and choose the **Hobby** (free) plan.
-- [ ] **Add New → Project →** import `literally-fantasy-sports`. Build settings: **Root Directory** `apps/web` (leave "Include files outside the root directory" on). Framework preset: Next.js. Leave the build and install commands at their defaults.
+- [ ] **Add New → Project →** import `literally-fantasy-sports`. Build settings: **Root Directory** `apps/web` (leave "Include files outside the root directory" on). Framework preset: Next.js. Leave the build and install commands at their defaults. `apps/web/vercel.json` turns off deploys for the release-please branch and skips builds when nothing the site uses changed (D100); leave **Settings → Git → Ignored Build Step** on its default so the file is used.
 - [ ] **Settings → Environment Variables:** add these two variables twice, once for **Production** and once for **Preview** (both are public values, not secrets):
 
 | Name | Production (`lfs-prod`) | Preview (`lfs-dev`) |
