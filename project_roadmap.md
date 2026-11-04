@@ -4,7 +4,7 @@ Nov 2, 2026 · @Gary · Last updated: Nov 4, 2026 (D121)
 
 ## Review progress
 
-The roadmap review is complete: all 8 steps are agreed. New decisions are added to the decision log as they are made. **v1.0.0 is released (Nov 4, 2026). Now:** M7 Quality of life (`v1.1.0`). Gary's notes after playing v1 are recorded as D107–D121 and planned as M7–M11 in section 5.
+The roadmap review is complete: all 8 steps are agreed. New decisions are added to the decision log as they are made. **v1.0.0 is released (Nov 4, 2026). M7 is done (`v1.1.0`). Now:** M8 Heatmaps (`v1.2.0`). Gary's notes after playing v1 are recorded as D107–D121 and planned as M7–M11 in section 5.
 
 - [x] **Step 1: Vision & goals** (agreed Nov 2, 2026)
 - [x] **Step 2: Scope decisions** (agreed Nov 2, 2026)
@@ -339,7 +339,7 @@ Total: about 22 weeks of effort (finished in two days).
 
 Gary's notes after playing v1 (D107–D121). Each milestone ends with Gary merging the release-please PR, which bumps the minor version. Sizes are rough.
 
-- [ ] **M7 Quality of life (S–M) → `v1.1.0`:** club colors at club creation (D107), one filterable, sortable scouting table for opened packs (D108), sortable roster with matchday markers (D109), rotated squad button and total squad score (D110), clickable clubs in your league with visible rosters and color percentages, plus the privacy policy line (D111), energy maximum 6 (D118). *Done when:* a new club has its colors across the UI, you can sort and filter a multi-pack opening, and you can inspect any club in your league.
+- [x] **M7 Quality of life (S–M) → `v1.1.0`:** club colors at club creation (D107), one filterable, sortable scouting table for opened packs (D108), sortable roster with matchday markers (D109), rotated squad button and total squad score (D110), clickable clubs in your league with visible rosters and color percentages, plus the privacy policy line (D111), energy maximum 6 (D118). *Done when:* a new club has its colors across the UI, you can sort and filter a multi-pack opening, and you can inspect any club in your league.
 - [ ] **M8 Heatmaps (M) → `v1.2.0`:** 3 generated variants per position for Gary to adjust, left and right slots for shared positions in every formation preset (D112). *Done when:* every position offers 3 variants to new players, and a 4-4-2 shows distinct LCB/RCB, LCM/RCM and LST/RST heatmaps.
 - [ ] **M9 AI world and 12-club seasons (L, high-risk) → `v1.3.0`:** data retention first (D120), then the AI manager module and the pool of 250 clubs (D113), scheduled AI runs (D114), Elo-nearest 12-club leagues of frozen clones (D115), one best ghost per real player (D116), 26-week seasons with play-in and 8-club bracket (D117), new playoff bonuses. Needs an ADR. *Done when:* AI clubs play seasons on their own for a week, a new season draws the 11 nearest clubs, database size holds steady, and backups stay small.
 - [ ] **M10 Color matchups (M, high-risk) → `v1.4.0`:** team-level and individual matchups in the soccer engine (D119), tuned with the harness, strengths in admin. *Done when:* harness metrics stay on target and matchups visibly shift influence on the heatmap.
