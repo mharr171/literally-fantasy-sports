@@ -22,7 +22,7 @@ pnpm + Turborepo monorepo.
 | `apps/web` | Next.js (App Router) app: UI, server actions, auth, admin |
 | `packages/config` | Shared tsconfig (`@lfs/config/tsconfig.base.json`) |
 | `packages/core` | Sport-agnostic engine: seeded RNG, Elo, influence grids, `Sport` interface (ADR 0001) |
-| `packages/sport-*` | One package per sport. `sport-soccer`: positions (D77), attributes and overall (D78), effective skill |
+| `packages/sport-*` | One package per sport. `sport-soccer`: positions (D77), attributes and overall (D78), effective skill, match sim, tuning harness |
 | `packages/db` | Drizzle schema (`src/schema.ts`), SQL migrations (`migrations/`), database tests |
 | `docs/` | Architecture notes, ADRs, legal sources |
 
@@ -36,6 +36,8 @@ pnpm + Turborepo monorepo.
 - Build soccer cleanly; extract shared code into core only when a second sport needs it.
 - Never change how `createRng` produces numbers: replays depend on it, and its
   tests pin exact values. Give new random rolls their own `rng.fork("label")`.
+- After any change to the soccer sim or its tuning, run the harness and put its
+  report in the PR. Targets: 2.5–2.8 goals per match, ~25% draws for even teams.
 - Matches are simulated on the server only. Row-level security on every table.
 
 ## Next.js
@@ -57,6 +59,7 @@ pnpm test          # Vitest with coverage (engine packages; 90% minimum)
 pnpm build         # production build
 pnpm db:generate   # after editing packages/db/src/schema.ts: write a new migration
 pnpm test:db       # database tests (needs DATABASE_URL, see below)
+pnpm --filter @lfs/sport-soccer harness 10000   # play 10,000 matches, print goal/draw stats
 ```
 
 Run `pnpm lint && pnpm typecheck && pnpm test && pnpm build` before pushing; CI runs
