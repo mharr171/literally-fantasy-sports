@@ -1,6 +1,6 @@
 "use server";
 
-import { playerWorth } from "@lfs/core";
+import { currentEnergy, playerWorth, spendEnergy } from "@lfs/core";
 import {
   DEFAULT_GHOST_SETTINGS,
   endOfSeason,
@@ -25,6 +25,7 @@ import {
   loadGhostTeams,
   loadLatestSeason,
 } from "@/lib/season";
+import { loadEnergySettings } from "@/lib/sport-settings";
 import { createServiceClient } from "@/lib/supabase/service";
 import {
   loadAgingPlayers,
@@ -132,6 +133,29 @@ export async function playNextWeek(): Promise<ActionResult> {
     const season = await loadLatestSeason(team.id);
     if (!season || season.status === "finished")
       throw new Error("Start a season first.");
+    // 1 energy = 1 game week (D17, D93), unless an admin has switched it off.
+    const energySettings = await loadEnergySettings("soccer");
+    const now = new Date();
+    const stored = {
+      energy: team.energy,
+      updatedAt: new Date(team.energyUpdatedAt),
+    };
+    let energyAfter: { energy: number; updatedAt: Date } | null = null;
+    if (energySettings.enabled) {
+      const current = currentEnergy(stored, now, energySettings);
+      if (current.energy < 1) {
+        const minutes = Math.max(
+          1,
+          Math.ceil(
+            ((current.nextAt as Date).getTime() - now.getTime()) / 60_000,
+          ),
+        );
+        throw new Error(
+          `Out of energy: the next point comes back in ${minutes} minute${minutes === 1 ? "" : "s"}.`,
+        );
+      }
+      energyAfter = spendEnergy(stored, now, energySettings);
+    }
     const { config } = await configFor(season.configVersion);
     const elo = Object.fromEntries(season.slots.map((s) => [s.slot, s.elo]));
     elo[MANAGER_SLOT] = team.elo;
@@ -177,6 +201,8 @@ export async function playNextWeek(): Promise<ActionResult> {
       })),
       p_status: outcome.status,
       p_next_week: outcome.week,
+      p_energy: energyAfter?.energy ?? null,
+      p_energy_updated_at: energyAfter?.updatedAt.toISOString() ?? null,
     });
     if (error) {
       if (error.message.includes("already played"))

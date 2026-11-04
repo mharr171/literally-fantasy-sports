@@ -7,7 +7,7 @@ import {
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { LoadedSeason } from "@/lib/season";
-import { PlayWeekButton } from "./season-buttons";
+import { type EnergyView, PlayWeekButton } from "./season-buttons";
 
 const LEAGUE_WEEKS = (LEAGUE_SIZE - 1) * 2;
 
@@ -26,7 +26,10 @@ export function SeasonView({
   elo,
   funds,
   wrapUp,
+  energy,
 }: {
+  /** The manager's energy now, or null when energy is switched off (D93). */
+  energy?: EnergyView | null;
   season: LoadedSeason;
   teamName: string;
   elo: number;
@@ -108,6 +111,7 @@ export function SeasonView({
                 ? `Play ${stageLabel(season).toLowerCase().startsWith("week") ? `week ${season.week}` : "match"}`
                 : "Play the round"
             }
+            energy={energy ?? null}
           />
         </div>
       )}

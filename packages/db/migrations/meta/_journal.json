@@ -127,6 +127,20 @@
       "when": 1793772569192,
       "tag": "0017_team_snapshots_functions",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793774535580,
+      "tag": "0018_sport_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793774536626,
+      "tag": "0019_sport_settings_grants_and_energy",
+      "breakpoints": true
     }
   ]
 }

@@ -18,6 +18,8 @@ export interface MyTeam {
   name: string;
   elo: number;
   funds: number;
+  energy: number;
+  energyUpdatedAt: string;
 }
 
 /**
@@ -27,12 +29,20 @@ export interface MyTeam {
 export async function loadMyTeam(ownerId: string): Promise<MyTeam | null> {
   const { data, error } = await createServiceClient()
     .from("teams")
-    .select("id, name, elo, funds")
+    .select("id, name, elo, funds, energy, energy_updated_at")
     .eq("owner_id", ownerId)
     .eq("sport", SOCCER)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  return data;
+  if (!data) return null;
+  return {
+    id: data.id,
+    name: data.name,
+    elo: data.elo,
+    funds: data.funds,
+    energy: data.energy,
+    energyUpdatedAt: data.energy_updated_at,
+  };
 }
 
 export interface StarterPack {

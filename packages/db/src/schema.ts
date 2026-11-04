@@ -475,6 +475,39 @@ export const fixtures = pgTable(
   ],
 ).enableRLS();
 
+/**
+ * Live per-sport switches (D93), changed by admins without publishing a new
+ * settings version: energy on or off, its refill time and its maximum.
+ */
+export const sportSettings = pgTable(
+  "sport_settings",
+  {
+    sport: text().primaryKey(),
+    energyEnabled: boolean().notNull().default(true),
+    energyRefillMinutes: integer().notNull().default(15),
+    energyMax: integer().notNull().default(3),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check("sport_settings_sport", sql`${t.sport} ${SPORT_CHECK}`),
+    check(
+      "sport_settings_energy",
+      sql`${t.energyRefillMinutes} between 1 and 1440 and ${t.energyMax} between 1 and 20`,
+    ),
+    pgPolicy("sport_settings_select", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`true`,
+    }),
+    pgPolicy("sport_settings_update_admin", {
+      for: "update",
+      to: authenticatedRole,
+      using: isAdmin,
+      withCheck: isAdmin,
+    }),
+  ],
+).enableRLS();
+
 export type Team = typeof teams.$inferSelect;
 export type Player = typeof players.$inferSelect;
 export type Pack = typeof packs.$inferSelect;
