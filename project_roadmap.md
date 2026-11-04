@@ -1,6 +1,6 @@
 # LiterallyFantasySports — Project Roadmap
 
-Nov 2, 2026 · @Gary · Last updated: Nov 4, 2026 (D82)
+Nov 2, 2026 · @Gary · Last updated: Nov 4, 2026 (D84)
 
 ## Review progress
 
@@ -103,6 +103,8 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D80 | Nov 4, 2026 | No home advantage for now: every match is played as if on neutral ground. Can be added later as a tuning value | M1 |
 | D81 | Nov 4, 2026 | Soccer match-day squad rules: up to 5 subs in up to 3 stoppages; the manager's sub plan runs first, then automatic subs for injuries and for tiredness (from 55'); red cards are never replaced; if the keeper goes with no subs left, the best outfield keeper moves in goal. Starting rates tuned with the harness (≈3.6 yellows, 0.13 reds, 0.33 injuries and 8 subs per match) | M1 |
 | D82 | Nov 4, 2026 | Template variants: admins can paint several influence templates per position (e.g. an attacking and a defensive full-back) and tick which ones are available to use. Planned for M5; how a variant is chosen in a match is still open (see Step 8) | M1 |
+| D83 | Nov 4, 2026 | New teams start with an empty roster and 22 free starter packs: 2 attacker, 4 midfielder, 4 defender, 1 goalkeeper and 11 all-position packs (5 players each). All 22 must be opened before the first match (the team's initial scouting). Players not kept are released for free, with no resale money. Keep 22–30 to play. Replaces D31 | M2 |
+| D84 | Nov 4, 2026 | Each player is given one of the available template variants for their position when generated, and keeps it. Answers D82's open question | M2 |
 
 ## 1. Vision & goals
 
@@ -237,7 +239,7 @@ Examples (soccer): 5/3/2/1 → +25% and +10%. 4/4/2/1 → both 4s get +15%, the 
 
 **Squad and recruitment rules (v1)**
 
-- **Roster:** up to 30; a 22-player matchday squad (11 + 11 bench); new teams start with 22.
+- **Roster:** up to 30; a 22-player matchday squad (11 + 11 bench). New teams start empty and scout their first squad from 22 free starter packs (D83).
 - **Youth intake:** each season, 2n rookies are offered (22 for soccer). Take as many as you like, free.
 - **Packs:** 5 players each, in tiers with published skill odds, plus position-focused packs. Each player is kept or bulk-resold.
 - **Roster limit:** the roster may go over 30 temporarily, but the next match is blocked until it is back to 30 or fewer.
@@ -287,7 +289,7 @@ The engine (M1) comes before any game UI because everything else depends on it. 
 
 - [x] **M0 Foundations (~2 wks) → `v0.1`:** *Released as `v0.1.0` on Nov 4, 2026.* setup guide for Gary (Vercel, Supabase, Resend, Sentry accounts; Squarespace DNS; Claude Code access; private `lfs-backups` repo), `CLAUDE.md`, branch protection, nightly backups, release-please, monorepo, Next.js, Supabase auth (Google + magic link), privacy policy and terms of service pages, `lfs-prod` + `lfs-dev`, CI, preview deploys, domain connected, keep-alive ping. *Done when:* you can sign in at www.literallyfantasysports.com, the privacy policy and terms pages are live, and CI is green.
 - [~] **M1 Match engine (~4 wks) → `v0.2`:** `packages/core` (RNG, Elo, `Sport` interface, config types), `packages/sport-soccer` (attributes, effective skill, chemistry, influence maps, possession phases, in-match fatigue, auto-subs, in-match injuries and cards), name pools by nationality, versioned `game_config` table, template editor (admin-only page; the admin flag is added here), tuning harness, ADR for the sport interface. *Done when:* the sim is deterministic, harness metrics are on target, and engine coverage is about 90%.
-- [ ] **M2 Players and squads (~4 wks) → `v0.3`:** player generation with worth, team creation with a 22-player starting squad (one per sport per account), tiered and position-focused packs (keep or bulk-resell), free release, drag-and-drop matchday squad builder with sub plan. *Done when:* a new user gets a squad, opens a pack, and saves a valid matchday 22.
+- [ ] **M2 Players and squads (~4 wks) → `v0.3`:** player generation with worth (each player keeps a template variant, D84), team creation with 22 starter packs to scout the first squad (one team per sport per account, D83), tiered and position-focused packs (keep or bulk-resell), free release, drag-and-drop matchday squad builder with sub plan. *Done when:* a new user opens their 22 starter packs, keeps 22–30 players, opens a pack, and saves a valid matchday 22.
 - [ ] **M3 Seasons (~3 wks) → `v0.4`, friends alpha:** league building from AI and ghost teams, double round-robin fixtures, top-4 playoffs, Elo, payouts, standings, season end (aging, retirement, youth intake, roster limit check), ghost snapshot (tagged with game version and completion date) and leaderboard entry. *Done when:* a full season including playoffs can be played, the roster carries into the next season, its ghost appears in another league, and a few friends are invited to the alpha.
 - [ ] **M4 Energy and continuity (~3 wks) → `v0.5`:** energy refill, match fitness carried between game weeks, injury and suspension countdowns, form, morale. Includes fixes from alpha feedback. *Done when:* rotating the squad visibly matters over a season.
 - [ ] **M5 Admin and visualization (~4 wks) → `v0.6`:** full admin panel with two-factor sign-in, template variants (several templates per position, with checkboxes for which are available, D82), pitch heatmaps on result pages, play-by-play log, replay from the seed and stored config version. *Done when:* an admin changes a setting without a deploy, and every result page shows the replay.
@@ -398,4 +400,4 @@ Work as if there were a team: every change goes through an issue, a branch, a PR
 - [x] Packs, recruitment and roster → D46–D50, D53–D55
 - [ ] Player worth formula and bulk resale percentage → decide while building M2 (D73)
 - [ ] Cross-sport bonus size and cap → decide when the feature is built (D73)
-- [ ] Template variants (D82): who picks a position's variant — the manager per lineup slot (like a player role), the engine at random from the available ones, or a team tactic? Decide before building in M5
+- [x] Template variants: each player gets one at generation and keeps it (D84)
