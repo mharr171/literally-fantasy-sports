@@ -1,18 +1,23 @@
 import {
-  DEFAULT_MATCH_TUNING,
-  formModifier,
   isAvailable,
   type PickOptions,
+  pickWeight,
+  ROTATION_FITNESS_EMPHASIS,
 } from "@lfs/sport-soccer";
 import type { RosterPlayer } from "./team";
 
 /**
  * What auto-pick should weigh this week (M4): injured and suspended players
  * are unavailable, and tired or out-of-form players rate lower, the same way
- * the match engine treats them at kickoff.
+ * the match engine treats them at kickoff. `rotate` weighs fitness much more,
+ * so tired starters are rested (D110).
  */
-export function pickOptions(roster: readonly RosterPlayer[]): PickOptions {
+export function pickOptions(
+  roster: readonly RosterPlayer[],
+  { rotate = false }: { rotate?: boolean } = {},
+): PickOptions {
   const byId = new Map(roster.map((p) => [p.id, p]));
+  const emphasis = rotate ? ROTATION_FITNESS_EMPHASIS : 1;
   return {
     available: (id) => {
       const p = byId.get(id);
@@ -20,11 +25,7 @@ export function pickOptions(roster: readonly RosterPlayer[]): PickOptions {
     },
     weight: (id) => {
       const p = byId.get(id);
-      if (!p) return 1;
-      const tiredness =
-        DEFAULT_MATCH_TUNING.fatiguePenalty *
-        ((100 - p.condition.fitness) / 100);
-      return (1 - tiredness) * (1 + formModifier(p.form, 0));
+      return p ? pickWeight(p.condition.fitness, p.form, emphasis) : 1;
     },
   };
 }

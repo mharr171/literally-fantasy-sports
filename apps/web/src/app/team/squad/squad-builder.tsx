@@ -13,6 +13,7 @@ import {
   positionFit,
   slotRating,
   squadProblems,
+  squadScore,
 } from "@lfs/sport-soccer";
 import { type DragEvent, useMemo, useState } from "react";
 import { ConditionBadge } from "@/components/condition-badge";
@@ -145,6 +146,17 @@ export function SquadBuilder({
         ? (bench[selected.index] ?? null)
         : selected.id || null;
   const selectedPlayer = selectedId ? byId.get(selectedId) : undefined;
+  // Squad score (D110): the starting 11 in their slots, with chemistry;
+  // "today" also counts this week's fitness and form.
+  const weights = pickOptions(roster).weight ?? (() => 1);
+  const score = squadScore(
+    slots.flatMap((slot, i) => {
+      const p = starters[i];
+      return p
+        ? [{ player: p, slot: slot.position, weight: weights(p.id) }]
+        : [];
+    }),
+  );
   const boosts = lineupChemistry(present);
   const chemistry = new Map(present.map((p, i) => [p.id, boosts[i] ?? 0]));
 
@@ -209,8 +221,12 @@ export function SquadBuilder({
     onClick: () => choose(loc),
   });
 
-  function autoPick() {
-    const squad = autoPickSquad(roster, formationId, pickOptions(roster));
+  function autoPick(rotate = false) {
+    const squad = autoPickSquad(
+      roster,
+      formationId,
+      pickOptions(roster, { rotate }),
+    );
     setLineup(pad(squad.lineup, 11));
     setBench(pad(squad.bench, BENCH_SIZE));
     setPlan([]);
@@ -245,11 +261,38 @@ export function SquadBuilder({
         </label>
         <button
           type="button"
-          onClick={autoPick}
+          onClick={() => autoPick()}
           className="rounded-md border border-zinc-300 px-3 py-1.5 font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
         >
           Auto-pick best
         </button>
+        <button
+          type="button"
+          onClick={() => autoPick(true)}
+          title="Picks a fresh 22, resting tired starters when someone fitter is close"
+          className="rounded-md border border-zinc-300 px-3 py-1.5 font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+        >
+          Rotated squad
+        </button>
+        <span
+          className="tabular-nums"
+          title="Average rating of the starting 11 in their slots, with chemistry. Today also counts fitness and form."
+        >
+          Squad score <strong>{score.base.toFixed(1)}</strong>
+          <span className="text-zinc-500">
+            {" "}
+            · today{" "}
+            <strong
+              className={
+                score.today < score.base - 3
+                  ? "text-amber-700 dark:text-amber-400"
+                  : ""
+              }
+            >
+              {score.today.toFixed(1)}
+            </strong>
+          </span>
+        </span>
         <span className="flex-1" />
         <span className="text-zinc-600 dark:text-zinc-400">
           {problems.length > 0
