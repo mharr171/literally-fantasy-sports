@@ -37,8 +37,8 @@ export function scoutPlayer(p: GeneratedPlayer): ScoutedPlayer {
   };
 }
 
-/** The row saved for a kept starter-pack player (see resolve_starter_packs). */
-export function starterPlayerRow(p: GeneratedPlayer) {
+/** The row saved for a kept pack player (see resolve_starter_packs, resolve_bought_pack). */
+export function playerRow(p: GeneratedPlayer) {
   return {
     first_name: p.firstName,
     last_name: p.lastName,

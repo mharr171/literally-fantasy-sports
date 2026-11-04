@@ -1,11 +1,6 @@
 import { packContents } from "@lfs/sport-soccer";
 import { describe, expect, it } from "vitest";
-import {
-  countByLine,
-  scoutPlayer,
-  sortPacks,
-  starterPlayerRow,
-} from "./scouting";
+import { countByLine, playerRow, scoutPlayer, sortPacks } from "./scouting";
 
 const players = packContents("scouting-test", "any", "starter");
 
@@ -23,7 +18,7 @@ describe("scouting", () => {
   it("saves the full player, true potential included, for the server", () => {
     const [p] = players;
     if (!p) throw new Error("empty pack");
-    const row = starterPlayerRow(p);
+    const row = playerRow(p);
     expect(row.potential).toBe(p.potential);
     expect([row.potential_low, row.potential_high]).toEqual(p.potentialRange);
     expect(row.worth).toBe(scoutPlayer(p).worth);
