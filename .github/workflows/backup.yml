@@ -1,0 +1,61 @@
+name: Nightly backup
+
+# Saves a SQL copy of lfs-prod to the private mharr171/lfs-backups repo (D70).
+# Each night overwrites lfs-prod.sql; Git history keeps every earlier night.
+# Restore steps: docs/backups.md.
+
+on:
+  schedule:
+    - cron: "41 10 * * *" # daily, 10:41 UTC (about 3am Pacific)
+  workflow_dispatch:
+
+concurrency:
+  group: backup
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    name: Back up lfs-prod
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out lfs-backups
+        uses: actions/checkout@v5
+        with:
+          repository: mharr171/lfs-backups
+          token: ${{ secrets.BACKUP_REPO_TOKEN }}
+          path: lfs-backups
+
+      - name: Dump lfs-prod
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: |
+          # Postgres 17 tools to match Supabase. Accounts first (auth.users,
+          # auth.identities; profiles reference them), then game data and
+          # schema (public) and the migration history (drizzle).
+          # A fixed --restrict-key keeps unchanged data byte-identical, so
+          # quiet nights don't create commits.
+          docker run --rm -e DATABASE_URL postgres:17 sh -ec '
+            pg_dump "$DATABASE_URL" --no-owner --no-privileges --restrict-key=lfsbackup \
+              --data-only --table=auth.users --table=auth.identities
+            pg_dump "$DATABASE_URL" --no-owner --no-privileges --restrict-key=lfsbackup \
+              --schema=public --schema=drizzle
+          ' > lfs-backups/lfs-prod.sql
+          test -s lfs-backups/lfs-prod.sql
+          echo "Backup size: $(du -h lfs-backups/lfs-prod.sql | cut -f1)"
+
+      - name: Commit if changed
+        working-directory: lfs-backups
+        run: |
+          git config user.name "lfs-backup-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lfs-prod.sql
+          if git diff --cached --quiet; then
+            echo "No changes since the last backup."
+          else
+            git commit -m "backup: lfs-prod $(date -u +%Y-%m-%d)"
+            git push
+          fi
