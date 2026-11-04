@@ -47,7 +47,7 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D24 | Nov 2, 2026 | Domain is registered at Squarespace (formerly Google Domains); DNS records point to Vercel, and `literallyfantasysports.com` redirects to `www` | 3 |
 | D25 | Nov 2, 2026 | Sign-in emails are sent through Resend (free tier) from the project's own domain | 3 |
 | D26 | Nov 2, 2026 | Biome for linting and formatting | 3 |
-| D27 | Nov 2, 2026 | Sentry (free) for error tracking and Vercel Web Analytics (free) for page views, both added in M6 before launch | 3 |
+| D27 | Nov 2, 2026 | Sentry (free) for error tracking and Vercel Web Analytics (free) for page views, both added in M6 before launch (skipped for now, D104) | 3 |
 | D28 | Nov 2, 2026 | Two Supabase cloud projects: `lfs-prod` (live site) and `lfs-dev` (development and preview deploys). No Docker on Gary's PC. CI creates a throwaway database on each PR to test migrations | 3 |
 | D29 | Nov 2, 2026 | All sports share one database (rows carry a `sport` column). A new sport is built on a Git branch as a new `packages/sport-*` folder, tested against `lfs-dev`; no extra Supabase project needed | 3 |
 | D30 | Nov 3, 2026 | Playoffs: top 4 of 8, single-match ties; draws go to extra time, then penalties | 4 |
@@ -124,6 +124,7 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D101 | Nov 4, 2026 | Match pages (M5): every played fixture has a page (from the score in Results, or "Heatmap, play-by-play and replay" under the last match). The server plays the match again from its seed with the season's settings version, so nothing but the inputs is stored: AI clubs come from the season seed, ghosts from their snapshot, and the manager's team as it played (lineup, bench, sub plan, fitness, form and morale) is kept with the result (`fixtures.manager_team`). The page shows the score, possession, chances and shots on target, a pitch heatmap (both teams, home blue and away red, or one team), the full play-by-play, and a replay that plays it back minute by minute. Matches played before this, or whose ghost has since been deleted, show their summary only. The seed never leaves the server | M5 |
 | D102 | Nov 4, 2026 | Balance without a deploy (M5): Admin > Balance edits match tuning, season payouts and pack prices (per tier, and the position-focus surcharge) in the numbered settings versions, with the same save draft, test (1,500 matches against live) and publish steps as templates. Every value has limits (e.g. chance rate 0.05–0.95, payouts 0–100,000, pricier tiers must cost more). A season plays and pays by the version it started with, so replays stay exact; pack prices follow the live version straight away. Pack odds stay fixed for now | M5 |
 | D103 | Nov 4, 2026 | Admin two-factor sign-in goes on the back burner (Gary): this is mainly a personal project, not run for the public, so the admin flag plus Google or email sign-in is enough for now. A finished version (authenticator app, `is_admin()` requiring `aal2`) was built and closed unmerged in #47, ready to pick up again if the game opens to other players. M5 is done without it | M5 |
+| D104 | Nov 4, 2026 | Sentry error tracking and Vercel Web Analytics are skipped for now (Gary): with a personal project and a handful of players, Vercel's own logs and a message from a friend are enough. Either can be added later without other changes (D27) | M6 |
 
 ## 1. Vision & goals
 
@@ -193,7 +194,7 @@ The project is a pnpm + Turborepo monorepo. The engine is pure TypeScript with n
 | Domain + DNS | Squarespace Domains | Records for Vercel (site) and Resend (email) |
 | Auth email | Resend (free tier) | Sends magic-link emails from the project's domain |
 | Lint + format | Biome | One tool, fast, little config |
-| Monitoring | Sentry + Vercel Web Analytics (free) | Added in M6 |
+| Monitoring | Sentry + Vercel Web Analytics (free) | Skipped for now (D104) |
 | Builder | Claude Code | AI writes the code; Gary reviews and approves PRs |
 | Scheduled work | Computed lazily from timestamps | Plus a daily GitHub Actions ping so the free Supabase project is not paused |
 
@@ -312,7 +313,7 @@ The engine (M1) comes before any game UI because everything else depends on it. 
 - [~] **M3 Seasons (~3 wks) → `v0.4`, friends alpha:** league building from AI and ghost teams, double round-robin fixtures, top-4 playoffs, Elo, payouts, standings, season end (aging, retirement, youth intake, roster limit check), ghost snapshot (tagged with game version and completion date) and leaderboard entry. *Done when:* a full season including playoffs can be played, the roster carries into the next season, its ghost appears in another league, and a few friends are invited to the alpha.
 - [x] **M4 Energy and continuity (~3 wks) → `v0.5`:** energy refill, match fitness carried between game weeks, injury and suspension countdowns, form, morale. Includes fixes from alpha feedback. *Done when:* rotating the squad visibly matters over a season.
 - [x] **M5 Admin and visualization (~4 wks) → `v0.6`:** full admin panel (two-factor sign-in on the back burner, D103), template variants (several templates per position, with checkboxes for which are available, D82), pitch heatmaps on result pages, play-by-play log, replay from the seed and stored config version. *Done when:* an admin changes a setting without a deploy, and every result page shows the replay.
-- [ ] **M6 Polish and launch (~2 wks) → `v1.0.0`:** onboarding, empty and error states, in-game "What's new" page, Sentry and Vercel Analytics, README with screenshots. *Done when:* a friend can sign up and play without help.
+- [ ] **M6 Polish and launch (~2 wks) → `v1.0.0`:** onboarding, empty and error states, in-game "What's new" page, README with screenshots (Sentry and Vercel Analytics skipped for now, D104). *Done when:* a friend can sign up and play without help.
 
 Total: about 22 weeks of effort.
 
