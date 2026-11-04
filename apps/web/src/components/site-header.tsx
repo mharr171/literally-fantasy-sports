@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { signOut } from "@/app/auth/actions";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentProfile } from "@/lib/auth";
 
 export function SiteHeader() {
   return (
@@ -19,7 +19,7 @@ export function SiteHeader() {
 }
 
 async function AccountMenu() {
-  const user = await getCurrentUser();
+  const user = await getCurrentProfile();
 
   if (!user) {
     return (
@@ -34,8 +34,16 @@ async function AccountMenu() {
 
   return (
     <div className="flex min-w-0 items-center gap-3 text-sm">
-      <span className="truncate text-zinc-600 dark:text-zinc-400">
-        {user.email}
+      {user.isAdmin && (
+        <Link href="/admin" className="font-medium hover:underline">
+          Admin
+        </Link>
+      )}
+      <span
+        className="truncate text-zinc-600 dark:text-zinc-400"
+        title={user.email ?? undefined}
+      >
+        {user.displayName}
       </span>
       <form action={signOut}>
         <button
