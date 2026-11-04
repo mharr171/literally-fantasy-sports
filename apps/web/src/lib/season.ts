@@ -12,6 +12,18 @@ import {
 import { createServiceClient } from "./supabase/service";
 import { SOCCER } from "./team";
 
+/** What season end did (stored on the season, shown to the manager). */
+export interface SeasonReview {
+  retired: { name: string; position: string; age: number; overall: number }[];
+  changes: {
+    name: string;
+    position: string;
+    age: number;
+    from: number;
+    to: number;
+  }[];
+}
+
 export interface LoadedSeason {
   id: string;
   number: number;
@@ -20,6 +32,9 @@ export interface LoadedSeason {
   /** Server only: decides every match. Never send it to the browser. */
   seed: string;
   configVersion: string;
+  closed: boolean;
+  review: SeasonReview | null;
+  intakeResolved: boolean;
   slots: (LeagueSlot & { elo: number })[];
   fixtures: (SeasonFixture & { summary: MatchSummary | null })[];
 }
@@ -31,7 +46,9 @@ export async function loadLatestSeason(
   const db = createServiceClient();
   const { data: season, error } = await db
     .from("seasons")
-    .select("id, number, status, week, seed, config_version")
+    .select(
+      "id, number, status, week, seed, config_version, closed_at, review, intake_resolved_at",
+    )
     .eq("team_id", teamId)
     .order("number", { ascending: false })
     .limit(1)
@@ -62,6 +79,9 @@ export async function loadLatestSeason(
     week: season.week,
     seed: season.seed,
     configVersion: season.config_version,
+    closed: season.closed_at !== null,
+    review: season.review as SeasonReview | null,
+    intakeResolved: season.intake_resolved_at !== null,
     slots: (slots.data ?? []).map((s) => ({
       slot: s.slot,
       kind: s.kind as LeagueSlot["kind"],

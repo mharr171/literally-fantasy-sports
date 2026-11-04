@@ -1,12 +1,15 @@
+import { youthIntake } from "@lfs/sport-soccer";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth";
-import { loadLatestSeason } from "@/lib/season";
-import { loadMyTeam, loadStarterPacks } from "@/lib/team";
+import { scoutPlayer } from "@/lib/scouting";
+import { loadLatestSeason, type SeasonReview } from "@/lib/season";
+import { loadMyTeam, loadRoster, loadStarterPacks } from "@/lib/team";
 import { StartSeasonButton } from "./season-buttons";
 import { SeasonView } from "./season-view";
+import { EndSeasonButton, YouthIntake } from "./wrap-up";
 
 export const metadata: Metadata = { title: "Season" };
 
@@ -50,12 +53,106 @@ async function SeasonContent() {
     );
   }
 
+  let wrapUp: React.ReactNode = null;
+  if (season.status === "finished") {
+    if (!season.closed) {
+      wrapUp = (
+        <div className="mt-3 flex flex-col gap-2 text-sm">
+          <p className="text-zinc-600 dark:text-zinc-400">
+            End the season to move on: every player gets a year older, young
+            players grow toward their potential, older ones decline and some
+            retire. Then the youth intake opens.
+          </p>
+          <EndSeasonButton />
+        </div>
+      );
+    } else if (!season.intakeResolved) {
+      const roster = await loadRoster(team.id);
+      wrapUp = (
+        <div className="mt-3 flex flex-col gap-4">
+          {season.review && <Review review={season.review} />}
+          <YouthIntake
+            prospects={youthIntake(season.seed).map(scoutPlayer)}
+            rosterSize={roster.length}
+          />
+        </div>
+      );
+    } else {
+      wrapUp = (
+        <div className="mt-3 flex flex-col gap-3 text-sm">
+          <p className="text-zinc-600 dark:text-zinc-400">
+            Season {season.number} is wrapped up. Check your{" "}
+            <Link href="/team/squad" className="underline">
+              matchday squad
+            </Link>{" "}
+            (retired players leave it) and your roster size, then start the next
+            one.
+          </p>
+          <StartSeasonButton number={season.number + 1} />
+        </div>
+      );
+    }
+  }
+
   return (
     <SeasonView
       season={season}
       teamName={team.name}
       elo={team.elo}
       funds={team.funds}
+      wrapUp={wrapUp}
     />
+  );
+}
+
+function Review({ review }: { review: SeasonReview }) {
+  const up = review.changes.filter((c) => c.to > c.from);
+  const down = review.changes.filter((c) => c.to < c.from);
+  return (
+    <div className="grid gap-4 text-sm sm:grid-cols-3">
+      <div>
+        <h3 className="font-semibold">Improved</h3>
+        {up.length === 0 && <p className="text-zinc-500">Nobody this year.</p>}
+        <ul>
+          {up.map((c) => (
+            <li key={c.name}>
+              {c.position} {c.name} ({c.age}){" "}
+              <span className="text-emerald-700 dark:text-emerald-400">
+                {c.from} → {c.to}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div>
+        <h3 className="font-semibold">Declined</h3>
+        {down.length === 0 && (
+          <p className="text-zinc-500">Nobody this year.</p>
+        )}
+        <ul>
+          {down.map((c) => (
+            <li key={c.name}>
+              {c.position} {c.name} ({c.age}){" "}
+              <span className="text-red-700 dark:text-red-400">
+                {c.from} → {c.to}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div>
+        <h3 className="font-semibold">Retired</h3>
+        {review.retired.length === 0 && (
+          <p className="text-zinc-500">Nobody this year.</p>
+        )}
+        <ul>
+          {review.retired.map((r) => (
+            <li key={r.name}>
+              {r.position} {r.name}, {r.age} ({r.overall})
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
   );
 }

@@ -1,18 +1,24 @@
 "use server";
 
+import { playerWorth } from "@lfs/core";
 import {
+  endOfSeason,
   MANAGER_SLOT,
   newLeague,
   playWeek,
   rosterWarning,
   squadProblems,
   squadToTeam,
+  youthIntake,
 } from "@lfs/sport-soccer";
 import { refresh } from "next/cache";
+import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
+import { playerRow } from "@/lib/scouting";
 import { configFor, liveSoccerConfig, loadLatestSeason } from "@/lib/season";
 import { createServiceClient } from "@/lib/supabase/service";
 import {
+  loadAgingPlayers,
   loadMyTeam,
   loadRoster,
   loadSquad,
@@ -58,9 +64,9 @@ export async function startSeason(): Promise<ActionResult> {
     const latest = await loadLatestSeason(team.id);
     if (latest && latest.status !== "finished")
       throw new Error("Your season is already under way.");
-    if (latest)
+    if (latest && !(latest.closed && latest.intakeResolved))
       throw new Error(
-        "The next season opens once season-end (ageing and youth intake) is ready.",
+        "Wrap up last season first: season end and youth intake.",
       );
     const seed = crypto.randomUUID();
     const { label } = await liveSoccerConfig();
@@ -85,6 +91,10 @@ export async function startSeason(): Promise<ActionResult> {
     if (error) {
       if (error.message.includes("already in progress"))
         throw new Error("Your season is already under way.");
+      if (error.message.includes("not wrapped up"))
+        throw new Error(
+          "Wrap up last season first: season end and youth intake.",
+        );
       throw new Error(error.message);
     }
     refresh();
@@ -157,6 +167,120 @@ export async function playNextWeek(): Promise<ActionResult> {
     refresh();
     return { ok: true };
   } catch (e) {
+    return fail(e);
+  }
+}
+
+async function requireTeam() {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Sign in first.");
+  const team = await loadMyTeam(user.id);
+  if (!team) throw new Error("Create your team first.");
+  return team;
+}
+
+/**
+ * Season end (D35): every player ages a year, young ones grow, older ones
+ * decline and some retire. Worked out from the season's seed, so it can
+ * only ever come out one way.
+ */
+export async function endSeason(): Promise<ActionResult> {
+  try {
+    const team = await requireTeam();
+    const season = await loadLatestSeason(team.id);
+    if (!season || season.status !== "finished")
+      throw new Error("Finish the season first.");
+    if (season.closed) throw new Error("This season is already wrapped up.");
+    const players = await loadAgingPlayers(team.id);
+    const result = endOfSeason(season.seed, players);
+    const byId = new Map(players.map((p) => [p.id, p]));
+    const updates = result.aged.map((a) => {
+      const p = byId.get(a.id) as (typeof players)[number];
+      return {
+        id: a.id,
+        age: a.age,
+        attributes: a.attributes,
+        overall: a.overall,
+        worth: playerWorth({
+          overall: a.overall,
+          age: a.age,
+          potentialRange: p.potentialRange,
+        }),
+      };
+    });
+    const review = {
+      retired: result.retired.map((id) => {
+        const p = byId.get(id) as (typeof players)[number];
+        return {
+          name: p.displayName,
+          position: p.primaryPosition,
+          age: p.age + 1,
+          overall: p.overall,
+        };
+      }),
+      changes: result.aged
+        .map((a) => {
+          const p = byId.get(a.id) as (typeof players)[number];
+          return {
+            name: p.displayName,
+            position: p.primaryPosition,
+            age: a.age,
+            from: p.overall,
+            to: a.overall,
+          };
+        })
+        .filter((c) => c.from !== c.to)
+        .sort((x, y) => y.to - y.from - (x.to - x.from)),
+    };
+    const { error } = await createServiceClient().rpc("close_season", {
+      p_season: season.id,
+      p_updates: updates,
+      p_retired: result.retired,
+      p_review: review,
+    });
+    if (error) {
+      if (error.message.includes("cannot be closed"))
+        throw new Error("This season is already wrapped up.");
+      throw new Error(error.message);
+    }
+    refresh();
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+const takenSchema = z.array(z.number().int().min(0).max(21)).max(22);
+
+/** Youth intake (D53): takes the chosen prospects into the squad for free. */
+export async function takeYouth(taken: number[]): Promise<ActionResult> {
+  try {
+    const picks = takenSchema.parse(taken);
+    if (new Set(picks).size !== picks.length)
+      throw new Error("A prospect was picked twice.");
+    const team = await requireTeam();
+    const season = await loadLatestSeason(team.id);
+    if (!season?.closed || season.intakeResolved)
+      throw new Error("The youth intake isn't open.");
+    const prospects = youthIntake(season.seed);
+    const rows = picks.map((i) =>
+      playerRow(prospects[i] as (typeof prospects)[number]),
+    );
+    const { error } = await createServiceClient().rpc("resolve_youth_intake", {
+      p_season: season.id,
+      p_players: rows,
+      p_taken: [...picks].sort((a, b) => a - b),
+    });
+    if (error) {
+      if (error.message.includes("not open"))
+        throw new Error("The youth intake isn't open.");
+      throw new Error(error.message);
+    }
+    refresh();
+    return { ok: true };
+  } catch (e) {
+    if (e instanceof z.ZodError)
+      return fail(new Error("That pick isn't valid."));
     return fail(e);
   }
 }

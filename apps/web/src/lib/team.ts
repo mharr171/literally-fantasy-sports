@@ -155,3 +155,24 @@ export async function loadSquad(teamId: string): Promise<MatchdaySquad | null> {
     subPlan: data.sub_plan as MatchdaySquad["subPlan"],
   };
 }
+
+/** Everything season end needs, true potential included (server only, D48). */
+export async function loadAgingPlayers(teamId: string) {
+  const { data, error } = await createServiceClient()
+    .from("players")
+    .select(
+      "id, display_name, age, attributes, primary_position, overall, potential, potential_low, potential_high",
+    )
+    .eq("team_id", teamId);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((p) => ({
+    id: p.id as string,
+    displayName: p.display_name as string,
+    age: p.age as number,
+    attributes: p.attributes as Attributes,
+    primaryPosition: p.primary_position as Position,
+    overall: p.overall as number,
+    potential: p.potential as number,
+    potentialRange: [p.potential_low, p.potential_high] as [number, number],
+  }));
+}

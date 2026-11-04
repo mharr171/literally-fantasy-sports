@@ -350,6 +350,13 @@ export const seasons = pgTable(
     configVersion: text().notNull(),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     finishedAt: timestamp({ withTimezone: true }),
+    /** Season end applied: players aged, retirements made (D35). */
+    closedAt: timestamp({ withTimezone: true }),
+    /** What season end did, for the manager: retirements and rating changes. */
+    review: jsonb(),
+    /** Youth intake answered (D53): which prospects (by index) were taken. */
+    intakeTaken: jsonb(),
+    intakeResolvedAt: timestamp({ withTimezone: true }),
   },
   (t) => [
     uniqueIndex("seasons_team_number").on(t.teamId, t.number),
