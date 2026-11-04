@@ -9,6 +9,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { GettingStarted } from "@/components/getting-started";
 import { WithTemplates } from "@/components/player/with-templates";
 import { getCurrentUser } from "@/lib/auth";
 import { scoutPlayer } from "@/lib/scouting";
@@ -34,6 +35,9 @@ export const metadata: Metadata = { title: "Season" };
 export default function SeasonPage() {
   return (
     <section className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
+      <Suspense fallback={null}>
+        <GettingStarted />
+      </Suspense>
       <Suspense fallback={<p className="text-sm text-zinc-500">Loading…</p>}>
         <WithTemplates>
           <SeasonContent />
