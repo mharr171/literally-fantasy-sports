@@ -327,6 +327,108 @@ export const matchdaySquads = pgTable(
   ],
 ).enableRLS();
 
+/**
+ * A team's seasons (D16, D18). One unfinished season per team at a time.
+ * `seed` decides every AI squad and match, so managers can't read it
+ * (knowing it would let them test lineups against the real results).
+ */
+export const seasons = pgTable(
+  "seasons",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    teamId: uuid()
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    sport: text().notNull(),
+    number: integer().notNull(),
+    status: text().notNull().default("regular"),
+    /** The next week to play (or the last one, once finished). */
+    week: integer().notNull().default(1),
+    seed: text().notNull(),
+    startElo: integer().notNull(),
+    /** Game settings version the matches use, e.g. "soccer:3" or "defaults". */
+    configVersion: text().notNull(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    finishedAt: timestamp({ withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex("seasons_team_number").on(t.teamId, t.number),
+    uniqueIndex("seasons_one_active")
+      .on(t.teamId)
+      .where(sql`${t.status} <> 'finished'`),
+    check("seasons_sport", sql`${t.sport} ${SPORT_CHECK}`),
+    check(
+      "seasons_status",
+      sql`${t.status} in ('regular', 'playoffs', 'finished')`,
+    ),
+    pgPolicy("seasons_select_own", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`exists (select 1 from public.teams tm where tm.id = ${t.teamId} and tm.owner_id = ${authUid})`,
+    }),
+  ],
+).enableRLS();
+
+/** The teams in a season's league, by slot (0 = the manager's team). */
+export const seasonTeams = pgTable(
+  "season_teams",
+  {
+    seasonId: uuid()
+      .notNull()
+      .references(() => seasons.id, { onDelete: "cascade" }),
+    slot: integer().notNull(),
+    kind: text().notNull(),
+    name: text().notNull(),
+    startRating: integer().notNull(),
+    elo: integer().notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.seasonId, t.slot] }),
+    check("season_teams_kind", sql`${t.kind} in ('manager', 'ai', 'ghost')`),
+    pgPolicy("season_teams_select_own", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`exists (select 1 from public.seasons s join public.teams tm on tm.id = s.team_id where s.id = ${t.seasonId} and tm.owner_id = ${authUid})`,
+    }),
+  ],
+).enableRLS();
+
+/** A season's matches: league weeks, then playoff semi-finals and a final (D30). */
+export const fixtures = pgTable(
+  "fixtures",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    seasonId: uuid()
+      .notNull()
+      .references(() => seasons.id, { onDelete: "cascade" }),
+    week: integer().notNull(),
+    stage: text().notNull(),
+    homeSlot: integer().notNull(),
+    awaySlot: integer().notNull(),
+    homeScore: integer(),
+    awayScore: integer(),
+    /** Knockout winner; null for league matches. */
+    winner: text(),
+    /** Possession, shots and key events with player names. */
+    summary: jsonb(),
+    playedAt: timestamp({ withTimezone: true }),
+  },
+  (t) => [
+    index("fixtures_season_week").on(t.seasonId, t.week),
+    check("fixtures_stage", sql`${t.stage} in ('league', 'semi', 'final')`),
+    check(
+      "fixtures_winner",
+      sql`${t.winner} is null or ${t.winner} in ('home', 'away')`,
+    ),
+    check("fixtures_two_teams", sql`${t.homeSlot} <> ${t.awaySlot}`),
+    pgPolicy("fixtures_select_own", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`exists (select 1 from public.seasons s join public.teams tm on tm.id = s.team_id where s.id = ${t.seasonId} and tm.owner_id = ${authUid})`,
+    }),
+  ],
+).enableRLS();
+
 export type Team = typeof teams.$inferSelect;
 export type Player = typeof players.$inferSelect;
 export type Pack = typeof packs.$inferSelect;

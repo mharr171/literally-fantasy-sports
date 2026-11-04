@@ -85,6 +85,20 @@
       "when": 1793768415495,
       "tag": "0011_matchday_squads_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793770415590,
+      "tag": "0012_seasons",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793770416446,
+      "tag": "0013_seasons_functions",
+      "breakpoints": true
     }
   ]
 }
