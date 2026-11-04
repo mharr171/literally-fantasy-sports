@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { asAnon, asUser, sql } from "./db";
+import { asAdmin, asAnon, asUser, sql } from "./db";
 
 describe.runIf(sql)("game config", () => {
   // biome-ignore lint/style/noNonNullAssertion: guarded by runIf
@@ -34,7 +34,7 @@ describe.runIf(sql)("game config", () => {
 
   describe("is_admin()", () => {
     it("is true only for admins", async () => {
-      const a = await asUser(
+      const a = await asAdmin(
         db,
         admin,
         (tx) => tx`select public.is_admin() as v`,
@@ -46,6 +46,24 @@ describe.runIf(sql)("game config", () => {
       );
       expect(a[0]?.v).toBe(true);
       expect(p[0]?.v).toBe(false);
+    });
+
+    it("is false for an admin signed in without two-factor (M5)", async () => {
+      const [row] = await asUser(
+        db,
+        admin,
+        (tx) => tx`select public.is_admin() as v`,
+      );
+      expect(row?.v).toBe(false);
+      // So they can't see drafts or change settings either.
+      await expect(
+        asUser(
+          db,
+          admin,
+          (tx) =>
+            tx`insert into game_config_versions (scope, version, note) values ('soccer', 999, 'x')`,
+        ),
+      ).rejects.toThrow(/row-level security/);
     });
 
     it("can't be called by signed-out visitors", async () => {
@@ -120,7 +138,7 @@ describe.runIf(sql)("game config", () => {
 
   describe("admins", () => {
     it("see drafts and can edit them", async () => {
-      const rows = await asUser(db, admin, async (tx) => {
+      const rows = await asAdmin(db, admin, async (tx) => {
         await tx`update game_config set value = '{"chanceRate": 0.5}'
           where scope = 'soccer' and version = ${draft} and key = 'tuning'`;
         await tx`insert into game_config (scope, version, key, value)
@@ -134,7 +152,7 @@ describe.runIf(sql)("game config", () => {
     });
 
     it("create new drafts, recorded as theirs", async () => {
-      const [row] = await asUser(
+      const [row] = await asAdmin(
         db,
         admin,
         (tx) => tx`insert into game_config_versions (scope, version)
@@ -144,7 +162,7 @@ describe.runIf(sql)("game config", () => {
     });
 
     it("can publish a draft", async () => {
-      const [row] = await asUser(
+      const [row] = await asAdmin(
         db,
         admin,
         (tx) => tx`update game_config_versions set published_at = now()
@@ -155,7 +173,7 @@ describe.runIf(sql)("game config", () => {
 
     it("can't create a version that is already published", async () => {
       await expect(
-        asUser(
+        asAdmin(
           db,
           admin,
           (
@@ -199,7 +217,7 @@ describe.runIf(sql)("game config", () => {
     ];
     for (const [what, run] of attempts) {
       it(`won't let even an admin ${what}`, async () => {
-        await expect(asUser(db, admin, run)).rejects.toThrow(
+        await expect(asAdmin(db, admin, run)).rejects.toThrow(
           /published and frozen/,
         );
       });
@@ -207,7 +225,7 @@ describe.runIf(sql)("game config", () => {
 
     it("won't let a setting be moved out of a published version", async () => {
       await expect(
-        asUser(
+        asAdmin(
           db,
           admin,
           (tx) => tx`update game_config set version = ${draft}
@@ -218,7 +236,7 @@ describe.runIf(sql)("game config", () => {
 
     it("won't let a draft be renumbered", async () => {
       await expect(
-        asUser(
+        asAdmin(
           db,
           admin,
           (tx) => tx`update game_config_versions set version = ${base + 5}

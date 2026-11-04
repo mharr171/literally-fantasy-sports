@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { asAnon, asUser, sql } from "./db";
+import { asAdmin, asAnon, asUser, sql } from "./db";
 
 describe.runIf(sql)("admin action log", () => {
   // biome-ignore lint/style/noNonNullAssertion: guarded by runIf
@@ -26,7 +26,7 @@ describe.runIf(sql)("admin action log", () => {
   });
 
   it("lets admins read the log", async () => {
-    const rows = await asUser(
+    const rows = await asAdmin(
       db,
       admin,
       (tx) =>

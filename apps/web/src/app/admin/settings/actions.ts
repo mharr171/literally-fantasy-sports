@@ -2,7 +2,7 @@
 
 import { refresh } from "next/cache";
 import { z } from "zod";
-import { getCurrentProfile } from "@/lib/auth";
+import { assertAdminAction } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
@@ -22,9 +22,8 @@ export async function saveEnergySettings(
   input: z.input<typeof energySchema>,
 ): Promise<ActionResult> {
   try {
-    const profile = await getCurrentProfile();
-    if (!profile?.isAdmin)
-      throw new Error("Only admins can change game settings.");
+    // Server actions are public endpoints: re-check admin and two-factor.
+    await assertAdminAction();
     const { sport, enabled, refillMinutes, max } = energySchema.parse(input);
     const { data, error } = await (await createClient())
       .from("sport_settings")

@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { asAnon, asUser, sql } from "./db";
+import { asAdmin, asAnon, asUser, sql } from "./db";
 
 describe.runIf(sql)("sport settings: energy switches (D93)", () => {
   // biome-ignore lint/style/noNonNullAssertion: guarded by runIf
@@ -35,13 +35,22 @@ describe.runIf(sql)("sport settings: energy switches (D93)", () => {
   });
 
   it("lets admins switch energy off, but not players or visitors", async () => {
-    const changed = await asUser(
+    const changed = await asAdmin(
       db,
       admin,
       (tx) =>
         tx`update sport_settings set energy_enabled = false where sport = 'soccer' returning energy_enabled`,
     );
     expect(changed).toEqual([{ energy_enabled: false }]);
+    // Without two-factor, an admin is just a player here (M5).
+    expect(
+      await asUser(
+        db,
+        admin,
+        (tx) =>
+          tx`update sport_settings set energy_enabled = false where sport = 'soccer' returning sport`,
+      ),
+    ).toEqual([]);
     expect(
       await asUser(
         db,
@@ -54,20 +63,20 @@ describe.runIf(sql)("sport settings: energy switches (D93)", () => {
       asAnon(db, (tx) => tx`select sport from sport_settings`),
     ).rejects.toThrow(/permission denied/);
     await expect(
-      asUser(
+      asAdmin(
         db,
         admin,
         (tx) => tx`insert into sport_settings (sport) values ('hockey')`,
       ),
     ).rejects.toThrow(/permission denied/);
     await expect(
-      asUser(db, admin, (tx) => tx`delete from sport_settings`),
+      asAdmin(db, admin, (tx) => tx`delete from sport_settings`),
     ).rejects.toThrow(/permission denied/);
   });
 
   it("keeps the numbers sensible", async () => {
     await expect(
-      asUser(
+      asAdmin(
         db,
         admin,
         (tx) =>

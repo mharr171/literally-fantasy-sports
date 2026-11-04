@@ -19,6 +19,18 @@ export async function asUser<T>(
   return asRole(db, "authenticated", userId, fn);
 }
 
+/**
+ * Runs `fn` as an admin signed in with two-factor (aal2), the only way the
+ * database treats an admin as one (M5).
+ */
+export async function asAdmin<T>(
+  db: postgres.Sql,
+  userId: string,
+  fn: (tx: Tx) => Promise<T>,
+): Promise<T> {
+  return asRole(db, "authenticated", userId, fn, "aal2");
+}
+
 /** Runs `fn` as a signed-out visitor inside a transaction that is rolled back. */
 export async function asAnon<T>(
   db: postgres.Sql,
@@ -46,10 +58,13 @@ async function asRole<T>(
   role: "anon" | "authenticated" | "service_role",
   userId: string | null,
   fn: (tx: Tx) => Promise<T>,
+  aal: "aal1" | "aal2" = "aal1",
 ): Promise<T> {
   try {
     await db.begin(async (tx) => {
-      const claims = JSON.stringify(userId ? { sub: userId, role } : { role });
+      const claims = JSON.stringify(
+        userId ? { sub: userId, role, aal } : { role },
+      );
       await tx`select set_config('request.jwt.claims', ${claims}, true)`;
       await tx.unsafe(`set local role ${role}`);
       throw new Rollback(await fn(tx));

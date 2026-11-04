@@ -176,7 +176,16 @@ Claude Code will try to do these itself and only ask you for the ones it can't.
 update public.profiles set is_admin = true where id = (select id from auth.users where email = 'you@example.com');
 ```
 - [ ] **M3 (friends alpha):** invite a few friends and share the link.
-- [ ] **M5:** turn on two-factor (authenticator app) on your game account. The admin panel will require it.
+- [ ] **M5: two-factor for admins (D103).** Admin pages and every admin change need a code from an authenticator app.
+  - In each Supabase project (`lfs-dev` and `lfs-prod`), check **Authentication → Multi-Factor**: **TOTP (App Authenticator)** should be enabled. It is by default.
+  - Sign in to the game and open **Admin**. You'll be sent to **Admin → Security**: click **Set up two-factor**, scan the QR code with an authenticator app (Google Authenticator, 1Password, Authy…) and type the 6-digit code. Do it on the live site and on previews (they use `lfs-dev`, a separate account list).
+  - After that, each new sign-in asks for a code before any admin page opens.
+  - Add a **backup app** on the same page (another phone or a password manager), so losing one phone doesn't lock you out.
+  - **Locked out?** In that Supabase project open **SQL Editor** and run the line below with your sign-in email. It removes your authenticator apps; then set up two-factor again.
+
+```sql
+delete from auth.mfa_factors where user_id = (select id from auth.users where email = 'you@example.com');
+```
 - [ ] **M6:** sign up at sentry.io (free Developer plan) and connect it to Vercel; turn on **Web Analytics** in the Vercel project. Claude Code adds the code.
 - [ ] **Every year:** renew the domain at Squarespace, the backup access token (`BACKUP_REPO_TOKEN`) and the release token (`RELEASE_PLEASE_TOKEN`).
 

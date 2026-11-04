@@ -197,6 +197,13 @@
       "when": 1793781597480,
       "tag": "0027_fixture_manager_team_function",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1793784101011,
+      "tag": "0028_admin_requires_two_factor",
+      "breakpoints": true
     }
   ]
 }

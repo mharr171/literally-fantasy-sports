@@ -39,6 +39,17 @@ AS $$
 $$;
 GRANT EXECUTE ON FUNCTION auth.uid() TO anon, authenticated, service_role;
 
+-- Same as Supabase: the request's JWT claims as JSON (e.g. "aal" for MFA).
+CREATE FUNCTION auth.jwt() RETURNS jsonb
+LANGUAGE sql STABLE
+AS $$
+  SELECT coalesce(
+    nullif(current_setting('request.jwt.claim', true), ''),
+    nullif(current_setting('request.jwt.claims', true), '')
+  )::jsonb
+$$;
+GRANT EXECUTE ON FUNCTION auth.jwt() TO anon, authenticated, service_role;
+
 -- Supabase's default privileges on new tables in "public".
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
   GRANT ALL ON TABLES TO anon, authenticated, service_role;

@@ -2,7 +2,7 @@
 
 import { refresh } from "next/cache";
 import { z } from "zod";
-import { getCurrentProfile } from "@/lib/auth";
+import { assertAdminAction } from "@/lib/auth";
 import { playOneWeek } from "@/lib/play-week";
 import { loadEnergySettings } from "@/lib/sport-settings";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -19,8 +19,7 @@ export type ToolResult =
 async function adminTeam(
   teamId: string,
 ): Promise<{ adminId: string; team: MyTeam }> {
-  const profile = await getCurrentProfile();
-  if (!profile?.isAdmin) throw new Error("Only admins can use testing tools.");
+  const profile = await assertAdminAction();
   const id = z.uuid().parse(teamId);
   const team = await loadTeamById(id);
   if (!team) throw new Error("That team doesn't exist.");

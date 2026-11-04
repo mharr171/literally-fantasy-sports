@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isAdminPath } from "./admin-path";
+import { adminNextPath, isAdminPath } from "./admin-path";
 
 describe("isAdminPath", () => {
   it("matches the admin area and everything under it", () => {
@@ -13,5 +13,27 @@ describe("isAdminPath", () => {
     expect(isAdminPath("/admins")).toBe(false);
     expect(isAdminPath("/")).toBe(false);
     expect(isAdminPath("/sign-in")).toBe(false);
+  });
+});
+
+describe("adminNextPath (M5)", () => {
+  it("returns to the admin page the admin was heading for", () => {
+    expect(adminNextPath("/admin/balance")).toBe("/admin/balance");
+    expect(adminNextPath("/admin")).toBe("/admin");
+  });
+
+  it("falls back to the overview for anything else", () => {
+    for (const bad of [
+      null,
+      undefined,
+      "",
+      "/admin/security",
+      "/team",
+      "https://evil.example/admin",
+      "//evil.example/admin",
+      "/admin/../team",
+      "/admin/x?y=1",
+    ])
+      expect(adminNextPath(bad)).toBe("/admin");
   });
 });

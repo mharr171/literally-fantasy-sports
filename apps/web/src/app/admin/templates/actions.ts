@@ -9,7 +9,7 @@ import {
   variantsToRows,
 } from "@lfs/sport-soccer";
 import { revalidatePath } from "next/cache";
-import { getCurrentProfile } from "@/lib/auth";
+import { assertAdminAction } from "@/lib/auth";
 import { publishDraft, saveDraftRows } from "@/lib/config-drafts";
 import {
   listSoccerVersions,
@@ -21,13 +21,6 @@ import { type SaveInput, saveInputSchema, templatesSchema } from "./schema";
 export type ActionResult<T> =
   | { ok: true; data: T }
   | { ok: false; error: string };
-
-/** Server actions are public endpoints: re-check admin on every call. */
-async function assertAdmin() {
-  const profile = await getCurrentProfile();
-  if (!profile?.isAdmin)
-    throw new Error("Only admins can change game settings.");
-}
 
 const fail = (e: unknown): { ok: false; error: string } => ({
   ok: false,
@@ -43,7 +36,7 @@ export async function saveTemplates(
   input: SaveInput,
 ): Promise<ActionResult<{ version: number }>> {
   try {
-    await assertAdmin();
+    await assertAdminAction();
     const { baseVersion, note, templates, variants, enabled } =
       saveInputSchema.parse(input);
     const version = await saveDraftRows(baseVersion, note, "Template edits", [
@@ -77,7 +70,7 @@ export async function testTemplates(
   input: SaveInput,
 ): Promise<ActionResult<TestResult>> {
   try {
-    await assertAdmin();
+    await assertAdminAction();
     const { baseVersion, templates, variants, enabled } =
       saveInputSchema.parse(input);
     const versions = await listSoccerVersions();
@@ -128,7 +121,7 @@ export async function publishVersion(
   version: number,
 ): Promise<ActionResult<{ version: number }>> {
   try {
-    await assertAdmin();
+    await assertAdminAction();
     await publishDraft(version);
     revalidatePath("/admin/templates");
     revalidatePath("/admin/balance");
