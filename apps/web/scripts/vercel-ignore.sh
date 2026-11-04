@@ -8,8 +8,10 @@ if [ -z "$base" ] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
   echo "No earlier deployment to compare with: building."
   exit 1
 fi
-if git diff --quiet "$base" HEAD -- . ../../packages ../../package.json \
-  ../../pnpm-lock.yaml ../../pnpm-workspace.yaml ../../turbo.json; then
+# docs/legal: the privacy policy and terms pages are built from it.
+if git diff --quiet "$base" HEAD -- . ../../packages ../../docs/legal \
+  ../../package.json ../../pnpm-lock.yaml ../../pnpm-workspace.yaml \
+  ../../turbo.json; then
   echo "Nothing the site is built from changed since $base: skipping."
   exit 0
 fi
