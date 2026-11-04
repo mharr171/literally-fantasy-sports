@@ -1,6 +1,6 @@
 # LiterallyFantasySports — Project Roadmap
 
-Nov 2, 2026 · @Gary · Last updated: Nov 4, 2026 (D81)
+Nov 2, 2026 · @Gary · Last updated: Nov 4, 2026 (D82)
 
 ## Review progress
 
@@ -102,6 +102,7 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D79 | Nov 4, 2026 | A chemistry colour group needs at least 2 players on the field to earn any boost; smaller groups don't rank. Refines D43/D52 | M1 |
 | D80 | Nov 4, 2026 | No home advantage for now: every match is played as if on neutral ground. Can be added later as a tuning value | M1 |
 | D81 | Nov 4, 2026 | Soccer match-day squad rules: up to 5 subs in up to 3 stoppages; the manager's sub plan runs first, then automatic subs for injuries and for tiredness (from 55'); red cards are never replaced; if the keeper goes with no subs left, the best outfield keeper moves in goal. Starting rates tuned with the harness (≈3.6 yellows, 0.13 reds, 0.33 injuries and 8 subs per match) | M1 |
+| D82 | Nov 4, 2026 | Template variants: admins can paint several influence templates per position (e.g. an attacking and a defensive full-back) and tick which ones are available to use. Planned for M5; how a variant is chosen in a match is still open (see Step 8) | M1 |
 
 ## 1. Vision & goals
 
@@ -289,7 +290,7 @@ The engine (M1) comes before any game UI because everything else depends on it. 
 - [ ] **M2 Players and squads (~4 wks) → `v0.3`:** player generation with worth, team creation with a 22-player starting squad (one per sport per account), tiered and position-focused packs (keep or bulk-resell), free release, drag-and-drop matchday squad builder with sub plan. *Done when:* a new user gets a squad, opens a pack, and saves a valid matchday 22.
 - [ ] **M3 Seasons (~3 wks) → `v0.4`, friends alpha:** league building from AI and ghost teams, double round-robin fixtures, top-4 playoffs, Elo, payouts, standings, season end (aging, retirement, youth intake, roster limit check), ghost snapshot (tagged with game version and completion date) and leaderboard entry. *Done when:* a full season including playoffs can be played, the roster carries into the next season, its ghost appears in another league, and a few friends are invited to the alpha.
 - [ ] **M4 Energy and continuity (~3 wks) → `v0.5`:** energy refill, match fitness carried between game weeks, injury and suspension countdowns, form, morale. Includes fixes from alpha feedback. *Done when:* rotating the squad visibly matters over a season.
-- [ ] **M5 Admin and visualization (~4 wks) → `v0.6`:** full admin panel with two-factor sign-in, pitch heatmaps on result pages, play-by-play log, replay from the seed and stored config version. *Done when:* an admin changes a setting without a deploy, and every result page shows the replay.
+- [ ] **M5 Admin and visualization (~4 wks) → `v0.6`:** full admin panel with two-factor sign-in, template variants (several templates per position, with checkboxes for which are available, D82), pitch heatmaps on result pages, play-by-play log, replay from the seed and stored config version. *Done when:* an admin changes a setting without a deploy, and every result page shows the replay.
 - [ ] **M6 Polish and launch (~2 wks) → `v1.0.0`:** onboarding, empty and error states, in-game "What's new" page, Sentry and Vercel Analytics, README with screenshots. *Done when:* a friend can sign up and play without help.
 
 Total: about 22 weeks of effort.
@@ -397,3 +398,4 @@ Work as if there were a team: every change goes through an issue, a branch, a PR
 - [x] Packs, recruitment and roster → D46–D50, D53–D55
 - [ ] Player worth formula and bulk resale percentage → decide while building M2 (D73)
 - [ ] Cross-sport bonus size and cap → decide when the feature is built (D73)
+- [ ] Template variants (D82): who picks a position's variant — the manager per lineup slot (like a player role), the engine at random from the available ones, or a team tactic? Decide before building in M5
