@@ -14,6 +14,7 @@ import {
   type SeasonStatus,
   type SnapshotPlayer,
   type SoccerConfig,
+  type SoccerTeam,
   type Stage,
   soccerConfigFromValues,
 } from "@lfs/sport-soccer";
@@ -273,4 +274,72 @@ export async function liveGenerationSettings(): Promise<GenerationSettings> {
   return generationSettingsFromValues(
     Object.fromEntries((rows ?? []).map((r) => [r.key as string, r.value])),
   );
+}
+
+/** The manager's team as it played a match, kept with the result (M5). */
+export interface StoredManagerTeam {
+  team: SoccerTeam;
+  /** Names of everyone in the matchday squad, by player id. */
+  names: Record<string, string>;
+}
+
+/** Everyone in a team's matchday squad: starters and bench. */
+export function playedIds(team: SoccerTeam): string[] {
+  return [
+    ...team.lineup.map((s) => s.player.id),
+    ...(team.bench ?? []).map((p) => p.id),
+  ];
+}
+
+/** One of the team's matches with what it takes to replay it, or null. */
+export async function loadMatch(teamId: string, fixtureId: string) {
+  const db = createServiceClient();
+  const { data: fixture, error } = await db
+    .from("fixtures")
+    .select(
+      "id, season_id, week, stage, home_slot, away_slot, home_score, away_score, winner, summary, manager_team",
+    )
+    .eq("id", fixtureId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!fixture || fixture.home_score === null) return null;
+  const { data: season, error: seasonError } = await db
+    .from("seasons")
+    .select("id, number, seed, config_version, team_id")
+    .eq("id", fixture.season_id)
+    .maybeSingle();
+  if (seasonError) throw new Error(seasonError.message);
+  // Only the team's own seasons: a manager can't open another's matches.
+  if (!season || season.team_id !== teamId) return null;
+  const { data: slots, error: slotsError } = await db
+    .from("season_teams")
+    .select("slot, kind, name, start_rating, snapshot_id")
+    .eq("season_id", season.id)
+    .order("slot");
+  if (slotsError) throw new Error(slotsError.message);
+  return {
+    seasonNumber: season.number as number,
+    /** Server only: never send it to the browser. */
+    seed: season.seed as string,
+    configVersion: season.config_version as string,
+    slots: (slots ?? []).map((s) => ({
+      slot: s.slot as number,
+      kind: s.kind as LeagueSlot["kind"],
+      name: s.name as string,
+      startRating: s.start_rating as number,
+      ghostId: s.snapshot_id as string | null,
+    })),
+    fixture: {
+      id: fixture.id as string,
+      week: fixture.week as number,
+      stage: fixture.stage as Stage,
+      homeSlot: fixture.home_slot as number,
+      awaySlot: fixture.away_slot as number,
+      homeScore: fixture.home_score as number,
+      awayScore: fixture.away_score as number,
+      winner: fixture.winner as SeasonFixture["winner"],
+      summary: fixture.summary as MatchSummary | null,
+    },
+    managerTeam: fixture.manager_team as StoredManagerTeam | null,
+  };
 }

@@ -11,10 +11,17 @@ import {
   nextMorale,
   playWeek,
   rosterWarning,
+  type SoccerTeam,
   squadProblems,
   squadToTeam,
 } from "@lfs/sport-soccer";
-import { configFor, loadGhostTeams, loadLatestSeason } from "./season";
+import {
+  configFor,
+  loadGhostTeams,
+  loadLatestSeason,
+  playedIds,
+  type StoredManagerTeam,
+} from "./season";
 import { loadEnergySettings } from "./sport-settings";
 import { createServiceClient } from "./supabase/service";
 import { loadRoster, loadSquad, loadStarterPacks, type MyTeam } from "./team";
@@ -85,6 +92,15 @@ export async function playOneWeek(
   );
   const elo = Object.fromEntries(season.slots.map((s) => [s.slot, s.elo]));
   elo[MANAGER_SLOT] = team.elo;
+  const managerTeam: SoccerTeam = {
+    ...squadToTeam(team.id, playing, new Map(roster.map((p) => [p.id, p]))),
+    fitness: Object.fromEntries(roster.map((p) => [p.id, p.condition.fitness])),
+    // Form and morale nudge skill a little (M4).
+    modifiers: Object.fromEntries(
+      roster.map((p) => [p.id, formModifier(p.form, team.morale)]),
+    ),
+  };
+  const managerNames = new Map(roster.map((p) => [p.id, p.displayName]));
   const outcome = playWeek(
     {
       seed: season.seed,
@@ -95,21 +111,23 @@ export async function playOneWeek(
       fixtures: season.fixtures,
     },
     {
-      team: {
-        ...squadToTeam(team.id, playing, new Map(roster.map((p) => [p.id, p]))),
-        fitness: Object.fromEntries(
-          roster.map((p) => [p.id, p.condition.fitness]),
-        ),
-        // Form and morale nudge skill a little (M4).
-        modifiers: Object.fromEntries(
-          roster.map((p) => [p.id, formModifier(p.form, team.morale)]),
-        ),
-      },
-      names: new Map(roster.map((p) => [p.id, p.displayName])),
+      team: managerTeam,
+      names: managerNames,
       ghosts: await loadGhostTeams(season.slots),
     },
     config,
   );
+  // Kept with the manager's result so the match can be replayed (M5).
+  const keptTeam: StoredManagerTeam = {
+    team: managerTeam,
+    names: Object.fromEntries(
+      playedIds(managerTeam).map((id) => [id, managerNames.get(id) ?? "?"]),
+    ),
+  };
+  const isMine = (id: string) => {
+    const f = season.fixtures.find((x) => x.id === id);
+    return f?.homeSlot === MANAGER_SLOT || f?.awaySlot === MANAGER_SLOT;
+  };
   const { error } = await createServiceClient().rpc("record_week", {
     p_season: season.id,
     p_week: season.week,
@@ -119,6 +137,7 @@ export async function playOneWeek(
       away_score: p.awayScore,
       winner: p.winner,
       summary: p.summary,
+      manager_team: isMine(p.id) ? keptTeam : null,
     })),
     p_elo: Object.fromEntries(
       Object.entries(outcome.elo).map(([slot, rating]) => [slot, rating]),

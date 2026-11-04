@@ -9,6 +9,7 @@ import {
   MANAGER_SLOT,
   newLeague,
   playWeek,
+  replayFixture,
   type SeasonFixture,
   type SeasonState,
   table,
@@ -203,4 +204,76 @@ describe("playWeek", () => {
 
 it("knows the manager's slot", () => {
   expect(MANAGER_SLOT).toBe(0);
+});
+
+describe("replayFixture", () => {
+  it("plays every match of a season again exactly", () => {
+    const { state } = playSeason("replay");
+    const manager = managerSide(1500);
+    // Knockout matches too: extra time and penalties come out the same.
+    expect(state.fixtures.some((f) => f.stage === "final")).toBe(true);
+    for (const f of state.fixtures) {
+      const r = replayFixture(state.seed, state.slots, f, manager, config);
+      expect(r.output.result.score).toEqual({
+        home: f.homeScore,
+        away: f.awayScore,
+      });
+      if (f.stage !== "league") expect(r.output.result.winner).toBe(f.winner);
+    }
+  });
+
+  it("gives the same summary, names and heatmaps as the week did", () => {
+    const state = startSeason("replay-week");
+    const manager = managerSide(1500);
+    const out = playWeek(state, manager, config);
+    for (const p of out.played) {
+      const f = state.fixtures.find((x) => x.id === p.id) as SeasonFixture;
+      const r = replayFixture(state.seed, state.slots, f, manager, config);
+      expect(r.summary).toEqual(p.summary);
+      expect(r.names.size).toBeGreaterThanOrEqual(22);
+      const sum = (side: "home" | "away") =>
+        r.output.influence[side].values.reduce((a, v) => a + v, 0);
+      expect(sum("home")).toBeGreaterThan(0);
+      expect(sum("away")).toBeGreaterThan(0);
+    }
+  });
+
+  it("replays from the manager's team as saved in the database (JSON)", () => {
+    const state = startSeason("replay-json");
+    const manager = managerSide(1500);
+    const out = playWeek(state, manager, config);
+    const saved = {
+      team: JSON.parse(JSON.stringify(manager.team)),
+      names: new Map(
+        Object.entries(
+          JSON.parse(JSON.stringify(Object.fromEntries(manager.names))),
+        ) as [string, string][],
+      ),
+    };
+    for (const p of out.played) {
+      const f = state.fixtures.find((x) => x.id === p.id) as SeasonFixture;
+      expect(
+        replayFixture(state.seed, state.slots, f, saved, config).summary,
+      ).toEqual(p.summary);
+    }
+  });
+
+  it("replays AI v AI matches without the manager's team", () => {
+    const state = startSeason("replay-ai");
+    const ai = state.fixtures.find(
+      (f) =>
+        f.week === 1 &&
+        f.homeSlot !== MANAGER_SLOT &&
+        f.awaySlot !== MANAGER_SLOT,
+    ) as SeasonFixture;
+    const a = replayFixture(state.seed, state.slots, ai, {}, config);
+    const b = replayFixture(state.seed, state.slots, ai, {}, config);
+    expect(a.output.events).toEqual(b.output.events);
+    const mine = state.fixtures.find(
+      (f) => f.homeSlot === MANAGER_SLOT || f.awaySlot === MANAGER_SLOT,
+    ) as SeasonFixture;
+    expect(() =>
+      replayFixture(state.seed, state.slots, mine, {}, config),
+    ).toThrow(/wasn't kept/);
+  });
 });

@@ -127,6 +127,7 @@ export function SeasonView({
       {season.status !== "finished" && notice}
       {lastMine?.summary && (
         <MatchCard
+          id={lastMine.id}
           title={`Last match · ${lastMine.stage === "league" ? `week ${lastMine.week}` : lastMine.stage === "semi" ? "semi-final" : "final"}`}
           home={name(lastMine.homeSlot)}
           away={name(lastMine.awaySlot)}
@@ -235,7 +236,11 @@ export function SeasonView({
                       <span className="truncate text-right">
                         {name(f.homeSlot)}
                       </span>
-                      <span className="tabular-nums">
+                      <Link
+                        href={`/season/match/${f.id}`}
+                        className="tabular-nums hover:underline"
+                        title="Heatmap, play-by-play and replay"
+                      >
                         {f.homeScore} – {f.awayScore}
                         {f.summary?.decidedBy === "penalties" &&
                         f.summary.penalties
@@ -243,7 +248,7 @@ export function SeasonView({
                           : f.summary?.decidedBy === "extra_time"
                             ? " (aet)"
                             : ""}
-                      </span>
+                      </Link>
                       <span className="truncate">{name(f.awaySlot)}</span>
                     </li>
                   ))}
@@ -258,6 +263,7 @@ export function SeasonView({
 }
 
 function MatchCard({
+  id,
   title,
   home,
   away,
@@ -265,6 +271,7 @@ function MatchCard({
   awayScore,
   summary,
 }: {
+  id: string;
   title: string;
   home: string;
   away: string;
@@ -299,7 +306,7 @@ function MatchCard({
                 : summary.shots.home}
             </span>
             <span className="text-center text-zinc-500">
-              {stat === "possession" ? "Possession" : "Shots"}
+              {stat === "possession" ? "Possession" : "On target"}
             </span>
             <span className="tabular-nums">
               {stat === "possession"
@@ -324,6 +331,12 @@ function MatchCard({
           ))}
         </ul>
       )}
+      <Link
+        href={`/season/match/${id}`}
+        className="self-center text-sm font-medium hover:underline"
+      >
+        Heatmap, play-by-play and replay →
+      </Link>
     </div>
   );
 }

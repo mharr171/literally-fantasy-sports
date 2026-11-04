@@ -265,28 +265,10 @@ export function playWeek(
   const teamFor = (slot: number): SoccerTeam => {
     const cached = teams.get(slot);
     if (cached) return cached;
-    let team: SoccerTeam;
-    if (slot === MANAGER_SLOT) team = manager.team;
-    else {
-      const info = state.slots.find((s) => s.slot === slot);
-      if (!info) throw new Error(`No team in slot ${slot}.`);
-      const ghost =
-        info.kind === "ghost" ? manager.ghosts?.get(slot) : undefined;
-      if (ghost) {
-        for (const [id, n] of ghost.names) names.set(id, n);
-        teams.set(slot, ghost.team);
-        return ghost.team;
-      }
-      const ai = aiTeam(state.seed, slot, info.startRating, aiSettings);
-      for (const p of ai.players) names.set(p.id, p.displayName);
-      team = squadToTeam(
-        `slot-${slot}`,
-        ai.squad,
-        new Map(ai.players.map((p) => [p.id, p])),
-      );
-    }
-    teams.set(slot, team);
-    return team;
+    const built = slotTeam(state.seed, state.slots, slot, manager, aiSettings);
+    for (const [id, n] of built.names) names.set(id, n);
+    teams.set(slot, built.team);
+    return built.team;
   };
 
   const elo = { ...state.elo };
@@ -303,7 +285,7 @@ export function playWeek(
         mode: knockout ? "knockout" : "league",
         config,
       },
-      `${state.seed}:${f.id}`,
+      matchSeed(state.seed, f.id),
     );
     const homeScore = result.score.home;
     const awayScore = result.score.away;
@@ -420,6 +402,84 @@ export function playWeek(
     week,
     managerReports,
     managerResult,
+  };
+}
+
+/** A fixture's match seed: from the season seed and the fixture's id. */
+export function matchSeed(seasonSeed: string, fixtureId: string): string {
+  return `${seasonSeed}:${fixtureId}`;
+}
+
+/**
+ * The team in a league slot as the engine plays it, with names for match
+ * reports: the manager's own, a ghost from its snapshot, or an AI club
+ * rebuilt from the season seed (also a ghost whose snapshot is gone).
+ */
+function slotTeam(
+  seed: string,
+  slots: readonly LeagueSlot[],
+  slot: number,
+  manager: Partial<ManagerSide>,
+  aiSettings: AiTeamSettings,
+): { team: SoccerTeam; names: ReadonlyMap<string, string> } {
+  if (slot === MANAGER_SLOT) {
+    if (!manager.team)
+      throw new Error("The manager's team for this match wasn't kept.");
+    return { team: manager.team, names: manager.names ?? new Map() };
+  }
+  const info = slots.find((s) => s.slot === slot);
+  if (!info) throw new Error(`No team in slot ${slot}.`);
+  const ghost = info.kind === "ghost" ? manager.ghosts?.get(slot) : undefined;
+  if (ghost) return ghost;
+  const ai = aiTeam(seed, slot, info.startRating, aiSettings);
+  return {
+    team: squadToTeam(
+      `slot-${slot}`,
+      ai.squad,
+      new Map(ai.players.map((p) => [p.id, p])),
+    ),
+    names: new Map(ai.players.map((p) => [p.id, p.displayName])),
+  };
+}
+
+/** A played match, run again from its seed (M5): every event and both heatmaps. */
+export interface Replay {
+  output: ReturnType<typeof simulateMatch>;
+  /** Player names by id, for both sides. */
+  names: Map<string, string>;
+  summary: MatchSummary;
+}
+
+/**
+ * Plays a fixture again exactly as it was played: the same teams, settings
+ * and seed give the same match. `manager` is the manager's team as it
+ * played this fixture (kept with the result); it's only needed when the
+ * manager was in it. Ghosts come in `manager.ghosts`, as for `playWeek`.
+ */
+export function replayFixture(
+  seed: string,
+  slots: readonly LeagueSlot[],
+  fixture: Pick<SeasonFixture, "id" | "stage" | "homeSlot" | "awaySlot">,
+  manager: Partial<ManagerSide>,
+  config: SoccerConfig,
+  aiSettings: AiTeamSettings = DEFAULT_AI_TEAM_SETTINGS,
+): Replay {
+  const home = slotTeam(seed, slots, fixture.homeSlot, manager, aiSettings);
+  const away = slotTeam(seed, slots, fixture.awaySlot, manager, aiSettings);
+  const names = new Map([...home.names, ...away.names]);
+  const output = simulateMatch(
+    {
+      home: home.team,
+      away: away.team,
+      mode: fixture.stage === "league" ? "league" : "knockout",
+      config,
+    },
+    matchSeed(seed, fixture.id),
+  );
+  return {
+    output,
+    names,
+    summary: summarize(output.result, output.events, names),
   };
 }
 

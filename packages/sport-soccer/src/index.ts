@@ -9,6 +9,7 @@ export * from "./harness";
 export * from "./match";
 export * from "./matchday";
 export * from "./overall";
+export * from "./play-by-play";
 export * from "./player";
 export * from "./positions";
 export * from "./roster";
