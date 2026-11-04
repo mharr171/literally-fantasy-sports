@@ -71,3 +71,59 @@ export function flipMap(map: InfluenceMap): InfluenceMap {
   for (let i = 0; i < n; i++) out.values[n - 1 - i] = map.values[i] as number;
   return out;
 }
+
+/**
+ * Which side of a shared position a slot is on (D112): a 4-4-2's two centre
+ * backs are the left and right centre-back. Slots with no side use the
+ * template as painted.
+ */
+export type SlotSide = "left" | "right";
+
+/** Columns a left or right version is moved towards its touchline. */
+export const SIDE_SHIFT = 3;
+
+const sideCache = new WeakMap<
+  InfluenceMap,
+  Partial<Record<SlotSide, InfluenceMap>>
+>();
+
+/**
+ * The left or right version of a template (D112): every row moved
+ * SIDE_SHIFT columns towards that touchline, keeping the row's total. Only
+ * where on the pitch a player's influence shows changes; how much of it
+ * falls in each third, and so the match itself, stays the same.
+ */
+export function sideMap(
+  map: InfluenceMap,
+  side: SlotSide | undefined,
+): InfluenceMap {
+  if (!side) return map;
+  const cached = sideCache.get(map)?.[side];
+  if (cached) return cached;
+  const { rows, cols } = map.size;
+  const shift = side === "left" ? -SIDE_SHIFT : SIDE_SHIFT;
+  const out = createInfluenceMap(map.size);
+  for (let r = 0; r < rows; r++) {
+    const start = r * cols;
+    let before = 0;
+    let after = 0;
+    for (let c = 0; c < cols; c++) {
+      const v = map.values[start + c] as number;
+      before += v;
+      const to = c + shift;
+      if (to >= 0 && to < cols) {
+        out.values[start + to] = (out.values[start + to] as number) + v;
+        after += v;
+      }
+    }
+    // Put back what fell off the edge, so the row keeps its total.
+    for (let c = 0; c < cols; c++) {
+      if (after > 0)
+        out.values[start + c] =
+          ((out.values[start + c] as number) * before) / after;
+      else out.values[start + c] = map.values[start + c] as number;
+    }
+  }
+  sideCache.set(map, { ...sideCache.get(map), [side]: out });
+  return out;
+}

@@ -1,6 +1,11 @@
 "use client";
 
-import type { HarnessReport } from "@lfs/sport-soccer";
+import {
+  generatedVariants,
+  type HarnessReport,
+  type SlotSide,
+  sideGrid,
+} from "@lfs/sport-soccer";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import {
@@ -27,6 +32,8 @@ const CELL = 20;
 type Variants = Partial<Record<Position, Record<string, Grid>>>;
 type Enabled = Partial<Record<Position, string[]>>;
 const DEFAULT = "default";
+/** Positions that formations use more than once, so have left and right slots (D112). */
+const SHARED: readonly Position[] = ["CB", "DM", "CM", "AM", "ST"];
 
 interface Props {
   version: number | null;
@@ -57,6 +64,7 @@ export function TemplateEditor(props: Props) {
   const [size, setSize] = useState(2);
   const [strength, setStrength] = useState(0.5);
   const [mirror, setMirror] = useState(true);
+  const [side, setSide] = useState<SlotSide | null>(null);
   const [note, setNote] = useState(props.note);
   const [dirty, setDirty] = useState(false);
   const [message, setMessage] = useState<{
@@ -83,14 +91,17 @@ export function TemplateEditor(props: Props) {
   const names = Object.keys(variants[position] ?? {});
   const usable = (name: string) =>
     (enabled[position] ?? [DEFAULT]).includes(name);
+  const shared = SHARED.includes(position);
+  const showSide = shared ? side : null;
 
   // Draw the pitch and the current template.
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
-    drawPitch(ctx, grid, pairGrid ?? grid, mirror && !!pairGrid);
-  }, [grid, pairGrid, mirror]);
+    if (showSide) drawPitch(ctx, sideGrid(grid, showSide), grid, false);
+    else drawPitch(ctx, grid, pairGrid ?? grid, mirror && !!pairGrid);
+  }, [grid, pairGrid, mirror, showSide]);
 
   const cellAt = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -139,6 +150,7 @@ export function TemplateEditor(props: Props) {
   );
 
   const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (showSide) return; // Previewing a left or right slot: nothing to paint.
     e.currentTarget.setPointerCapture(e.pointerId);
     painting.current = true;
     setHistory((h) => [...h.slice(-19), { templates, variants }]);
@@ -205,6 +217,47 @@ export function TemplateEditor(props: Props) {
     }));
     setVariant(name);
     setDirty(true);
+  };
+
+  // D112: three generated starting variants per position, ticked for new
+  // players in place of the default, ready to adjust.
+  const addGenerated = () => {
+    if (
+      !window.confirm(
+        "Add 3 generated variants to every position (names already used are skipped) and make them the templates new players are given? Nothing changes for players until you save and publish.",
+      )
+    )
+      return;
+    const generated = generatedVariants();
+    setHistory((h) => [...h.slice(-19), { templates, variants }]);
+    const nextVariants: Variants = { ...variants };
+    const nextEnabled: Enabled = { ...enabled };
+    let added = 0;
+    for (const p of POSITION_ORDER) {
+      const own = { ...nextVariants[p] };
+      const fresh: string[] = [];
+      for (const [name, g] of Object.entries(generated[p])) {
+        if (own[name] || Object.keys(own).length >= 8) continue;
+        own[name] = g;
+        fresh.push(name);
+      }
+      nextVariants[p] = own;
+      added += fresh.length;
+      if (fresh.length > 0) {
+        const kept = (nextEnabled[p] ?? [DEFAULT]).filter((n) => n !== DEFAULT);
+        nextEnabled[p] = [...new Set([...kept, ...fresh])];
+      }
+    }
+    setVariants(nextVariants);
+    setEnabled(nextEnabled);
+    setDirty(true);
+    setMessage({
+      kind: "ok",
+      text:
+        added > 0
+          ? `Added ${added} generated variants. Adjust them, then save and publish.`
+          : "Every generated variant is already here.",
+    });
   };
 
   const deleteVariant = () => {
@@ -349,6 +402,9 @@ export function TemplateEditor(props: Props) {
         <button type="button" onClick={addVariant} className={secondary}>
           + Add variant
         </button>
+        <button type="button" onClick={addGenerated} className={secondary}>
+          Add generated variants (all positions)
+        </button>
       </div>
       <div className="flex flex-wrap items-center gap-4 text-sm">
         <label className="flex items-center gap-2">
@@ -380,7 +436,7 @@ export function TemplateEditor(props: Props) {
             width={COLS * CELL}
             height={ROWS * CELL}
             aria-label={`Influence template for ${POSITION_LABELS[position]}`}
-            className="h-auto w-full max-w-[340px] touch-none rounded-md shadow-sm"
+            className={`h-auto w-full max-w-[340px] touch-none rounded-md shadow-sm ${showSide ? "cursor-not-allowed" : ""}`}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={endStroke}
@@ -389,6 +445,35 @@ export function TemplateEditor(props: Props) {
           <p className="text-xs uppercase tracking-wide text-zinc-500">
             Own goal
           </p>
+          {shared && (
+            <fieldset className="flex flex-wrap items-center justify-center gap-3 text-sm">
+              <legend className="sr-only">Show the slot</legend>
+              {(
+                [
+                  [null, position],
+                  ["left", `L${position}`],
+                  ["right", `R${position}`],
+                ] as const
+              ).map(([s, label]) => (
+                <label key={label} className="flex items-center gap-1">
+                  <input
+                    type="radio"
+                    name="side"
+                    checked={showSide === s}
+                    onChange={() => setSide(s)}
+                  />
+                  {label}
+                </label>
+              ))}
+            </fieldset>
+          )}
+          {showSide && (
+            <p className="max-w-[340px] text-center text-xs text-zinc-500">
+              The {showSide} slot when a formation has two or three {position}s:
+              the same template moved towards that touchline. Switch back to{" "}
+              {position} to paint.
+            </p>
+          )}
         </div>
 
         <div className="flex flex-1 flex-col gap-4 text-sm">

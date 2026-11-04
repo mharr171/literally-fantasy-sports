@@ -11,6 +11,9 @@ import {
   type PlannedSub,
   type Position,
   positionFit,
+  type SlotSide,
+  sideGrid,
+  slotLabel,
   slotRating,
   squadProblems,
   squadScore,
@@ -107,14 +110,19 @@ export function SquadBuilder({
   const present = starters.filter(Boolean) as RosterPlayer[];
   // Heatmaps (M5): the highlighted player's template in their slot, or the
   // whole starting 11 weighted by rating.
-  const gridFor = (player: RosterPlayer, position: Position) => {
+  const gridFor = (
+    player: RosterPlayer,
+    position: Position,
+    side: SlotSide | undefined,
+  ) => {
     if (!templates) return null;
     const variant =
       player.templateVariant !== "default" &&
       player.primaryPosition === position
         ? templates.variants[position]?.[player.templateVariant]
         : undefined;
-    return variant ?? templates.templates[position];
+    // A left or right slot of a shared position uses that version (D112).
+    return sideGrid(variant ?? templates.templates[position], side);
   };
   const focus = hover ?? (selected?.area === "lineup" ? selected.index : null);
   let overlayGrid: number[][] | null = null;
@@ -122,7 +130,7 @@ export function SquadBuilder({
     const sum = Array.from({ length: 25 }, () => Array(17).fill(0) as number[]);
     slots.forEach((slot, i) => {
       const p = starters[i];
-      const g = p ? gridFor(p, slot.position) : null;
+      const g = p ? gridFor(p, slot.position, slot.side) : null;
       if (!p || !g) return;
       const weight = slotRating(p, slot.position);
       for (let r = 0; r < g.length; r++) {
@@ -136,7 +144,7 @@ export function SquadBuilder({
   } else if (focus !== null) {
     const p = starters[focus];
     const slot = slots[focus];
-    overlayGrid = p && slot ? gridFor(p, slot.position) : null;
+    overlayGrid = p && slot ? gridFor(p, slot.position, slot.side) : null;
   }
   const selectedId = !selected
     ? null
@@ -381,7 +389,7 @@ export function SquadBuilder({
                   className={`absolute flex w-[22%] -translate-x-1/2 translate-y-1/2 cursor-pointer flex-col items-center rounded-md bg-white/95 px-1 py-0.5 text-center text-[11px] leading-tight text-zinc-900 shadow ${ring(loc)}`}
                 >
                   <span className="font-semibold text-zinc-500">
-                    {s.position}
+                    {slotLabel(s)}
                   </span>
                   {player ? (
                     <>
