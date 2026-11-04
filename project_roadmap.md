@@ -1,6 +1,6 @@
 # LiterallyFantasySports — Project Roadmap
 
-Nov 2, 2026 · @Gary · Last updated: Nov 4, 2026 (D84)
+Nov 2, 2026 · @Gary · Last updated: Nov 4, 2026 (D85)
 
 ## Review progress
 
@@ -105,6 +105,7 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D82 | Nov 4, 2026 | Template variants: admins can paint several influence templates per position (e.g. an attacking and a defensive full-back) and tick which ones are available to use. Planned for M5; how a variant is chosen in a match is still open (see Step 8) | M1 |
 | D83 | Nov 4, 2026 | New teams start with an empty roster and 22 free starter packs: 2 attacker, 4 midfielder, 4 defender, 1 goalkeeper and 11 all-position packs (5 players each). All 22 must be opened before the first match (the team's initial scouting). Players not kept are released for free, with no resale money. Keep 22–30 to play. Replaces D31 | M2 |
 | D84 | Nov 4, 2026 | Each player is given one of the available template variants for their position when generated, and keeps it. Answers D82's open question | M2 |
+| D85 | Nov 4, 2026 | Player worth = 1,000 × 1.08^(overall − 50) × age factor (×1.2 to 21, ×1.0 to 29, ×0.8 to 31, ×0.6 after) × (1 + 4% per point the shown potential midpoint is above the overall), rounded to 50. Uses the shown range, never the hidden potential. Bulk resale pays 25% of worth. Resolves D73's first item | M2 |
 
 ## 1. Vision & goals
 
@@ -398,6 +399,6 @@ Work as if there were a team: every change goes through an issue, a branch, a PR
 - [x] Chemistry details → D51, D52
 - [x] Squad mechanics → D45
 - [x] Packs, recruitment and roster → D46–D50, D53–D55
-- [ ] Player worth formula and bulk resale percentage → decide while building M2 (D73)
+- [x] Player worth formula and bulk resale percentage → D85
 - [ ] Cross-sport bonus size and cap → decide when the feature is built (D73)
 - [x] Template variants: each player gets one at generation and keeps it (D84)
