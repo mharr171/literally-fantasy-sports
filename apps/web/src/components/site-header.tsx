@@ -37,6 +37,9 @@ async function AccountMenu() {
       <Link href="/team" className="font-medium hover:underline">
         My team
       </Link>
+      <Link href="/season" className="font-medium hover:underline">
+        Season
+      </Link>
       {user.isAdmin && (
         <Link href="/admin" className="font-medium hover:underline">
           Admin
