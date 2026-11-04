@@ -1,3 +1,4 @@
+import { currentEnergy } from "@lfs/core";
 import { youthIntake } from "@lfs/sport-soccer";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -6,6 +7,7 @@ import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth";
 import { scoutPlayer } from "@/lib/scouting";
 import { loadLatestSeason, type SeasonReview } from "@/lib/season";
+import { loadEnergySettings } from "@/lib/sport-settings";
 import { loadMyTeam, loadRoster, loadStarterPacks } from "@/lib/team";
 import { StartSeasonButton } from "./season-buttons";
 import { SeasonView } from "./season-view";
@@ -94,8 +96,24 @@ async function SeasonContent() {
     }
   }
 
+  const energySettings = await loadEnergySettings("soccer");
+  const energyNow = energySettings.enabled
+    ? currentEnergy(
+        { energy: team.energy, updatedAt: new Date(team.energyUpdatedAt) },
+        new Date(),
+        energySettings,
+      )
+    : null;
+
   return (
     <SeasonView
+      energy={
+        energyNow && {
+          energy: energyNow.energy,
+          max: energySettings.max,
+          nextAt: energyNow.nextAt?.toISOString() ?? null,
+        }
+      }
       season={season}
       teamName={team.name}
       elo={team.elo}

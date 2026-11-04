@@ -5,6 +5,8 @@ import {
   type ConfigVersionSummary,
   listConfigVersions,
 } from "@/lib/game-config";
+import { loadEnergySettings, SPORTS } from "@/lib/sport-settings";
+import { EnergyForm } from "./energy-form";
 
 export const metadata: Metadata = { title: "Game settings" };
 
@@ -24,6 +26,18 @@ export default function SettingsPage() {
       <Suspense fallback={<p className="text-sm text-zinc-500">Loading…</p>}>
         <VersionTable />
       </Suspense>
+      <div className="mt-4 flex flex-col gap-2">
+        <h2 className="text-xl font-semibold tracking-tight">Energy</h2>
+        <p className="max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
+          Playing a game week costs 1 energy, which comes back one point at a
+          time up to the maximum. Switch it off to let every manager of that
+          sport play as often as they like. Changes apply straight away, with no
+          new settings version.
+        </p>
+        <Suspense fallback={<p className="text-sm text-zinc-500">Loading…</p>}>
+          <EnergySettingsList />
+        </Suspense>
+      </div>
     </section>
   );
 }
@@ -93,6 +107,23 @@ async function VersionTable() {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+async function EnergySettingsList() {
+  await requireAdmin();
+  const settings = await Promise.all(
+    SPORTS.map(async (sport) => ({
+      sport,
+      value: await loadEnergySettings(sport),
+    })),
+  );
+  return (
+    <div className="flex flex-col gap-3">
+      {settings.map(({ sport, value }) => (
+        <EnergyForm key={sport} sport={sport} initial={value} />
+      ))}
     </div>
   );
 }

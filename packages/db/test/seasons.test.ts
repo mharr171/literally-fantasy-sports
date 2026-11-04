@@ -100,15 +100,16 @@ describe.runIf(sql)("seasons, league teams and fixtures (D16)", () => {
       const record = (week: number) =>
         tx`select public.record_week(${season}, ${week}, ${tx.json(results)},
           ${tx.json({ "0": 1512, "1": 1388 })}, 1500,
-          ${tx.json([{ week: 3, stage: "semi", home_slot: 0, away_slot: 1 }])}, 'playoffs', 2)`;
+          ${tx.json([{ week: 3, stage: "semi", home_slot: 0, away_slot: 1 }])}, 'playoffs', 2,
+          2, '2026-11-04T12:00:00Z')`;
       await record(1);
       const twice = await attempt(tx, record(1));
       const wrongWeek = await attempt(
         tx,
-        tx`select public.record_week(${season}, 2, ${tx.json(results)}, '{}', 0, '[]', 'regular', 3)`,
+        tx`select public.record_week(${season}, 2, ${tx.json(results)}, '{}', 0, '[]', 'regular', 3, null, null)`,
       );
       const [teamRow] =
-        await tx`select elo, funds from teams where id = ${team}`;
+        await tx`select elo, funds, energy, energy_updated_at from teams where id = ${team}`;
       const [seasonRow] =
         await tx`select status, week, finished_at from seasons where id = ${season}`;
       const elos =
@@ -121,7 +122,12 @@ describe.runIf(sql)("seasons, league teams and fixtures (D16)", () => {
     });
     expect(result.twice).toMatch(/already played/);
     expect(result.wrongWeek).toMatch(/do not match week 2/);
-    expect(result.teamRow).toEqual({ elo: 1512, funds: 10_000 + 1_500 });
+    expect(result.teamRow).toEqual({
+      elo: 1512,
+      funds: 10_000 + 1_500,
+      energy: 2,
+      energy_updated_at: new Date("2026-11-04T12:00:00Z"),
+    });
     expect(result.seasonRow).toEqual({
       status: "playoffs",
       week: 2,
@@ -192,7 +198,7 @@ describe.runIf(sql)("seasons, league teams and fixtures (D16)", () => {
       await expect(
         run(
           (tx) =>
-            tx`select public.record_week(gen_random_uuid(), 1, '[]', '{}', 99999, '[]', 'finished', 1)`,
+            tx`select public.record_week(gen_random_uuid(), 1, '[]', '{}', 99999, '[]', 'finished', 1, null, null)`,
         ),
       ).rejects.toThrow(/permission denied/);
     }

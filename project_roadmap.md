@@ -37,7 +37,7 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D14 | Nov 2, 2026 | Funds in v1: fixed amount per match played, plus bonuses for wins, playoff placement and championships | 2 |
 | D15 | Nov 2, 2026 | Soccer roster: 30 max; matchday squad of 22 (11 starters + 11 subs) | 2 |
 | D16 | Nov 2, 2026 | Soccer league: 8 teams, double round-robin (14 match weeks), then playoffs | 2 |
-| D17 | Nov 2, 2026 | 1 energy = 1 game week (your next scheduled match). Default 1 energy per 2 hours, max 3; adjustable in admin | 2 |
+| D17 | Nov 2, 2026 | 1 energy = 1 game week (your next scheduled match). Default 1 energy per 2 hours, max 3; adjustable in admin (refill changed by D93) | 2 |
 | D18 | Nov 2, 2026 | Seasons mark in-game time (one in-game year). Roster and Elo carry over; nothing resets | 2 |
 | D19 | Nov 2, 2026 | Per-sport leaderboard of saved season-end entries, ranked by Elo, then by that season's stats | 2 |
 | D20 | Nov 2, 2026 | Sign-in: "Continue with Google" plus passwordless email magic link. No passwords to manage | 2 |
@@ -113,6 +113,7 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D90 | Nov 4, 2026 | Playing a season (M3): a "Play week" button plays the manager's match with their saved matchday squad and the rest of the league's matches at once; energy starts gating it in M4. AI clubs never share a place name. A season's seed (which decides every match) is hidden from managers. The next season opens once season-end processing (ageing, retirement, youth intake) exists | M3 |
 | D91 | Nov 4, 2026 | Season end (proposed defaults, Gary approves): players up to 27 close 25–60% of the gap to their true potential each year (at least 1 point while below it, never past it); 28–30 move −1 to +1; from 31 they lose 1–3 a year (31–32), 2–4 (33–34), then 3–6. Retirement chance at the new age: 33 10%, 34 20%, 35 40%, 36 60%, 37+ 85%. Youth intake: 22 prospects aged 16–18, overall around 45 (35–58), always including 2 keepers. Worth is recalculated after ageing. The manager ends the season, sees who improved, declined and retired, answers the intake, then starts the next season | M3 |
 | D92 | Nov 4, 2026 | Ghosts and leaderboard (proposed defaults, Gary approves): ending a season freezes the team as it finished (roster, matchday squad, Elo, league record, playoff result, game version, date) before ageing. A new league takes up to 4 ghosts within 300 Elo of the manager, the latest snapshot of each team and at most one per team, each in the AI place nearest its Elo; AI clubs fill the rest. The manager's own ghost can appear under a made-up name. If a ghost's team is deleted, its place plays on as an AI club. The leaderboard lists every finished season by Elo, then points, goal difference and goals; rosters stay private | M3 |
+| D93 | Nov 4, 2026 | Energy (Gary): 1 point back every 15 minutes, up to 3 (replaces D17's 1 per 2 hours). Admins can switch the energy requirement off server-wide for each sport, and change the refill time and maximum, on the Game settings page; changes apply at once, without a new settings version. Every played week costs 1 energy, including playoff rounds the manager isn't in | M4 |
 
 ## 1. Vision & goals
 
