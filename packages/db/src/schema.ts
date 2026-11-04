@@ -475,6 +475,12 @@ export const fixtures = pgTable(
     winner: text(),
     /** Possession, shots and key events with player names. */
     summary: jsonb(),
+    /**
+     * The manager's team as it played this match (lineup, bench, sub plan,
+     * fitness, form and morale) and its players' names, so the match can be
+     * replayed from its seed (M5). Null for matches the manager wasn't in.
+     */
+    managerTeam: jsonb(),
     playedAt: timestamp({ withTimezone: true }),
   },
   (t) => [

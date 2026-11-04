@@ -113,6 +113,7 @@ describe.runIf(sql)("seasons, league teams and fixtures (D16)", () => {
           away_score: 1,
           winner: null,
           summary: { shots: { home: 5, away: 3 } },
+          manager_team: { team: { id: "t", lineup: [] }, names: {} },
         },
       ];
       const record = (week: number) =>
@@ -133,7 +134,7 @@ describe.runIf(sql)("seasons, league teams and fixtures (D16)", () => {
       const elos =
         await tx`select slot, elo from season_teams where season_id = ${season} order by slot`;
       const played =
-        await tx`select home_score, away_score, summary from fixtures where id = ${f1?.id as string}`;
+        await tx`select home_score, away_score, summary, manager_team from fixtures where id = ${f1?.id as string}`;
       const semis =
         await tx`select stage from fixtures where season_id = ${season} and week = 3`;
       const condition =
@@ -173,6 +174,7 @@ describe.runIf(sql)("seasons, league teams and fixtures (D16)", () => {
         home_score: 2,
         away_score: 1,
         summary: { shots: { home: 5, away: 3 } },
+        manager_team: { team: { id: "t", lineup: [] }, names: {} },
       },
     ]);
     expect(result.semis).toEqual([{ stage: "semi" }]);
