@@ -16,6 +16,8 @@ export interface ChemistryBoosts {
   secondAlone: number;
   /** Each group tied for second (4+ colours only). */
   secondTied: number;
+  /** Smallest group that can earn a boost; smaller groups are ignored (D79). */
+  minGroupSize: number;
 }
 
 /** Defaults from the roadmap's chemistry table (Step 4). */
@@ -24,6 +26,7 @@ export const DEFAULT_CHEMISTRY_BOOSTS: ChemistryBoosts = {
   largestTied: 0.15,
   secondAlone: 0.1,
   secondTied: 0.05,
+  minGroupSize: 2,
 };
 
 /** Colours per sport: n ÷ 3 + 1, rounded, minimum 3 (D51). Soccer (11) → 5. */
@@ -48,6 +51,7 @@ export function rollChemistryColor(rng: Rng, colorCount: number): number {
  * - 5/3/2/1 → +25% and +10%
  * - 4/4/2/1 → +15% for each 4, nothing for the 2
  * - 5/2/2/2 → +25%, and +5% for each 2
+ * - 10/1 → +25%; the lone player gets nothing (groups need 2+ players, D79)
  */
 export function chemistryBoostsByColor(
   colorsOnField: readonly number[],
@@ -66,7 +70,11 @@ export function chemistryBoostsByColor(
   }
 
   const result = new Array<number>(colorCount).fill(0);
-  const sizes = [...new Set(counts.filter((c) => c > 0))].sort((a, b) => b - a);
+  // Groups below the minimum size don't rank at all (D79).
+  const minSize = Math.max(1, boosts.minGroupSize);
+  const sizes = [...new Set(counts.filter((c) => c >= minSize))].sort(
+    (a, b) => b - a,
+  );
   const largest = sizes[0];
   if (largest === undefined) return result;
 

@@ -1,6 +1,6 @@
 # LiterallyFantasySports — Project Roadmap
 
-Nov 2, 2026 · @Gary · Last updated: Nov 4, 2026 (D76)
+Nov 2, 2026 · @Gary · Last updated: Nov 4, 2026 (D79)
 
 ## Review progress
 
@@ -97,6 +97,9 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D74 | Nov 3, 2026 | Simple privacy policy and terms of service, published at `/privacy-policy` and `/terms-of-service` (required for Google sign-in), linked from the footer and sign-in page. Source files in `docs/legal/` | M0 |
 | D75 | Nov 3, 2026 | One project email address: `admin@literallyfantasysports.com`, forwarded by Squarespace to Gary's personal inbox; replies sent from Gmail through Resend. Used as the contact address in the privacy policy and terms | M0 |
 | D76 | Nov 4, 2026 | Release tags use full semantic versions: `v0.1.0` (M0) … `v0.6.0` (M5), then `v1.0.0`. release-please creates them when Gary merges its release PR at the end of each milestone. Refines D58 | M0 |
+| D77 | Nov 4, 2026 | Soccer positions: GK; CB, LB, RB; DM, CM, AM, LM, RM; ST (10 positions, no separate wingers) | M1 |
+| D78 | Nov 4, 2026 | Soccer attributes, each 1–99: pace, passing, shooting, defending, physical, stamina, plus goalkeeping (GK only). Overall is a position-weighted average, tuned in admin | M1 |
+| D79 | Nov 4, 2026 | A chemistry colour group needs at least 2 players on the field to earn any boost; smaller groups don't rank. Refines D43/D52 | M1 |
 
 ## 1. Vision & goals
 
@@ -227,7 +230,7 @@ Color groups on the field are ranked by size, recalculated whenever a sub change
 | Second-largest, alone (4+ colors only) | +10% |
 | Tied for second (4+ colors only) | Split second-place boost (default +5% each) |
 
-Examples (soccer): 5/3/2/1 → +25% and +10%. 4/4/2/1 → both 4s get +15%, the 2 gets nothing. 5/2/2/2 → +25%, and each 2 gets +5%.
+Examples (soccer): 5/3/2/1 → +25% and +10%. 4/4/2/1 → both 4s get +15%, the 2 gets nothing. 5/2/2/2 → +25%, and each 2 gets +5%. A group needs at least 2 players to earn a boost (D79): 10/1 → +25% only.
 
 **Squad and recruitment rules (v1)**
 
