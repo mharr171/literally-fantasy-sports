@@ -27,6 +27,45 @@ export interface MyTeam {
  * Game data is read with the service role so the server can see pack seeds;
  * every query here is filtered to the signed-in manager's own team.
  */
+const toTeam = (data: {
+  id: string;
+  name: string;
+  elo: number;
+  funds: number;
+  energy: number;
+  energy_updated_at: string;
+}): MyTeam => ({
+  id: data.id,
+  name: data.name,
+  elo: data.elo,
+  funds: data.funds,
+  energy: data.energy,
+  energyUpdatedAt: data.energy_updated_at,
+});
+
+/** Any team, by id (admin tools). */
+export async function loadTeamById(teamId: string): Promise<MyTeam | null> {
+  const { data, error } = await createServiceClient()
+    .from("teams")
+    .select("id, name, elo, funds, energy, energy_updated_at")
+    .eq("id", teamId)
+    .eq("sport", SOCCER)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data ? toTeam(data) : null;
+}
+
+/** Every soccer team, by name (admin tools). */
+export async function listTeams(): Promise<{ id: string; name: string }[]> {
+  const { data, error } = await createServiceClient()
+    .from("teams")
+    .select("id, name")
+    .eq("sport", SOCCER)
+    .order("name");
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
 export async function loadMyTeam(ownerId: string): Promise<MyTeam | null> {
   const { data, error } = await createServiceClient()
     .from("teams")

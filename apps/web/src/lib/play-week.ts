@@ -1,0 +1,147 @@
+import "server-only";
+import { currentEnergy, spendEnergy } from "@lfs/core";
+import {
+  availableSquad,
+  FRESH,
+  isAvailable,
+  MANAGER_SLOT,
+  nextCondition,
+  playWeek,
+  rosterWarning,
+  squadProblems,
+  squadToTeam,
+} from "@lfs/sport-soccer";
+import { configFor, loadGhostTeams, loadLatestSeason } from "./season";
+import { loadEnergySettings } from "./sport-settings";
+import { createServiceClient } from "./supabase/service";
+import { loadRoster, loadSquad, loadStarterPacks, type MyTeam } from "./team";
+
+/**
+ * Everything a match needs from a team: a picked starting squad, a roster
+ * of 22–30 (D54) and a valid matchday squad (D88).
+ */
+export async function readyToPlay(team: MyTeam) {
+  const packs = await loadStarterPacks(team.id);
+  if (packs.some((p) => !p.resolved))
+    throw new Error("Pick your starting squad first.");
+  const [roster, squad] = await Promise.all([
+    loadRoster(team.id),
+    loadSquad(team.id),
+  ]);
+  const warning = rosterWarning(roster.length);
+  if (warning) throw new Error(warning);
+  if (!squad) throw new Error("Save a matchday squad first.");
+  const problems = squadProblems(squad, new Set(roster.map((p) => p.id)));
+  if (problems.length > 0)
+    throw new Error(`Fix your matchday squad first: ${problems.join(" ")}`);
+  return { team, roster, squad };
+}
+
+/**
+ * Plays the team's current week: their match with their saved squad and
+ * every other match in the league, then saves results, Elo, earnings,
+ * energy and player condition. `useEnergy: false` is for admin testing.
+ * Returns the season's status afterwards.
+ */
+export async function playOneWeek(
+  teamIn: MyTeam,
+  { useEnergy }: { useEnergy: boolean },
+): Promise<"regular" | "playoffs" | "finished"> {
+  const { team, roster, squad } = await readyToPlay(teamIn);
+  const season = await loadLatestSeason(team.id);
+  if (!season || season.status === "finished")
+    throw new Error("Start a season first.");
+  // 1 energy = 1 game week (D17, D93), unless an admin has switched it off.
+  const energySettings = await loadEnergySettings("soccer");
+  const now = new Date();
+  const stored = {
+    energy: team.energy,
+    updatedAt: new Date(team.energyUpdatedAt),
+  };
+  let energyAfter: { energy: number; updatedAt: Date } | null = null;
+  if (useEnergy && energySettings.enabled) {
+    const current = currentEnergy(stored, now, energySettings);
+    if (current.energy < 1) {
+      const minutes = Math.max(
+        1,
+        Math.ceil(
+          ((current.nextAt as Date).getTime() - now.getTime()) / 60_000,
+        ),
+      );
+      throw new Error(
+        `Out of energy: the next point comes back in ${minutes} minute${minutes === 1 ? "" : "s"}.`,
+      );
+    }
+    energyAfter = spendEnergy(stored, now, energySettings);
+  }
+  const { config } = await configFor(season.configVersion);
+  // Injured and suspended players sit out; the best fit players step in.
+  const condition = new Map(roster.map((p) => [p.id, p.condition]));
+  const { squad: playing } = availableSquad(squad, roster, (id) =>
+    isAvailable(condition.get(id) ?? FRESH),
+  );
+  const elo = Object.fromEntries(season.slots.map((s) => [s.slot, s.elo]));
+  elo[MANAGER_SLOT] = team.elo;
+  const outcome = playWeek(
+    {
+      seed: season.seed,
+      status: season.status,
+      week: season.week,
+      slots: season.slots,
+      elo,
+      fixtures: season.fixtures,
+    },
+    {
+      team: {
+        ...squadToTeam(team.id, playing, new Map(roster.map((p) => [p.id, p]))),
+        fitness: Object.fromEntries(
+          roster.map((p) => [p.id, p.condition.fitness]),
+        ),
+      },
+      names: new Map(roster.map((p) => [p.id, p.displayName])),
+      ghosts: await loadGhostTeams(season.slots),
+    },
+    config,
+  );
+  const { error } = await createServiceClient().rpc("record_week", {
+    p_season: season.id,
+    p_week: season.week,
+    p_results: outcome.played.map((p) => ({
+      id: p.id,
+      home_score: p.homeScore,
+      away_score: p.awayScore,
+      winner: p.winner,
+      summary: p.summary,
+    })),
+    p_elo: Object.fromEntries(
+      Object.entries(outcome.elo).map(([slot, rating]) => [slot, rating]),
+    ),
+    p_funds: outcome.managerFunds,
+    p_new_fixtures: outcome.newFixtures.map((f) => ({
+      week: f.week,
+      stage: f.stage,
+      home_slot: f.homeSlot,
+      away_slot: f.awaySlot,
+    })),
+    p_status: outcome.status,
+    p_next_week: outcome.week,
+    p_energy: energyAfter?.energy ?? null,
+    p_energy_updated_at: energyAfter?.updatedAt.toISOString() ?? null,
+    p_players: roster.map((p) => {
+      const next = nextCondition(p.condition, outcome.managerReports[p.id]);
+      return {
+        id: p.id,
+        fitness: next.fitness,
+        injured_weeks: next.injuredWeeks,
+        suspended_weeks: next.suspendedWeeks,
+        yellow_cards: next.yellowCards,
+      };
+    }),
+  });
+  if (error) {
+    if (error.message.includes("already played"))
+      throw new Error("That week has already been played.");
+    throw new Error(error.message);
+  }
+  return outcome.status;
+}
