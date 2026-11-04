@@ -4,6 +4,7 @@
     ".": {
       "release-type": "node",
       "package-name": "literally-fantasy-sports",
+      "initial-version": "0.1.0",
       "include-component-in-tag": false,
       "changelog-path": "CHANGELOG.md",
       "changelog-sections": [
