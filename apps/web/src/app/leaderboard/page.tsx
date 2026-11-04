@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { EmptyState } from "@/components/empty-state";
 import { getCurrentUser } from "@/lib/auth";
 import { loadLeaderboard } from "@/lib/season";
 import { getSupabaseEnv } from "@/lib/supabase/env";
@@ -45,9 +46,12 @@ async function Board() {
   const myTeam = user ? await loadMyTeam(user.id) : null;
   if (entries.length === 0)
     return (
-      <p className="text-sm text-zinc-500">
-        No finished seasons yet. Be the first on the board.
-      </p>
+      <EmptyState
+        title="No finished seasons yet."
+        action={{ href: "/season", label: "Play a season" }}
+      >
+        Finish a season, playoffs included, and your club goes on the board.
+      </EmptyState>
     );
   return (
     <div className="overflow-x-auto rounded-md border border-zinc-200 dark:border-zinc-800">
