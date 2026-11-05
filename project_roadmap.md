@@ -1,6 +1,6 @@
 # LiterallyFantasySports — Project Roadmap
 
-Nov 2, 2026 · @Gary · Last updated: Nov 5, 2026 (D165)
+Nov 2, 2026 · @Gary · Last updated: Nov 5, 2026 (D166)
 
 ## Review progress
 
@@ -186,6 +186,7 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D163 | Nov 5, 2026 | Admin view (Gary): when an admin is signed in, public pages show extra information (e.g. hidden potential, worth, Elo details, an AI club's activity profile and manager personality, the settings version a match used) in a different color with an "Admin" label. Admins can always tell real clubs and managers from AI ones. The extra data is only sent to admins. A switch lets an admin view pages as a normal player (proposed) | M13 |
 | D164 | Nov 5, 2026 | Versions: M10 and M11 both shipped in `v1.4.0`. The open release-please PR for `v1.4.1` only holds a docs change. Later milestones move up one: M12 Squad balance and polish → `v1.5.0`, M13 Admin tools → `v1.6.0`, M14 History and hall of fame → `v1.7.0` | M12 |
 | D165 | Nov 5, 2026 | How D159 ships: a "Logical substitutions" switch in Admin → Soccer balance (0 until a settings version sets it to 1). When on and there are fewer windows left than subs, a tired-player window opens only once enough players are due to share it (subs left ÷ windows left, rounded up); the energy limit rises by 15 from the first auto-sub minute to 85', and from 85' any window left is used. A window already opened by a planned sub, an injury or a red card also brings on anyone within 10 of the limit. Harness: teams using all 5 subs go from 34% to 64%, goals and draws unchanged | M12 |
+| D166 | Nov 5, 2026 | How D161 ships: a "Contributions count for form" switch in Admin → Soccer balance → Form and morale (0 until a settings version sets it to 1). When on, the match rating also adds +0.5 per assist, +0.1 per tackle (up to +1), +0.25 per save (up to +1.5) and, after 60+ minutes, +1 for a keeper's clean sheet or +0.5 for a defender's (by main position). In a 22-match simulation, average season-end form goes from 0.00 to 0.37 for keepers and from −0.05 to 0.11 for defenders; strikers 0.20 → 0.26 | M12 |
 
 ## 1. Vision & goals
 

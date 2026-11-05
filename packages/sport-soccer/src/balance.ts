@@ -311,6 +311,13 @@ export const FORM_LIMITS: Record<keyof FormSettings, Limit> = {
     min: 0,
     max: 1,
   },
+  contributionRating: {
+    label: "Contributions count for form",
+    help: "1 = assists, tackles, saves and clean sheets raise a player's match rating, so defenders and keepers build form too; 0 = goals, results and cards only. D161.",
+    min: 0,
+    max: 1,
+    integer: true,
+  },
 };
 
 export const FOCUS_SURCHARGE_LIMIT: Limit = {
