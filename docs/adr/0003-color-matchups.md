@@ -1,7 +1,7 @@
 # ADR 0003: Color matchups and the color cycle (M11)
 
-Status: proposed (Nov 5, 2026). Covers D119 and D138. The strengths are balance
-defaults and need Gary's OK.
+Status: accepted (Nov 5, 2026: Gary OK'd the cycle and the strengths). Covers
+D119, D138 and D149.
 
 ## Context
 
@@ -81,8 +81,14 @@ against the defender's. That shows on the heatmap as a stronger or weaker area.
 ### 4. Strengths are tuning values, off for old versions
 
 `teamMatchup`, `teamMatchupSecond` and `playerMatchup` become match tuning
-values, adjustable in Admin → Soccer balance. They default to 0, and a stored
-version without them plays with matchups off.
+values. They are adjustable in Admin → Soccer balance, with limits and help
+text like the other tuning values, and are tested there with the harness
+before publishing (D149). They default to 0, and a stored version without
+them plays with matchups off.
+
+The cycle itself (which color beats which) is fixed in code for now. An
+admin editor for it is planned in M12 (D149): admins can reorder the ring,
+and the editor checks that every color still beats two and loses to two.
 
 That keeps every season already under way, and every saved replay, exactly as
 it was. Seasons play by the settings version they started with. Matchups start
@@ -123,11 +129,10 @@ skill. The PR that builds this includes the harness report.
 
 ## Needs Gary
 
-1. **OK the cycle.** Red → Yellow → Green → Blue → Purple; each color beats the
-   next two.
-2. **OK the proposed strengths:** team matchup 4%, second colors 2%, player
-   matchups 6%. These are balance defaults, and the harness may adjust them in
-   step 2.
+- Done: Gary OK'd the cycle and the proposed strengths (Nov 5, 2026). The
+  harness may still adjust the strengths in step 2, and its report goes in
+  that PR.
+- Step 6: publish the settings version with the matchup strengths in admin.
 
 ## Consequences
 
