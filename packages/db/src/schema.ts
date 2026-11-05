@@ -177,11 +177,16 @@ export const teams = pgTable(
   "teams",
   {
     id: uuid().primaryKey().defaultRandom(),
-    ownerId: uuid()
-      .notNull()
-      .references(() => authUsers.id, { onDelete: "cascade" }),
+    /** The manager's account; null for an AI club (D113). */
+    ownerId: uuid().references(() => authUsers.id, { onDelete: "cascade" }),
     sport: text().notNull(),
     name: text().notNull(),
+    /** "human" or "ai" (D113). Only admins can tell them apart. */
+    kind: text().notNull().default("human"),
+    /** An AI club's invented manager. */
+    managerName: text(),
+    /** An AI club's profile: personality, pace and formation (server only). */
+    ai: jsonb(),
     elo: integer().notNull().default(1500),
     /** Starting funds let a new team buy its first packs (balance default, Gary OKs). */
     funds: integer().notNull().default(10_000),
@@ -207,6 +212,10 @@ export const teams = pgTable(
     check("teams_funds_nonnegative", sql`${t.funds} >= 0`),
     check("teams_energy_nonnegative", sql`${t.energy} >= 0`),
     check("teams_morale_range", sql`${t.morale} between -1 and 1`),
+    check(
+      "teams_kind",
+      sql`(${t.kind} = 'human' and ${t.ownerId} is not null and ${t.ai} is null) or (${t.kind} = 'ai' and ${t.ownerId} is null and ${t.managerName} is not null and ${t.ai} is not null)`,
+    ),
     check(
       "teams_colors",
       sql`cardinality(${t.colors}) = 0 or (cardinality(${t.colors}) between 2 and 3 and array_position(${t.colors}, null) is null)`,
@@ -621,6 +630,31 @@ export const sportSettings = pgTable(
       using: isAdmin,
       withCheck: isAdmin,
     }),
+  ],
+).enableRLS();
+
+/**
+ * The AI world's switches (D113, D114), per sport: how many AI clubs to
+ * keep and whether scheduled runs play them. Only the server reads it.
+ */
+export const aiSettings = pgTable(
+  "ai_settings",
+  {
+    sport: text().primaryKey(),
+    /** Scheduled runs play AI clubs only when this is on. */
+    enabled: boolean().notNull().default(false),
+    /** AI clubs to keep; runs add clubs up to this. */
+    poolSize: integer().notNull().default(250),
+    /** Scheduled runs a day, for working out each club's weeks per run. */
+    runsPerDay: integer().notNull().default(12),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    check("ai_settings_sport", sql`${t.sport} ${SPORT_CHECK}`),
+    check(
+      "ai_settings_limits",
+      sql`${t.poolSize} between 0 and 1000 and ${t.runsPerDay} between 1 and 48`,
+    ),
   ],
 ).enableRLS();
 

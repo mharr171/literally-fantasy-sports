@@ -260,3 +260,79 @@ describe("matchday and pace (D110, D114)", () => {
     }
   });
 });
+
+describe("an AI club's seasons, decision by decision", () => {
+  it.each([
+    "builder",
+    "spender",
+    "steady",
+  ] as const)("a %s always keeps a roster and squad the rules accept", (personality) => {
+    const rng = createRng(`life-${personality}`);
+    let roster: (AiRosterPlayer & GeneratedPlayer)[] = starterRoster(
+      `life-${personality}`,
+      personality,
+    );
+    let funds = 40_000;
+    let next = 0;
+    const ids = () => new Set(roster.map((p) => p.id));
+    for (let season = 0; season < 4; season++) {
+      // Between seasons: packs, then releases.
+      for (let k = 0; k < 3; k++) {
+        const choice = choosePack(funds, roster, personality);
+        if (!choice) break;
+        funds -= 10_000;
+        const pack = packContents(
+          `${personality}-${season}-${k}`,
+          choice.focus,
+          choice.tier,
+        );
+        for (const i of chooseKeeps(pack, roster, personality))
+          roster.push({
+            ...(pack[i] as GeneratedPlayer),
+            id: `n${next++}`,
+            fromStarterPack: false,
+          });
+        expect(roster.length).toBeLessThanOrEqual(ROSTER_MAX);
+      }
+      const out = new Set(chooseReleases(roster, personality).map((o) => o.id));
+      roster = roster.filter((p) => !out.has(p.id));
+      expect(roster.length).toBeGreaterThanOrEqual(ROSTER_MIN);
+      expect(roster.length).toBeLessThanOrEqual(ROSTER_MAX);
+      // A matchday squad the server accepts.
+      const squad = aiSquad(
+        roster.map((p) => ({ ...p, form: 0, condition: FRESH })),
+        { personality, pace: "normal", formation: "4-4-2" },
+      );
+      expect(squadProblems(squad, ids())).toEqual([]);
+      // Season end: everyone a year older, then youth.
+      roster = roster.map((p) => ({ ...p, age: p.age + 1 }));
+      const positions = ["GK", "CB", "CM", "ST"] as const;
+      const prospects = Array.from(
+        { length: 22 },
+        (
+          _,
+          i,
+        ): {
+          age: number;
+          primaryPosition: (typeof positions)[number];
+          overall: number;
+          potentialRange: [number, number];
+        } => ({
+          age: 17,
+          primaryPosition: positions[i % 4] as (typeof positions)[number],
+          overall: 40 + (i % 7),
+          potentialRange: [60 + i, 66 + i],
+        }),
+      );
+      for (const i of chooseYouth(prospects, roster.length, personality))
+        roster.push({
+          ...(roster[0] as AiRosterPlayer & GeneratedPlayer),
+          ...(prospects[i] as (typeof prospects)[number]),
+          id: `y${next++}`,
+          fromStarterPack: false,
+        });
+      expect(roster.length).toBeLessThanOrEqual(ROSTER_MAX);
+      funds += 30_000 + Math.floor(rng.next() * 5_000);
+    }
+  });
+});

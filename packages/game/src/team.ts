@@ -25,6 +25,8 @@ export interface MyTeam {
   morale: number;
   /** Club color keys, main first; empty for clubs from before (D107). */
   colors: string[];
+  /** "ai" for an AI club (D113); only the server and admins see this. */
+  kind: "human" | "ai";
 }
 
 /**
@@ -40,6 +42,7 @@ const toTeam = (data: {
   energy_updated_at: string;
   morale: number;
   colors: string[] | null;
+  kind: string;
 }): MyTeam => ({
   id: data.id,
   name: data.name,
@@ -49,13 +52,16 @@ const toTeam = (data: {
   energyUpdatedAt: data.energy_updated_at,
   morale: data.morale,
   colors: data.colors ?? [],
+  kind: data.kind === "ai" ? "ai" : "human",
 });
 
 /** Any team, by id (admin tools). */
 export async function loadTeamById(teamId: string): Promise<MyTeam | null> {
   const { data, error } = await createServiceClient()
     .from("teams")
-    .select("id, name, elo, funds, energy, energy_updated_at, morale, colors")
+    .select(
+      "id, name, elo, funds, energy, energy_updated_at, morale, colors, kind",
+    )
     .eq("id", teamId)
     .eq("sport", SOCCER)
     .maybeSingle();
@@ -64,10 +70,12 @@ export async function loadTeamById(teamId: string): Promise<MyTeam | null> {
 }
 
 /** Every soccer team, by name (admin tools). */
-export async function listTeams(): Promise<{ id: string; name: string }[]> {
+export async function listTeams(): Promise<
+  { id: string; name: string; kind: string }[]
+> {
   const { data, error } = await createServiceClient()
     .from("teams")
-    .select("id, name")
+    .select("id, name, kind")
     .eq("sport", SOCCER)
     .order("name");
   if (error) throw new Error(error.message);
@@ -77,7 +85,9 @@ export async function listTeams(): Promise<{ id: string; name: string }[]> {
 export async function loadMyTeam(ownerId: string): Promise<MyTeam | null> {
   const { data, error } = await createServiceClient()
     .from("teams")
-    .select("id, name, elo, funds, energy, energy_updated_at, morale, colors")
+    .select(
+      "id, name, elo, funds, energy, energy_updated_at, morale, colors, kind",
+    )
     .eq("owner_id", ownerId)
     .eq("sport", SOCCER)
     .maybeSingle();

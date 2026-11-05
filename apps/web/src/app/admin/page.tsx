@@ -48,6 +48,15 @@ async function Overview() {
             publish without a deploy.
           </p>
         </li>
+        <li className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+          <Link href="/admin/ai" className="font-medium hover:underline">
+            AI clubs →
+          </Link>
+          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+            The AI world: how many clubs, how often they play, and each
+            club&apos;s style. Add clubs or run a turn for testing.
+          </p>
+        </li>
       </ul>
     </section>
   );
