@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { ClubViewPanel } from "@/components/club-view";
+import { adminView } from "@/lib/admin-view";
 import { loadGhostClub } from "@/lib/club-view";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 
@@ -33,7 +34,7 @@ async function Entry({
   await connection();
   const { id } = await params;
   if (!UUID.test(id) || !getSupabaseEnv()) notFound();
-  const club = await loadGhostClub(id);
+  const club = await loadGhostClub(id, { admin: await adminView() });
   if (!club) notFound();
   return <ClubViewPanel club={club} />;
 }

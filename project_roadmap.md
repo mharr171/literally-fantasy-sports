@@ -1,6 +1,6 @@
 # LiterallyFantasySports — Project Roadmap
 
-Nov 2, 2026 · @Gary · Last updated: Nov 5, 2026 (D170)
+Nov 2, 2026 · @Gary · Last updated: Nov 5, 2026 (D171)
 
 ## Review progress
 
@@ -191,6 +191,7 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D168 | Nov 5, 2026 | Resets (D141, D142, proposed in ADR 0004): an account reset is confirmed by typing the club's name and deletes the club with everything that belongs to it (the account stays, and other leagues keep their frozen copies). A soft reset is chosen by scope, previewed with counts and confirmed by typing RESET AI / RESET REAL / RESET ALL. It keeps every player (healed, form 0), squads and unsorted packs, and wipes all seasons, season records, ghosts, careers and player stats, with Elo 1500, funds 10,000, energy full and morale 0. Both run in one transaction and are logged in `admin_actions` (Gary OK'd, Nov 5, 2026) | M13 |
 | D169 | Nov 5, 2026 | How D141 ships: Account → Start over deletes the manager's club by the `reset_account` database function, only after the club's exact name is typed (checked in the page, the server action and the database). The existing cascades remove players, packs, squad, seasons, season records, careers and the ghost; the account and profile stay, and other managers' leagues keep their frozen copies. Logged in `admin_actions` as `account_reset` with counts. Managers can't call the function directly | M13 |
 | D170 | Nov 5, 2026 | How D142 ships: Admin → Testing tools → Soft reset. The admin picks AI, real or all clubs, presses Preview to see the counts (clubs and players kept; seasons, season records, ghosts and careers deleted), then types RESET AI / RESET REAL / RESET ALL. The `admin_soft_reset` database function checks the admin and the phrase again, locks the clubs, and does the whole reset in one transaction; real clubs are `kind = 'human'`. Energy goes to the sport's `energy_max`. Logged in `admin_actions` as `soft_reset` with the scope and counts. Only the server can call it. A "Back up now" link opens the backup workflow; the page names the nightly time rather than reading the last run | M13 |
+| D171 | Nov 5, 2026 | How D163 ships (first part): admin extras are violet with an "Admin" label. Club pages (league and leaderboard) show where the club comes from (real club and its manager, AI club with its manager, personality, pace and formation, or generated for this league), its start and current Elo, and each player's age, true potential, shown range, worth and fitness today. The leaderboard, the season table and match pages label every club real or AI, and match pages name the settings version played. The extras are loaded on the server only when an admin has them on, so they never reach anyone else. A header switch ("Admin view on" / "Player view") hides them, stored in an http-only cookie | M13 |
 
 ## 1. Vision & goals
 

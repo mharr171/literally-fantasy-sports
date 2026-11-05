@@ -11,7 +11,9 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { GettingStarted } from "@/components/getting-started";
 import { WithTemplates } from "@/components/player/with-templates";
+import { adminView } from "@/lib/admin-view";
 import { getCurrentUser } from "@/lib/auth";
+import { loadClubOrigins } from "@/lib/club-view";
 import { scoutPlayer } from "@/lib/scouting";
 import {
   liveGenerationSettings,
@@ -191,6 +193,7 @@ async function SeasonContent() {
 
   return (
     <SeasonView
+      adminLabels={await seasonAdminLabels(season)}
       notice={notice}
       morale={team.morale}
       skipIdleWeeks={team.skipIdleWeeks}
@@ -260,5 +263,27 @@ function Review({ review }: { review: SeasonReview }) {
         </ul>
       </div>
     </div>
+  );
+}
+
+/** Admins can always tell real clubs from AI ones (D163). */
+async function seasonAdminLabels(
+  season: NonNullable<Awaited<ReturnType<typeof loadLatestSeason>>>,
+): Promise<Record<number, string> | undefined> {
+  if (!(await adminView())) return undefined;
+  const origins = await loadClubOrigins(
+    season.slots.flatMap((s) => (s.ghostId ? [s.ghostId] : [])),
+  );
+  return Object.fromEntries(
+    season.slots.map((s) => [
+      s.slot,
+      s.kind === "manager"
+        ? "You"
+        : s.kind === "ai"
+          ? "AI, made for this league"
+          : s.ghostId
+            ? (origins.get(s.ghostId)?.label ?? "Club deleted")
+            : "Copy gone, plays as AI",
+    ]),
   );
 }

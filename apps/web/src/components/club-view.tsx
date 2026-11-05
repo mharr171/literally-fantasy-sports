@@ -5,10 +5,11 @@ import {
   slotLabel,
   squadScore,
 } from "@lfs/sport-soccer";
+import { ADMIN_TEXT, AdminNote } from "@/components/admin-note";
 import { ChemistryShares } from "@/components/chemistry-shares";
 import { ClubBadge } from "@/components/club-badge";
 import { ChemistryDot } from "@/components/player/player-card";
-import type { ClubPlayer, ClubView } from "@/lib/club-view";
+import type { ClubAdmin, ClubPlayer, ClubView } from "@/lib/club-view";
 
 const KIND = {
   manager: "Your club",
@@ -82,6 +83,33 @@ export function ClubViewPanel({ club }: { club: ClubView }) {
         </p>
       </div>
 
+      {club.admin && (
+        <AdminNote>
+          <p>
+            <strong>{club.admin.origin.label}</strong>
+            {club.admin.origin.detail && <> · {club.admin.origin.detail}</>}
+          </p>
+          {club.admin.startRating !== null && (
+            <p>
+              Started this season at {club.admin.startRating} Elo
+              {club.elo !== null && (
+                <>
+                  , {club.elo} in this league now (
+                  {club.elo - club.admin.startRating >= 0 ? "+" : ""}
+                  {club.elo - club.admin.startRating})
+                </>
+              )}
+              .
+            </p>
+          )}
+          <p>
+            {club.admin.live
+              ? "Player columns in violet are each player's values today; a player who has left shows —."
+              : "Player columns in violet are as generated for this league."}
+          </p>
+        </AdminNote>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2">
         <ChemistryShares
           title="Starting 11"
@@ -93,18 +121,21 @@ export function ClubViewPanel({ club }: { club: ClubView }) {
       {starters.length > 0 && (
         <PlayerList
           title="Starting 11"
+          admin={club.admin}
           rows={starters.map((s) => ({ player: s.player, place: s.label }))}
         />
       )}
       {bench.length > 0 && (
         <PlayerList
           title="Bench"
+          admin={club.admin}
           rows={bench.map((p, i) => ({ player: p, place: `S${i + 1}` }))}
         />
       )}
       {rest.length > 0 && (
         <PlayerList
           title="Rest of the roster"
+          admin={club.admin}
           rows={rest.map((p) => ({ player: p, place: "" }))}
         />
       )}
@@ -119,21 +150,31 @@ export function ClubViewPanel({ club }: { club: ClubView }) {
 function PlayerList({
   title,
   rows,
+  admin,
 }: {
   title: string;
   rows: { player: ClubPlayer; place: string }[];
+  admin?: ClubAdmin;
 }) {
   return (
     <div className="flex flex-col gap-2">
       <h2 className="text-lg font-semibold">{title}</h2>
       <div className="overflow-x-auto rounded-md border border-zinc-200 dark:border-zinc-800">
-        <table className="w-full min-w-[28rem] text-left text-sm">
+        <table
+          className={`w-full ${admin ? "min-w-[44rem]" : "min-w-[28rem]"} text-left text-sm`}
+        >
           <thead className="bg-zinc-50 text-xs uppercase tracking-wide text-zinc-500 dark:bg-zinc-900">
             <tr>
               <th className="px-3 py-2">Place</th>
               <th className="px-3 py-2">Pos</th>
               <th className="px-3 py-2">Name</th>
               <th className="px-3 py-2 text-right">Overall</th>
+              {admin &&
+                ["Age", "Potential", "Shown", "Worth", "Fitness"].map((h) => (
+                  <th key={h} className={`px-3 py-2 text-right ${ADMIN_TEXT}`}>
+                    {h}
+                  </th>
+                ))}
             </tr>
           </thead>
           <tbody>
@@ -161,6 +202,7 @@ function PlayerList({
                 <td className="px-3 py-1.5 text-right font-semibold tabular-nums">
                   {p.overall}
                 </td>
+                {admin && <AdminCells value={admin.players[p.id]} />}
               </tr>
             ))}
           </tbody>
@@ -168,4 +210,29 @@ function PlayerList({
       </div>
     </div>
   );
+}
+
+function AdminCells({
+  value,
+}: {
+  value: ClubAdmin["players"][string] | undefined;
+}) {
+  const cells = value
+    ? [
+        value.age,
+        value.potential,
+        `${value.range[0]}–${value.range[1]}`,
+        value.worth?.toLocaleString("en-US") ?? "—",
+        value.fitness ?? "—",
+      ]
+    : ["—", "—", "—", "—", "—"];
+  return cells.map((c, i) => (
+    <td
+      // biome-ignore lint/suspicious/noArrayIndexKey: fixed columns
+      key={i}
+      className={`px-3 py-1.5 text-right tabular-nums ${ADMIN_TEXT}`}
+    >
+      {c}
+    </td>
+  ));
 }

@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { AdminTag } from "@/components/admin-note";
 import { ClubBadge } from "@/components/club-badge";
 import { EmptyState } from "@/components/empty-state";
+import { adminView } from "@/lib/admin-view";
 import { getCurrentUser } from "@/lib/auth";
+import { loadClubOrigins } from "@/lib/club-view";
 import { loadLeaderboard } from "@/lib/season";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 import { loadMyTeam } from "@/lib/team";
@@ -46,7 +49,14 @@ async function Board() {
     loadLeaderboard(),
     getCurrentUser(),
   ]);
-  const myTeam = user ? await loadMyTeam(user.id) : null;
+  const [myTeam, admin] = await Promise.all([
+    user ? loadMyTeam(user.id) : null,
+    adminView(),
+  ]);
+  // Admins can always tell real clubs from AI ones (D163).
+  const origins = admin
+    ? await loadClubOrigins(entries.map((e) => e.teamId))
+    : null;
   if (entries.length === 0)
     return (
       <EmptyState
@@ -83,21 +93,28 @@ async function Board() {
               >
                 <td className="px-3 py-1.5">{i + 1}</td>
                 <td className="px-3 py-1.5">
-                  {e.ghostTeamId ? (
-                    <Link
-                      href={`/leaderboard/${e.ghostTeamId}`}
-                      className="inline-flex items-center gap-1.5 hover:underline"
-                      title="See this season's roster"
-                    >
-                      <ClubBadge name={e.teamName} colors={e.colors} />
-                      {e.teamName}
-                    </Link>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5">
-                      <ClubBadge name={e.teamName} colors={e.colors} />
-                      {e.teamName}
-                    </span>
-                  )}
+                  <span className="inline-flex flex-wrap items-center gap-2">
+                    {e.ghostTeamId ? (
+                      <Link
+                        href={`/leaderboard/${e.ghostTeamId}`}
+                        className="inline-flex items-center gap-1.5 hover:underline"
+                        title="See this season's roster"
+                      >
+                        <ClubBadge name={e.teamName} colors={e.colors} />
+                        {e.teamName}
+                      </Link>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5">
+                        <ClubBadge name={e.teamName} colors={e.colors} />
+                        {e.teamName}
+                      </span>
+                    )}
+                    {origins && (
+                      <AdminTag>
+                        {origins.get(e.teamId)?.label ?? "Club deleted"}
+                      </AdminTag>
+                    )}
+                  </span>
                 </td>
                 <td className="px-3 py-1.5 text-right">{e.seasonNumber}</td>
                 <td className="px-3 py-1.5 text-right tabular-nums">{e.elo}</td>

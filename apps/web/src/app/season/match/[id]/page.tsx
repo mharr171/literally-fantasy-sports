@@ -9,7 +9,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
+import { AdminNote } from "@/components/admin-note";
+import { adminView } from "@/lib/admin-view";
 import { getCurrentUser } from "@/lib/auth";
+import { loadClubOrigins } from "@/lib/club-view";
 import { configFor, loadGhostTeams, loadMatch } from "@/lib/season";
 import { loadMyTeam } from "@/lib/team";
 import { MatchView, type MatchViewProps } from "./match-view";
@@ -107,25 +110,65 @@ async function MatchContent({
     }
   }
 
+  const admin = (await adminView())
+    ? await matchAdmin(slots, fixture, match.configVersion)
+    : null;
+
   return (
-    <MatchView
-      title={title}
-      teams={teams}
-      teamColors={{
-        home: fixture.homeSlot === MANAGER_SLOT ? team.colors : null,
-        away: fixture.awaySlot === MANAGER_SLOT ? team.colors : null,
-      }}
-      mySide={
-        fixture.homeSlot === MANAGER_SLOT
-          ? "home"
-          : fixture.awaySlot === MANAGER_SLOT
-            ? "away"
-            : null
-      }
-      score={{ home: fixture.homeScore, away: fixture.awayScore }}
-      summary={fixture.summary}
-      replay={replay}
-      problem={problem}
-    />
+    <>
+      {admin}
+      <MatchView
+        title={title}
+        teams={teams}
+        teamColors={{
+          home: fixture.homeSlot === MANAGER_SLOT ? team.colors : null,
+          away: fixture.awaySlot === MANAGER_SLOT ? team.colors : null,
+        }}
+        mySide={
+          fixture.homeSlot === MANAGER_SLOT
+            ? "home"
+            : fixture.awaySlot === MANAGER_SLOT
+              ? "away"
+              : null
+        }
+        score={{ home: fixture.homeScore, away: fixture.awayScore }}
+        summary={fixture.summary}
+        replay={replay}
+        problem={problem}
+      />
+    </>
+  );
+}
+
+/** What an admin sees above a match (D163): settings version and each side's origin. */
+async function matchAdmin(
+  slots: NonNullable<Awaited<ReturnType<typeof loadMatch>>>["slots"],
+  fixture: { homeSlot: number; awaySlot: number },
+  configVersion: string,
+) {
+  const origins = await loadClubOrigins(
+    slots.flatMap((s) => (s.ghostId ? [s.ghostId] : [])),
+  );
+  const side = (slot: number) => {
+    const s = slots.find((x) => x.slot === slot);
+    if (!s) return "?";
+    const what =
+      s.kind === "manager"
+        ? "this manager's club"
+        : s.kind === "ai"
+          ? "AI, made for this league"
+          : s.ghostId
+            ? (origins.get(s.ghostId)?.label ?? "club deleted")
+            : "copy gone, plays as AI";
+    return `${s.name} (${what}, started at ${s.startRating} Elo)`;
+  };
+  return (
+    <AdminNote>
+      <p>
+        Played with settings version <strong>{configVersion}</strong>.
+      </p>
+      <p>Home: {side(fixture.homeSlot)}</p>
+      <p>Away: {side(fixture.awaySlot)}</p>
+    </AdminNote>
   );
 }
