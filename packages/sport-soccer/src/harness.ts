@@ -11,6 +11,14 @@ import {
   OUTFIELD_ATTRIBUTES,
 } from "./attributes";
 import {
+  DEFAULT_FORM_SETTINGS,
+  FORM_LINES,
+  type FormLine,
+  type FormSettings,
+  formLine,
+  matchRating,
+} from "./form";
+import {
   defaultSoccerConfig,
   SOCCER_COLOR_CYCLE,
   type SoccerConfig,
@@ -283,5 +291,70 @@ export function formatManDown(r: ReturnType<typeof runManDown>): string {
   return [
     `Even teams, one side a man down (${r.matches} matches), the side with 10:`,
     `  win ${pct(r.win)}   draw ${pct(r.draw)}   loss ${pct(r.loss)}   (target: about 25–30% wins)`,
+  ].join("\n");
+}
+
+/**
+ * Average match rating by line (D178): keepers, defenders, midfielders and
+ * attackers over even matches, with contributions counted. With form
+ * weights by position on, every line should come out about level.
+ */
+export function runFormByLine(options: {
+  matches: number;
+  seed: string;
+  form?: FormSettings;
+  baseStrength?: number;
+  config?: SoccerConfig;
+}): Record<FormLine, number> {
+  const config = options.config ?? defaultSoccerConfig();
+  const form = options.form ?? DEFAULT_FORM_SETTINGS;
+  const base = options.baseStrength ?? 60;
+  const rng = createRng(`${options.seed}:form`);
+  const sum = { GK: 0, DEF: 0, MID: 0, ATT: 0 };
+  const n = { GK: 0, DEF: 0, MID: 0, ATT: 0 };
+  for (let i = 0; i < options.matches; i++) {
+    const home = generateTeam(rng, `f-h${i}`, base);
+    const away = generateTeam(rng, `f-a${i}`, base);
+    const { result } = simulateMatch(
+      { home, away, mode: "league", config },
+      `${options.seed}:form:${i}`,
+    );
+    const where = new Map<string, Position>();
+    for (const t of [home, away]) {
+      for (const p of t.bench ?? []) where.set(p.id, p.primaryPosition);
+      for (const s of t.lineup) where.set(s.player.id, s.slot);
+    }
+    for (const [id, r] of Object.entries(result.players)) {
+      if (r.minutes === 0) continue;
+      const position = where.get(id) ?? "CM";
+      const mine = result.score[r.side];
+      const theirs = result.score[r.side === "home" ? "away" : "home"];
+      const rating = matchRating(
+        r,
+        mine > theirs ? "win" : mine < theirs ? "loss" : "draw",
+        {
+          position,
+          conceded: theirs,
+          contributions: true,
+          ...(form.positionWeights ? { weights: form } : {}),
+          ...(form.minutesScaling ? { fullCameo: true } : {}),
+        },
+      );
+      const line = formLine(position);
+      sum[line] += rating;
+      n[line]++;
+    }
+  }
+  return Object.fromEntries(
+    FORM_LINES.map((l) => [l, n[l] ? sum[l] / n[l] : 0]),
+  ) as Record<FormLine, number>;
+}
+
+export function formatFormByLine(r: Record<FormLine, number>): string {
+  const values = Object.values(r);
+  const spread = Math.max(...values) - Math.min(...values);
+  return [
+    "Average match rating by line (contributions on):",
+    `  keepers ${r.GK.toFixed(2)}   defenders ${r.DEF.toFixed(2)}   midfielders ${r.MID.toFixed(2)}   attackers ${r.ATT.toFixed(2)}   (spread ${spread.toFixed(2)}, target ≤ 0.2)`,
   ].join("\n");
 }

@@ -4,10 +4,47 @@
  * numbers from −1 to 1 that nudge skill in the next match a little.
  */
 import type { PlayerMatchReport } from "./match";
-import type { Position } from "./positions";
+import { POSITION_LINE, type Position } from "./positions";
+
+/** The lines a form weight is set for (D178). */
+export const FORM_LINES = ["GK", "DEF", "MID", "ATT"] as const;
+export type FormLine = (typeof FORM_LINES)[number];
+/** The stats a match rating counts, each weighted per line (D178). */
+export const FORM_STATS = [
+  "goals",
+  "assists",
+  "tackles",
+  "saves",
+  "cleanSheet",
+] as const;
+export type FormStat = (typeof FORM_STATS)[number];
+/** E.g. "goalsDEF": what one goal adds to a defender's match rating. */
+export type FormWeightKey = `${FormStat}${FormLine}`;
+
+const LINE_OF: Record<string, FormLine> = {
+  goal: "GK",
+  defence: "DEF",
+  midfield: "MID",
+  attack: "ATT",
+};
+export const formLine = (position: Position): FormLine =>
+  LINE_OF[POSITION_LINE[position]] ?? "MID";
+
+/** Today's single set of weights (D161), the same for every line. */
+const BASE_WEIGHTS: Record<FormStat, Record<FormLine, number>> = {
+  goals: { GK: 1, DEF: 1, MID: 1, ATT: 1 },
+  assists: { GK: 0.5, DEF: 0.5, MID: 0.5, ATT: 0.5 },
+  tackles: { GK: 0.1, DEF: 0.1, MID: 0.1, ATT: 0.1 },
+  saves: { GK: 0.25, DEF: 0.25, MID: 0.25, ATT: 0.25 },
+  cleanSheet: { GK: 1, DEF: 0.5, MID: 0, ATT: 0 },
+};
+
+/** Tackles and saves count up to these many in one match. */
+const TACKLES_COUNTED = 10;
+const SAVES_COUNTED = 6;
 
 /** Balance defaults: changed only with Gary's OK. */
-export interface FormSettings {
+export interface FormSettings extends FormWeights {
   /** Skill change at form +1 or −1 (0.05 = ±5%). */
   formEffect: number;
   /** Skill change at morale +1 or −1, for every player in the team. */
@@ -26,7 +63,26 @@ export interface FormSettings {
    * results and cards only.
    */
   contributionRating: number;
+  /**
+   * 1 weights each stat per line with the values below (D178), so every
+   * line builds form alike; 0 = the single set of weights.
+   */
+  positionWeights: number;
+  /**
+   * 1 moves form in step with minutes played (minutes / 90, up and down
+   * alike) instead of halving short cameos (D178).
+   */
+  minutesScaling: number;
 }
+
+/** Per-line stat weights, stored next to the other form settings (D178). */
+export type FormWeights = Record<FormWeightKey, number>;
+
+export const DEFAULT_FORM_WEIGHTS: FormWeights = Object.fromEntries(
+  FORM_STATS.flatMap((stat) =>
+    FORM_LINES.map((line) => [`${stat}${line}`, BASE_WEIGHTS[stat][line]]),
+  ),
+) as FormWeights;
 
 export const DEFAULT_FORM_SETTINGS: FormSettings = {
   formEffect: 0.05,
@@ -37,6 +93,10 @@ export const DEFAULT_FORM_SETTINGS: FormSettings = {
   moraleSwing: 0.3,
   // Off unless a settings version turns it on (D161).
   contributionRating: 0,
+  // Off unless a settings version turns them on (D178).
+  positionWeights: 0,
+  minutesScaling: 0,
+  ...DEFAULT_FORM_WEIGHTS,
 };
 
 /** What a match rating can also know about the player and the match (D161). */
@@ -47,6 +107,10 @@ export interface RatingContext {
   conceded?: number | null;
   /** Count assists, tackles, saves and clean sheets. */
   contributions?: boolean;
+  /** Per-line weights (D178); the single set when left out. */
+  weights?: FormWeights;
+  /** Don't halve short cameos: minutes scale form instead (D178). */
+  fullCameo?: boolean;
 }
 
 const DEFENDERS: readonly Position[] = ["CB", "LB", "RB"];
@@ -69,21 +133,37 @@ export function matchRating(
   context: RatingContext = {},
 ): number {
   let rating = 6;
-  rating += report.goals;
-  if (context.contributions) {
-    rating += 0.5 * report.assists;
-    rating += Math.min(1, 0.1 * report.tackles);
-    rating += Math.min(1.5, 0.25 * report.saves);
-    if (context.conceded === 0 && report.minutes >= 60 && context.position) {
-      if (context.position === "GK") rating += 1;
-      else if (DEFENDERS.includes(context.position)) rating += 0.5;
+  if (context.weights && context.position) {
+    // Per-line weights (D178).
+    const line = formLine(context.position);
+    const w = (stat: FormStat) =>
+      (context.weights as FormWeights)[`${stat}${line}`];
+    rating += w("goals") * report.goals;
+    if (context.contributions) {
+      rating += w("assists") * report.assists;
+      rating += w("tackles") * Math.min(TACKLES_COUNTED, report.tackles);
+      rating += w("saves") * Math.min(SAVES_COUNTED, report.saves);
+      if (context.conceded === 0 && report.minutes >= 60)
+        rating += w("cleanSheet");
+    }
+  } else {
+    rating += report.goals;
+    if (context.contributions) {
+      rating += 0.5 * report.assists;
+      rating += Math.min(1, 0.1 * report.tackles);
+      rating += Math.min(1.5, 0.25 * report.saves);
+      if (context.conceded === 0 && report.minutes >= 60 && context.position) {
+        if (context.position === "GK") rating += 1;
+        else if (DEFENDERS.includes(context.position)) rating += 0.5;
+      }
     }
   }
   if (result === "win") rating += 0.5;
   if (result === "loss") rating -= 0.5;
   rating -= report.yellowCards * 0.5;
   if (report.redCard) rating -= 2;
-  if (report.minutes < 30) rating = 6 + (rating - 6) / 2; // A cameo counts for less.
+  // A cameo counts for less, unless minutes scale form instead (D178).
+  if (report.minutes < 30 && !context.fullCameo) rating = 6 + (rating - 6) / 2;
   return clamp(rating, 1, 10);
 }
 
@@ -93,15 +173,25 @@ export function nextForm(
   report: PlayerMatchReport | undefined,
   result: TeamResult | null,
   s: FormSettings = DEFAULT_FORM_SETTINGS,
-  context: Omit<RatingContext, "contributions"> = {},
+  context: Omit<RatingContext, "contributions" | "weights" | "fullCameo"> = {},
 ): number {
   if (!report || report.minutes === 0 || !result)
     return round(form * s.formIdleDecay);
   const rating = matchRating(report, result, {
     ...context,
     contributions: Boolean(s.contributionRating),
+    ...(s.positionWeights ? { weights: s } : {}),
+    ...(s.minutesScaling ? { fullCameo: true } : {}),
   });
   const performance = clamp((rating - 6) / 2);
+  if (s.minutesScaling) {
+    // Form moves toward this match's performance in step with the minutes
+    // played (D178): a full 90 moves it most, a cameo little.
+    const share = Math.min(1, report.minutes / 90);
+    return round(
+      clamp(form + (performance - form) * (1 - s.formMemory) * share),
+    );
+  }
   return round(clamp(form * s.formMemory + performance * (1 - s.formMemory)));
 }
 
@@ -125,3 +215,33 @@ export function formModifier(
 ): number {
   return round(clamp(form) * s.formEffect + clamp(morale) * s.moraleEffect);
 }
+
+/**
+ * Per-line weights tuned with the harness (D178) so keepers, defenders,
+ * midfielders and attackers average the same match rating: keepers count
+ * saves and clean sheets for less, defenders and midfielders more for
+ * tackles and clean sheets, attackers a little less for goals. For the
+ * settings version that turns form weights by position on.
+ */
+export const PROPOSED_FORM_WEIGHTS: FormWeights = {
+  goalsGK: 1,
+  goalsDEF: 1,
+  goalsMID: 1,
+  goalsATT: 0.95,
+  assistsGK: 0.5,
+  assistsDEF: 0.5,
+  assistsMID: 1,
+  assistsATT: 0.47,
+  tacklesGK: 0.1,
+  tacklesDEF: 0.18,
+  tacklesMID: 0.34,
+  tacklesATT: 0.1,
+  savesGK: 0.12,
+  savesDEF: 0.25,
+  savesMID: 0.25,
+  savesATT: 0.25,
+  cleanSheetGK: 0.48,
+  cleanSheetDEF: 0.9,
+  cleanSheetMID: 1.01,
+  cleanSheetATT: 0,
+};
