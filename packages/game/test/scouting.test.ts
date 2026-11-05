@@ -1,6 +1,11 @@
 import { packContents } from "@lfs/sport-soccer";
 import { describe, expect, it } from "vitest";
-import { countByLine, playerRow, scoutPlayer, sortPacks } from "./scouting";
+import {
+  countByLine,
+  playerRow,
+  scoutPlayer,
+  sortPacks,
+} from "../src/scouting";
 
 const players = packContents("scouting-test", "any", "starter");
 

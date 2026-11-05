@@ -23,13 +23,15 @@ pnpm + Turborepo monorepo.
 | `packages/config` | Shared tsconfig (`@lfs/config/tsconfig.base.json`) |
 | `packages/core` | Sport-agnostic engine: seeded RNG, Elo, influence grids, chemistry, name pools, `Sport` interface (ADR 0001) |
 | `packages/sport-*` | One package per sport. `sport-soccer`: positions (D77), attributes and overall (D78), effective skill, match sim, tuning harness |
+| `packages/game` | Server-side game steps shared by the web app and the AI runner (ADR 0002): loading clubs and seasons, playing a week, season and squad steps. Uses the service-role Supabase client; no Next.js code |
 | `packages/db` | Drizzle schema (`src/schema.ts`), SQL migrations (`migrations/`), database tests |
 | `docs/` | Architecture notes, ADRs, legal sources |
 
 ## Architecture rules
 
-- Game rules live in the engine packages. `apps/web` only loads data, calls the
-  engine and saves results.
+- Game rules live in the engine packages. `packages/game` loads data, calls the
+  engine and saves results; `apps/web` checks who is acting and the input
+  shape, then calls `packages/game`.
 - `packages/core` never imports a sport. Sports implement the `Sport` interface.
 - Engine packages are pure TypeScript: no I/O, no database, no framework code.
   Randomness comes only from the seeded RNG so matches replay exactly.

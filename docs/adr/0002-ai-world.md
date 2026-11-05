@@ -43,9 +43,12 @@ applies to an AI club for free, through the same SQL functions.
 
 The steps a club takes (start a season, play a week, end a season, take
 youth, buy and sort packs, release players, save a squad) currently live in
-`apps/web`. They move into a new package, `packages/game`. It takes a
-Supabase service client as input and has no Next.js code, so the web app
-and the AI runner call the same code. Game rules stay in the engine
+`apps/web`. They move into a new package, `packages/game`. It makes its
+own service-role Supabase client from the server's environment
+(`SUPABASE_SECRET_KEY` and the Supabase URL) and has no Next.js code, so the
+web app and the AI runner call the same code. The web app's `lib/` files
+re-export it behind `server-only`, and its server actions keep only
+sign-in checks, input checks and page refreshes. Game rules stay in the engine
 packages, as now. This is a refactor with no change in behaviour, done
 before any AI work.
 
