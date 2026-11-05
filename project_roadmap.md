@@ -1,6 +1,6 @@
 # LiterallyFantasySports — Project Roadmap
 
-Nov 2, 2026 · @Gary · Last updated: Nov 5, 2026 (D167)
+Nov 2, 2026 · @Gary · Last updated: Nov 5, 2026 (D168)
 
 ## Review progress
 
@@ -188,6 +188,7 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D165 | Nov 5, 2026 | How D159 ships: a "Logical substitutions" switch in Admin → Soccer balance (0 until a settings version sets it to 1). When on and there are fewer windows left than subs, a tired-player window opens only once enough players are due to share it (subs left ÷ windows left, rounded up); the energy limit rises by 15 from the first auto-sub minute to 85', and from 85' any window left is used. A window already opened by a planned sub, an injury or a red card also brings on anyone within 10 of the limit. Harness: teams using all 5 subs go from 34% to 64%, goals and draws unchanged | M12 |
 | D166 | Nov 5, 2026 | How D161 ships: a "Contributions count for form" switch in Admin → Soccer balance → Form and morale (0 until a settings version sets it to 1). When on, the match rating also adds +0.5 per assist, +0.1 per tackle (up to +1), +0.25 per save (up to +1.5) and, after 60+ minutes, +1 for a keeper's clean sheet or +0.5 for a defender's (by main position). In a 22-match simulation, average season-end form goes from 0.00 to 0.37 for keepers and from −0.05 to 0.11 for defenders; strikers 0.20 → 0.26 | M12 |
 | D167 | Nov 5, 2026 | How D154 ships: players count `season_minutes` in their club's own matches (starter or substitute), reset when the season closes. A "Growth from playing time" setting in Admin → Soccer balance → Recovery, bans and growth (0 until a settings version sets it) scales a young player's growth by his minutes: regulars (70%+ of the club's minutes) grow fully, a player who didn't play grows (1 − weight) as much. Older players' decline is unchanged. At 0.5, an 18-year-old grows +12.0 as a regular, +8.1 with a quarter of the minutes and +6.0 without playing | M12 |
+| D168 | Nov 5, 2026 | Resets (D141, D142, proposed in ADR 0004): an account reset is confirmed by typing the club's name and deletes the club with everything that belongs to it (the account stays, and other leagues keep their frozen copies). A soft reset is chosen by scope, previewed with counts and confirmed by typing RESET AI / RESET REAL / RESET ALL. It keeps every player (healed, form 0), squads and unsorted packs, and wipes all seasons, season records, ghosts, careers and player stats, with Elo 1500, funds 10,000, energy full and morale 0. Both run in one transaction and are logged in `admin_actions` (proposed, Gary to OK) | M13 |
 
 ## 1. Vision & goals
 
