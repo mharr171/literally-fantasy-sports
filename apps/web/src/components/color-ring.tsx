@@ -5,8 +5,12 @@ import { CHEMISTRY_COLORS } from "@/lib/chemistry-colors";
  * Soccer's color cycle as a ring (D137, D138): each color points at the two
  * it beats, the next two round the rainbow.
  */
-export function ColorRing() {
-  const ring = SOCCER_COLOR_CYCLE;
+export function ColorRing({
+  ring = SOCCER_COLOR_CYCLE,
+}: {
+  /** The cycle to draw (D149); the built-in one by default. */
+  ring?: readonly number[];
+} = {}) {
   const size = 260;
   const c = size / 2;
   const r = 96;
@@ -51,7 +55,7 @@ export function ColorRing() {
           {ring
             .map((color) => {
               const name = CHEMISTRY_COLORS[color]?.name ?? "?";
-              const beats = colorMatchups(color)
+              const beats = colorMatchups(color, ring)
                 .beats.map((b) => CHEMISTRY_COLORS[b]?.name ?? "?")
                 .join(" and ");
               return `${name} beats ${beats}`;

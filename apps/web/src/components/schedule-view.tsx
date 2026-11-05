@@ -17,11 +17,13 @@ const colorName = (c: number | null) =>
 function Matchup({
   mine,
   theirs,
+  cycle,
 }: {
   mine: readonly { chemistryColor: number }[];
   theirs: readonly { chemistryColor: number }[];
+  cycle: readonly number[];
 }) {
-  const m = dominantMatchup(mine, theirs);
+  const m = dominantMatchup(mine, theirs, cycle);
   if (m.mine === null || m.theirs === null)
     return <span className="text-zinc-500">No dominant color</span>;
   const verb = m.edge > 0 ? "beats" : m.edge < 0 ? "loses to" : "even with";
@@ -44,7 +46,7 @@ function Matchup({
 /** The season schedule with each opponent's colors (D139). */
 export function ScheduleView({ schedule }: { schedule: Schedule }) {
   const mine = dominantMatchup(schedule.myStarters, []).mine;
-  const cycle = mine === null ? null : colorMatchups(mine);
+  const cycle = mine === null ? null : colorMatchups(mine, schedule.cycle);
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -134,6 +136,7 @@ export function ScheduleView({ schedule }: { schedule: Schedule }) {
                 </td>
                 <td className="py-2 pr-3 align-top">
                   <Matchup
+                    cycle={schedule.cycle}
                     mine={schedule.myStarters}
                     theirs={r.opponentStarters}
                   />

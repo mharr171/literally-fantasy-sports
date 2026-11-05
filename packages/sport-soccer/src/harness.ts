@@ -165,7 +165,9 @@ export function runHarness(options: HarnessOptions): HarnessReport {
       const a = dominant(strong);
       const b = dominant(weak);
       const edge =
-        a !== null && b !== null ? colorEdge(a, b, SOCCER_COLOR_CYCLE) : 0;
+        a !== null && b !== null
+          ? colorEdge(a, b, config.tuning.colorCycle ?? SOCCER_COLOR_CYCLE)
+          : 0;
       if (edge !== 0) {
         const winnerSide =
           edge > 0 ? strongSide : strongSide === "home" ? "away" : "home";

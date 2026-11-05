@@ -15,7 +15,11 @@ import {
   DEFAULT_CONDITION_SETTINGS,
 } from "./condition";
 import { DEFAULT_FORM_SETTINGS, type FormSettings } from "./form";
-import { DEFAULT_MATCH_TUNING, type MatchTuning } from "./match";
+import {
+  colorCycleError,
+  DEFAULT_MATCH_TUNING,
+  type MatchTuning,
+} from "./match";
 import { BOUGHT_TIERS, DEFAULT_PACK_PRICES, type PackPrices } from "./roster";
 
 export interface BalanceSettings {
@@ -67,7 +71,10 @@ export interface Limit {
   integer?: boolean;
 }
 
-export const TUNING_LIMITS: Record<keyof MatchTuning, Limit> = {
+/** The number tuning values; the color cycle (D149) is checked on its own. */
+export type TuningNumberKey = Exclude<keyof MatchTuning, "colorCycle">;
+
+export const TUNING_LIMITS: Record<TuningNumberKey, Limit> = {
   phases: {
     label: "Possession phases (90 minutes)",
     help: "More phases means more chances.",
@@ -351,7 +358,11 @@ export function balanceErrors(settings: BalanceSettings): string[] {
     if (e) errors.push(e);
   };
   for (const [key, limit] of Object.entries(TUNING_LIMITS))
-    check(limit.label, settings.tuning[key as keyof MatchTuning], limit);
+    check(limit.label, settings.tuning[key as TuningNumberKey], limit);
+  if (settings.tuning.colorCycle !== undefined) {
+    const e = colorCycleError(settings.tuning.colorCycle);
+    if (e) errors.push(e);
+  }
   if (settings.tuning.maxSubWindows > Math.max(1, settings.tuning.maxSubs))
     errors.push("There can't be more sub windows than substitutions.");
   for (const [key, limit] of Object.entries(PAYOUT_LIMITS))
@@ -393,6 +404,14 @@ function numbers<T extends object>(stored: unknown, keys: readonly string[]) {
   return out;
 }
 
+/** A stored color cycle (D149), kept only when it's a valid one. */
+function colorCycleOf(stored: unknown): Pick<MatchTuning, "colorCycle"> {
+  const cycle = (stored as { colorCycle?: unknown } | null)?.colorCycle;
+  return colorCycleError(cycle) === null
+    ? { colorCycle: [...(cycle as number[])] }
+    : {};
+}
+
 /** A stored version's balance settings; anything missing uses the defaults. */
 export function balanceFromValues(
   values: Record<string, unknown>,
@@ -402,6 +421,7 @@ export function balanceFromValues(
     tuning: {
       ...DEFAULT_MATCH_TUNING,
       ...numbers<MatchTuning>(values.tuning, Object.keys(TUNING_LIMITS)),
+      ...colorCycleOf(values.tuning),
     },
     payouts: {
       ...DEFAULT_PAYOUTS,
@@ -443,7 +463,15 @@ export function balanceToRows(settings: BalanceSettings): {
   const errors = balanceErrors(settings);
   if (errors.length > 0) throw new Error(errors.join(" "));
   return [
-    { key: "tuning", value: { ...settings.tuning } },
+    {
+      key: "tuning",
+      value: {
+        ...settings.tuning,
+        ...(settings.tuning.colorCycle
+          ? { colorCycle: [...settings.tuning.colorCycle] }
+          : {}),
+      },
+    },
     { key: "payouts", value: { ...settings.payouts } },
     {
       key: "packs",

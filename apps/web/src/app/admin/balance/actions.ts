@@ -43,7 +43,10 @@ const inputSchema = z.object({
   baseVersion: z.number().int().positive().nullable(),
   note: z.string().trim().max(200),
   settings: z.object({
-    tuning: z.record(z.string(), num),
+    // Numbers, plus the color cycle (D149).
+    tuning: z
+      .object({ colorCycle: z.array(z.number().int()).max(10).optional() })
+      .catchall(num),
     payouts: z.record(z.string(), num),
     packs: z.object({
       tiers: z.record(z.string(), num),

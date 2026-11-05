@@ -87,6 +87,8 @@ function Section({
 async function Guide() {
   const { config, balance, energy } = await settings();
   const t = config.tuning;
+  // The live color cycle (D149).
+  const cycle = t.colorCycle ?? SOCCER_COLOR_CYCLE;
   const p = balance.payouts;
   const matchupsOn = Boolean(
     t.teamMatchup || t.teamMatchupSecond || t.playerMatchup,
@@ -226,11 +228,12 @@ async function Guide() {
       <Section id="matchups" title="Color matchups">
         <p>
           Colors also matter between teams. Each color beats the next two round
-          the rainbow, Red → Yellow → Green → Blue → Purple → Red, and loses to
-          the two before it. No color is better overall.
+          the ring,{" "}
+          {[...cycle, cycle[0] as number].map((c) => name(c)).join(" → ")}, and
+          loses to the two before it. No color is better overall.
         </p>
         <div className="grid items-center gap-4 sm:grid-cols-[auto_1fr]">
-          <ColorRing />
+          <ColorRing ring={cycle} />
           <table className="text-left text-sm">
             <thead className="text-xs uppercase tracking-wide text-zinc-500">
               <tr>
@@ -240,8 +243,8 @@ async function Guide() {
               </tr>
             </thead>
             <tbody>
-              {SOCCER_COLOR_CYCLE.map((color) => {
-                const m = colorMatchups(color);
+              {cycle.map((color) => {
+                const m = colorMatchups(color, cycle);
                 const list = (cs: number[]) => (
                   <span className="inline-flex flex-wrap items-center gap-1.5">
                     {cs.map((c) => (
