@@ -22,6 +22,12 @@ export function SiteHeader() {
           >
             Leaderboard
           </Link>
+          <Link
+            href="/hall-of-fame"
+            className="hidden text-sm font-medium hover:underline sm:inline"
+          >
+            Hall of fame
+          </Link>
         </div>
         <Suspense fallback={<span className="h-8" />}>
           <AccountMenu />

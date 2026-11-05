@@ -295,6 +295,12 @@ export const players = pgTable(
   },
   (t) => [
     index("players_team").on(t.teamId),
+    // The hall of fame's all-time lists (ADR 0005).
+    index("players_stat_games").on(t.sport, t.statGames.desc()),
+    index("players_stat_goals").on(t.sport, t.statGoals.desc()),
+    index("players_assists").on(t.sport, t.assists.desc()),
+    index("players_tackles").on(t.sport, t.tackles.desc()),
+    index("players_saves").on(t.sport, t.saves.desc()),
     check("players_sport", sql`${t.sport} ${SPORT_CHECK}`),
     check(
       "players_overall_range",
@@ -520,6 +526,12 @@ export const playerCareers = pgTable(
   },
   (t) => [
     index("player_careers_team").on(t.teamId),
+    // The hall of fame's all-time lists (ADR 0005).
+    index("player_careers_stat_games").on(t.sport, t.statGames.desc()),
+    index("player_careers_stat_goals").on(t.sport, t.statGoals.desc()),
+    index("player_careers_assists").on(t.sport, t.assists.desc()),
+    index("player_careers_tackles").on(t.sport, t.tackles.desc()),
+    index("player_careers_saves").on(t.sport, t.saves.desc()),
     check("player_careers_sport", sql`${t.sport} ${SPORT_CHECK}`),
   ],
 ).enableRLS();
