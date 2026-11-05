@@ -137,3 +137,109 @@ export async function loadGhostClub(teamId: string): Promise<ClubView | null> {
     subtitle: `Season ${data.season_number as number}, its best, as it finished`,
   };
 }
+
+/** One of the club's fixtures, with the opponent's colors (D139). */
+export interface ScheduleRow {
+  id: string;
+  week: number;
+  stage: string;
+  home: boolean;
+  opponent: { slot: number; name: string; colors: string[] | null };
+  /** The opponent's starting 11 colors, from the league's frozen copy. */
+  opponentStarters: { chemistryColor: number }[];
+  /** Goals for and against, once played. */
+  result: { for: number; against: number; won: boolean | null } | null;
+}
+
+export interface Schedule {
+  seasonNumber: number;
+  week: number;
+  /** The club's starting 11 colors as its squad is saved now. */
+  myStarters: { chemistryColor: number }[];
+  rows: ScheduleRow[];
+}
+
+/**
+ * Every fixture of the club's latest season with each opponent's starting
+ * colors (D139). Leagues are frozen copies (D115), so these stay right all
+ * season. Playoff fixtures appear once they're drawn.
+ */
+export async function loadSchedule(ownerId: string): Promise<Schedule | null> {
+  const team = await loadMyTeam(ownerId);
+  if (!team) return null;
+  const season = await loadLatestSeason(team.id);
+  if (!season) return null;
+  const [roster, squad, clones] = await Promise.all([
+    loadRoster(team.id),
+    loadSquad(team.id),
+    loadClones(season.id),
+  ]);
+  const colorsOf = (
+    players: readonly { id: string; chemistryColor: number }[],
+    lineup: readonly string[],
+  ) => {
+    const byId = new Map(players.map((p) => [p.id, p]));
+    return lineup.flatMap((id) => {
+      const p = byId.get(id);
+      return p ? [{ chemistryColor: p.chemistryColor }] : [];
+    });
+  };
+  const starters = new Map<number, { chemistryColor: number }[]>();
+  const startersOf = (slot: number) => {
+    const cached = starters.get(slot);
+    if (cached) return cached;
+    const info = season.slots.find((s) => s.slot === slot);
+    const clone = clones.get(slot);
+    const result = clone
+      ? colorsOf(clone.players, clone.squad.lineup)
+      : info
+        ? (() => {
+            const ai = aiTeam(season.seed, slot, info.startRating);
+            return colorsOf(ai.players, ai.squad.lineup);
+          })()
+        : [];
+    starters.set(slot, result);
+    return result;
+  };
+  const rows = season.fixtures
+    .filter((f) => f.homeSlot === MANAGER_SLOT || f.awaySlot === MANAGER_SLOT)
+    .sort((a, b) => a.week - b.week)
+    .map((f): ScheduleRow => {
+      const home = f.homeSlot === MANAGER_SLOT;
+      const slot = home ? f.awaySlot : f.homeSlot;
+      const info = season.slots.find((s) => s.slot === slot);
+      const played = f.homeScore !== null && f.awayScore !== null;
+      const goalsFor = (home ? f.homeScore : f.awayScore) ?? 0;
+      const goalsAgainst = (home ? f.awayScore : f.homeScore) ?? 0;
+      const winnerMine =
+        f.winner === null ? null : f.winner === (home ? "home" : "away");
+      return {
+        id: f.id,
+        week: f.week,
+        stage: f.stage,
+        home,
+        opponent: {
+          slot,
+          name: info?.name ?? "Unknown",
+          colors: info && info.colors.length > 0 ? info.colors : null,
+        },
+        opponentStarters: startersOf(slot),
+        result: played
+          ? {
+              for: goalsFor,
+              against: goalsAgainst,
+              won:
+                goalsFor !== goalsAgainst
+                  ? goalsFor > goalsAgainst
+                  : winnerMine,
+            }
+          : null,
+      };
+    });
+  return {
+    seasonNumber: season.number,
+    week: season.week,
+    myStarters: squad ? colorsOf(roster, squad.lineup) : [],
+    rows,
+  };
+}

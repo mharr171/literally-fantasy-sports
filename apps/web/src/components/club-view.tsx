@@ -1,14 +1,13 @@
 import {
-  chemistryShares,
   formation,
   POSITIONS,
   type Position,
   slotLabel,
   squadScore,
 } from "@lfs/sport-soccer";
+import { ChemistryShares } from "@/components/chemistry-shares";
 import { ClubBadge } from "@/components/club-badge";
 import { ChemistryDot } from "@/components/player/player-card";
-import { CHEMISTRY_COLORS } from "@/lib/chemistry-colors";
 import type { ClubPlayer, ClubView } from "@/lib/club-view";
 
 const KIND = {
@@ -84,11 +83,11 @@ export function ClubViewPanel({ club }: { club: ClubView }) {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <ColorShares
+        <ChemistryShares
           title="Starting 11"
           players={starters.map((s) => s.player)}
         />
-        <ColorShares title="Whole roster" players={club.players} />
+        <ChemistryShares title="Whole roster" players={club.players} />
       </div>
 
       {starters.length > 0 && (
@@ -113,49 +112,6 @@ export function ClubViewPanel({ club }: { club: ClubView }) {
         Ratings are overall at each player&apos;s main position. Potential and
         fitness stay with the club&apos;s own manager.
       </p>
-    </div>
-  );
-}
-
-function ColorShares({
-  title,
-  players,
-}: {
-  title: string;
-  players: readonly ClubPlayer[];
-}) {
-  const shares = chemistryShares(players);
-  return (
-    <div className="flex flex-col gap-2 rounded-md border border-zinc-200 p-3 text-sm dark:border-zinc-800">
-      <h2 className="font-semibold">Chemistry colors · {title}</h2>
-      {shares.length === 0 ? (
-        <p className="text-zinc-500">No players.</p>
-      ) : (
-        <>
-          <div className="flex h-3 overflow-hidden rounded" aria-hidden="true">
-            {shares.map((s) => (
-              <span
-                key={s.color}
-                style={{
-                  width: `${s.share * 100}%`,
-                  background: CHEMISTRY_COLORS[s.color]?.hex ?? "#a1a1aa",
-                }}
-              />
-            ))}
-          </div>
-          <ul className="flex flex-wrap gap-x-4 gap-y-1">
-            {shares.map((s) => (
-              <li key={s.color} className="inline-flex items-center gap-1.5">
-                <ChemistryDot color={s.color} />
-                {CHEMISTRY_COLORS[s.color]?.name ?? "Unknown"}{" "}
-                <span className="tabular-nums text-zinc-600 dark:text-zinc-400">
-                  {Math.round(s.share * 100)}% ({s.count})
-                </span>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
     </div>
   );
 }

@@ -20,6 +20,7 @@ import {
   variantAt,
 } from "@lfs/sport-soccer";
 import { type DragEvent, useMemo, useState } from "react";
+import { ChemistryShares } from "@/components/chemistry-shares";
 import { ConditionBadge } from "@/components/condition-badge";
 import { Heatmap } from "@/components/player/heatmap";
 import { ChemistryDot, PlayerCardBody } from "@/components/player/player-card";
@@ -439,6 +440,11 @@ export function SquadBuilder({
         </div>
 
         <div className="flex flex-col gap-4">
+          {/* Chemistry colors of the starting 11 and the roster (D139). */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <ChemistryShares title="Starting 11" players={present} />
+            <ChemistryShares title="Whole roster" players={roster} />
+          </div>
           <PlayerList
             title={`Bench (${squad.bench.length}/${BENCH_SIZE})`}
             rows={bench.map((id, i) => ({
