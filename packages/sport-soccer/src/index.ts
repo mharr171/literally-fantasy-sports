@@ -1,3 +1,4 @@
+export * from "./ai-manager";
 export * from "./ai-team";
 export * from "./attributes";
 export * from "./balance";
