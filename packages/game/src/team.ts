@@ -258,7 +258,7 @@ export async function loadAgingPlayers(teamId: string) {
   const { data, error } = await createServiceClient()
     .from("players")
     .select(
-      "id, display_name, age, attributes, primary_position, overall, potential, potential_low, potential_high",
+      "id, display_name, age, attributes, primary_position, overall, potential, potential_low, potential_high, season_minutes",
     )
     .eq("team_id", teamId);
   if (error) throw new Error(error.message);
@@ -271,5 +271,6 @@ export async function loadAgingPlayers(teamId: string) {
     overall: p.overall as number,
     potential: p.potential as number,
     potentialRange: [p.potential_low, p.potential_high] as [number, number],
+    seasonMinutes: (p.season_minutes as number | null) ?? 0,
   }));
 }

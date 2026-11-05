@@ -6,6 +6,7 @@ import {
   type AgingPlayer,
   DEFAULT_SEASON_END_SETTINGS,
   endOfSeason,
+  playingTimeFactor,
   retirementChance,
   shiftToOverall,
   yearlyChange,
@@ -149,5 +150,59 @@ describe("youthIntake (D53)", () => {
     expect(mean).toBeGreaterThan(41);
     expect(mean).toBeLessThan(49);
     expect(youthIntake("intake")).toEqual(intake);
+  });
+});
+
+describe("growth from playing time (D154)", () => {
+  const club = { clubMinutes: 26 * 90 };
+
+  it("leaves growth as it was when switched off", () => {
+    const kids = Array.from({ length: 20 }, (_, i) => ({
+      ...player(`k${i}`, 18, 50, 80),
+      seasonMinutes: i * 100,
+    }));
+    const before = endOfSeason("pt", kids);
+    const off = endOfSeason("pt", kids, undefined, undefined, {
+      ...club,
+      weight: 0,
+    });
+    expect(off).toEqual(before);
+  });
+
+  it("gives regulars full growth and benchwarmers less", () => {
+    expect(playingTimeFactor(26 * 90, { ...club, weight: 0.5 })).toBe(1);
+    // 70% of the club's minutes is enough to count as a regular.
+    expect(playingTimeFactor(0.7 * 26 * 90, { ...club, weight: 0.5 })).toBe(1);
+    expect(playingTimeFactor(0, { ...club, weight: 0.5 })).toBe(0.5);
+    expect(playingTimeFactor(0, { ...club, weight: 1 })).toBe(0);
+    expect(playingTimeFactor(500, undefined)).toBe(1);
+  });
+
+  it("makes regulars grow more than benchwarmers over a season", () => {
+    let regular = 0;
+    let bench = 0;
+    for (let i = 0; i < 200; i++) {
+      const kid = player(`g${i}`, 18, 50, 80);
+      const grown = (minutes: number) =>
+        yearlyChange(
+          createRng(`grow-${i}`),
+          { ...kid, seasonMinutes: minutes },
+          DEFAULT_SEASON_END_SETTINGS,
+          { ...club, weight: 0.5 },
+        );
+      regular += grown(26 * 90);
+      bench += grown(100);
+    }
+    expect(regular).toBeGreaterThan(bench * 1.6);
+  });
+
+  it("doesn't change older players' decline", () => {
+    const vet = { ...player("vet", 33, 72, 72), seasonMinutes: 0 };
+    const off = yearlyChange(createRng("v"), vet);
+    const on = yearlyChange(createRng("v"), vet, DEFAULT_SEASON_END_SETTINGS, {
+      ...club,
+      weight: 1,
+    });
+    expect(on).toBe(off);
   });
 });

@@ -358,6 +358,20 @@
       "when": 1793854804846,
       "tag": "0050_stat_games_goals_functions",
       "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1793862715886,
+      "tag": "0051_season_minutes",
+      "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1793862716889,
+      "tag": "0052_season_minutes_functions",
+      "breakpoints": true
     }
   ]
 }

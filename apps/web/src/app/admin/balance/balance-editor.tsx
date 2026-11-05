@@ -217,7 +217,7 @@ export function BalanceEditor(props: {
 
       <fieldset className="flex flex-col gap-3">
         <legend className="mb-2 text-lg font-semibold">
-          Recovery and bans between weeks
+          Recovery, bans and growth
         </legend>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {(Object.keys(CONDITION_LIMITS) as (keyof ConditionSettings)[]).map(

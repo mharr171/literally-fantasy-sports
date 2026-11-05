@@ -1,0 +1,1 @@
+ALTER TABLE "players" ADD COLUMN "season_minutes" integer DEFAULT 0 NOT NULL;

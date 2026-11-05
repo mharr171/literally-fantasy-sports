@@ -74,6 +74,39 @@ export interface AgingPlayer {
   overall: number;
   /** True potential (server only, D48). */
   potential: number;
+  /** Minutes played this season in the club's own matches (D154). */
+  seasonMinutes?: number;
+}
+
+/**
+ * Growth from playing time (D154). `weight` 0 leaves growth as it was; at 1
+ * a player who never played grows almost nothing. A player who played at
+ * least `regularShare` of the club's minutes counts as a regular and grows
+ * fully.
+ */
+export interface PlayingTimeGrowth {
+  weight: number;
+  /** Minutes the club played this season: its own matches × 90. */
+  clubMinutes: number;
+  regularShare?: number;
+}
+
+/** Share of the club's minutes that makes a player a regular (D154). */
+export const REGULAR_SHARE = 0.7;
+
+/**
+ * How much of a young player's usual growth he gets for the minutes he
+ * played (D154): 1 for a regular, down to 1 − weight for a player who
+ * didn't play.
+ */
+export function playingTimeFactor(
+  seasonMinutes: number,
+  growth: PlayingTimeGrowth | undefined,
+): number {
+  if (!growth || growth.weight <= 0 || growth.clubMinutes <= 0) return 1;
+  const regular = growth.clubMinutes * (growth.regularShare ?? REGULAR_SHARE);
+  const share = Math.min(1, Math.max(0, seasonMinutes) / regular);
+  return 1 - growth.weight * (1 - share);
 }
 
 export interface AgedPlayer {
@@ -123,15 +156,20 @@ export function shiftToOverall(
 /** How much a player's overall changes over one year. */
 export function yearlyChange(
   rng: Rng,
-  player: Pick<AgingPlayer, "age" | "overall" | "potential">,
+  player: Pick<AgingPlayer, "age" | "overall" | "potential" | "seasonMinutes">,
   s: SeasonEndSettings = DEFAULT_SEASON_END_SETTINGS,
+  growth?: PlayingTimeGrowth,
 ): number {
   const nextAge = player.age + 1;
   if (nextAge <= s.peakAge) {
     const gap = player.potential - player.overall;
     if (gap <= 0) return 0;
     const share = rng.float(s.growthShare[0], s.growthShare[1]);
-    return Math.max(1, Math.min(gap, Math.round(gap * share)));
+    // Regulars grow fully; players who rarely played grow less (D154).
+    const factor = playingTimeFactor(player.seasonMinutes ?? 0, growth);
+    if (factor === 1)
+      return Math.max(1, Math.min(gap, Math.round(gap * share)));
+    return Math.max(0, Math.min(gap, Math.round(gap * share * factor)));
   }
   if (nextAge < s.declineAge) return rng.int(-1, 1);
   const band = s.decline.find((b) => nextAge <= b.maxAge) ?? s.decline.at(-1);
@@ -162,6 +200,7 @@ export function endOfSeason(
   players: readonly AgingPlayer[],
   s: SeasonEndSettings = DEFAULT_SEASON_END_SETTINGS,
   weights: OverallWeights = DEFAULT_OVERALL_WEIGHTS,
+  growth?: PlayingTimeGrowth,
 ): SeasonEndResult {
   const root = createRng(seed).fork("season-end");
   const aged: AgedPlayer[] = [];
@@ -177,7 +216,7 @@ export function endOfSeason(
       ATTRIBUTE_MIN,
       Math.min(
         ATTRIBUTE_MAX,
-        p.overall + yearlyChange(rng.fork("growth"), p, s),
+        p.overall + yearlyChange(rng.fork("growth"), p, s, growth),
       ),
     );
     const attributes = shiftToOverall(

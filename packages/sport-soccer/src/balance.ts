@@ -272,6 +272,12 @@ export const CONDITION_LIMITS: Record<keyof ConditionSettings, Limit> = {
     max: 5,
     integer: true,
   },
+  playingTimeGrowth: {
+    label: "Growth from playing time",
+    help: "How much a young player's growth at season end depends on his minutes: 0 = not at all, 0.5 = a player who didn't play grows half as much, 1 = he barely grows. Regulars (70%+ of the club's minutes) always grow fully. D154.",
+    min: 0,
+    max: 1,
+  },
 };
 
 export const FORM_LIMITS: Record<keyof FormSettings, Limit> = {

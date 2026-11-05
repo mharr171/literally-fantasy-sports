@@ -23,6 +23,11 @@ export interface ConditionSettings {
   /** Every this many yellow cards in a season earns a ban. */
   yellowsForBan: number;
   yellowBan: number;
+  /**
+   * How much a young player's growth at season end depends on his minutes
+   * (D154): 0 = not at all, 1 = a player who never played barely grows.
+   */
+  playingTimeGrowth: number;
 }
 
 export const DEFAULT_CONDITION_SETTINGS: ConditionSettings = {
@@ -30,6 +35,8 @@ export const DEFAULT_CONDITION_SETTINGS: ConditionSettings = {
   redCardBan: 1,
   yellowsForBan: 5,
   yellowBan: 1,
+  // Off unless a settings version turns it on (D154).
+  playingTimeGrowth: 0,
 };
 
 export interface PlayerCondition {
