@@ -188,6 +188,11 @@ export interface GeneratePlayerOptions {
   /** The overall the player should have at that position. */
   overall: number;
   settings?: GenerationSettings;
+  /**
+   * The chemistry colors the player may have (D180), e.g. a pack that
+   * leaves some out. Rolled on its own stream; all colors when left out.
+   */
+  colors?: readonly number[];
 }
 
 export function generatePlayer(
@@ -243,10 +248,15 @@ export function generatePlayer(
       overall,
       s.potentialRangeWidth,
     ),
-    chemistryColor: rollChemistryColor(
-      rng.fork("chemistry"),
-      chemistryColorCount(PLAYERS_ON_FIELD),
-    ),
+    chemistryColor:
+      options.colors && options.colors.length > 0
+        ? (options.colors[
+            rng.fork("colors").int(0, options.colors.length - 1)
+          ] as number)
+        : rollChemistryColor(
+            rng.fork("chemistry"),
+            chemistryColorCount(PLAYERS_ON_FIELD),
+          ),
     templateVariant,
     secondaryTemplateVariant,
   };
@@ -360,6 +370,8 @@ export function generatePack(
   focus: PackFocus,
   tier: PackTier,
   settings: GenerationSettings = DEFAULT_GENERATION_SETTINGS,
+  /** Colors the pack can hold (D180); all when left out. */
+  colors?: readonly number[],
 ): GeneratedPlayer[] {
   const positions = positionsFor(focus);
   const weights = positions.map((p) =>
@@ -369,6 +381,11 @@ export function generatePack(
     const r = rng.fork(`player-${i}`);
     const position = positions[r.weightedIndex(weights)] as Position;
     const overall = rollOverall(r, tier);
-    return generatePlayer(r, { position, overall, settings });
+    return generatePlayer(r, {
+      position,
+      overall,
+      settings,
+      ...(colors ? { colors } : {}),
+    });
   });
 }

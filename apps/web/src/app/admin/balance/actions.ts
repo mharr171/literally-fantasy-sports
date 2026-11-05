@@ -48,10 +48,13 @@ const inputSchema = z.object({
       .object({ colorCycle: z.array(z.number().int()).max(10).optional() })
       .catchall(num),
     payouts: z.record(z.string(), num),
-    packs: z.object({
-      tiers: z.record(z.string(), num),
-      focusSurcharge: num,
-    }),
+    // Tier prices, the focus surcharge and the Elo and color levers (D179, D180).
+    packs: z
+      .object({
+        tiers: z.record(z.string(), num),
+        focusSurcharge: num,
+      })
+      .catchall(num),
     // Recovery, bans, form and morale (D158).
     condition: z.record(z.string(), num),
     form: z.record(z.string(), num),

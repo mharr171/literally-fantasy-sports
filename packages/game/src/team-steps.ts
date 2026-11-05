@@ -6,9 +6,11 @@
  */
 import { clubColorsError, resalePrice, teamNameError } from "@lfs/core";
 import {
+  excludedColorsError,
   type MatchdaySquad,
   type PackFocus,
   packChoiceError,
+  packEloShift,
   packPrice,
   removalError,
   squadProblems,
@@ -148,16 +150,24 @@ export async function buyPackFor(
   team: MyTeam,
   tier: string,
   focus: PackFocus,
+  excludedColors: readonly number[] = [],
 ): Promise<void> {
   const starter = await loadStarterPacks(team.id);
   if (starter.some((p) => !p.resolved))
     throw new Error("Pick your starting squad before buying packs.");
-  const { error } = await createServiceClient().rpc("buy_pack", {
+  const colorProblem = excludedColorsError(excludedColors);
+  if (colorProblem) throw new Error(colorProblem);
+  // Today's prices from the live settings version (M5), with the odds and
+  // price moved for the club's Elo now (D179) and any colors left out (D180).
+  const prices = (await liveSoccerConfig()).balance.packs;
+  const eloShift = packEloShift(team.elo, prices);
+  const { error } = await createServiceClient().rpc("buy_pack_with_choices", {
     p_team: team.id,
     p_focus: focus,
     p_tier: tier,
-    // Today's prices from the live settings version (M5).
-    p_price: packPrice(tier, focus, (await liveSoccerConfig()).balance.packs),
+    p_price: packPrice(tier, focus, prices, { eloShift, excludedColors }),
+    p_elo_shift: eloShift,
+    p_excluded: [...excludedColors],
   });
   if (error) throw new Error(friendly(error.message));
 }

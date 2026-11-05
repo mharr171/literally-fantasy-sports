@@ -14,6 +14,7 @@ import {
   chooseReleases,
   chooseYouth,
   type GeneratedPlayer,
+  packEloShift,
   pickStarterKeeps,
   rollAiIdentity,
   rosterWarning,
@@ -243,7 +244,13 @@ async function rebuild(team: MyTeam, profile: AiProfile, notes: string[]) {
   for (let i = 0; i < 3; i++) {
     const fresh = (await loadTeamById(team.id)) as MyTeam;
     const roster = await loadRoster(team.id);
-    const choice = choosePack(fresh.funds, roster, profile.personality, prices);
+    const choice = choosePack(
+      fresh.funds,
+      roster,
+      profile.personality,
+      prices,
+      packEloShift(fresh.elo, prices),
+    );
     if (!choice) break;
     await buyPackFor(fresh, choice.tier, choice.focus);
     await sortOpenPack(fresh, profile);

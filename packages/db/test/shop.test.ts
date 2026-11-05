@@ -159,6 +159,42 @@ describe.runIf(sql)(
       expect(result.funds).toBe(10_250);
     });
 
+    it("stores a pack's Elo shift and left-out colors (D179, D180)", async () => {
+      const result = await asService(db, async (tx) => {
+        const bad = [
+          await attempt(
+            tx,
+            tx`select public.buy_pack_with_choices(${team}, 'any', 'basic', 100, 16, '{}')`,
+          ),
+          await attempt(
+            tx,
+            tx`select public.buy_pack_with_choices(${team}, 'any', 'basic', 100, 0, '{0,1,2,3}')`,
+          ),
+        ];
+        const [p] = await tx<{ id: string }[]>`
+        select public.buy_pack_with_choices(${team}, 'defence', 'silver', 7250, 5, '{1,3}') as id`;
+        const [row] = await tx`select tier, focus, elo_shift, excluded_colors
+        from packs where id = ${p?.id as string}`;
+        // The old function still works during a deploy, with no choices.
+        await tx`update packs set resolved_at = now() where id = ${p?.id as string}`;
+        const [old] = await tx<{ id: string }[]>`
+        select public.buy_pack(${team}, 'any', 'basic', 100) as id`;
+        const [plain] = await tx`select elo_shift, excluded_colors
+        from packs where id = ${old?.id as string}`;
+        return { bad, row, plain, funds: await funds(tx) };
+      });
+      expect(result.bad[0]).toMatch(/packs_choice/);
+      expect(result.bad[1]).toMatch(/packs_choice/);
+      expect(result.row).toEqual({
+        tier: "silver",
+        focus: "defence",
+        elo_shift: 5,
+        excluded_colors: [1, 3],
+      });
+      expect(result.plain).toEqual({ elo_shift: 0, excluded_colors: [] });
+      expect(result.funds).toBe(10_000 - 7_250 - 100);
+    });
+
     it("lets only the server call them", async () => {
       for (const run of [
         (fn: Parameters<typeof asAnon>[1]) => asAnon(db, fn),
@@ -166,6 +202,8 @@ describe.runIf(sql)(
       ]) {
         for (const call of [
           (tx: Tx) => tx`select public.buy_pack(${team}, 'any', 'basic', 1)`,
+          (tx: Tx) =>
+            tx`select public.buy_pack_with_choices(${team}, 'any', 'basic', 1, 0, '{}')`,
           (tx: Tx) =>
             tx`select public.resolve_bought_pack(${team}, gen_random_uuid(), '[]', '[]', 99999)`,
           (tx: Tx) =>

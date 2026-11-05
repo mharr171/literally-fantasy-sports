@@ -219,13 +219,15 @@ export const FUNDS_BUFFER: Record<Personality, number> = {
  * The pack to buy now, or null to save. Spenders buy the best pack they
  * can afford, builders cheap all-position packs, steady clubs a mid-tier
  * pack aimed at their weakest line once they have a cushion. A full
- * roster buys nothing.
+ * roster buys nothing. `eloShift` is the club's pack shift (D179), which
+ * moves prices the same way the shop does.
  */
 export function choosePack(
   funds: number,
   roster: readonly AiPlayerView[],
   personality: Personality,
   prices: PackPrices = DEFAULT_PACK_PRICES,
+  eloShift = 0,
 ): { tier: string; focus: PackFocus } | null {
   if (roster.length >= Math.min(AI_ROSTER_CAP, ROSTER_MAX)) return null;
   const spend = funds - FUNDS_BUFFER[personality];
@@ -241,7 +243,8 @@ export function choosePack(
         ? BOUGHT_TIERS.filter((t) => t.id !== "gold").reverse()
         : BOUGHT_TIERS.filter((t) => t.id === "basic");
   for (const t of tiers)
-    if (packPrice(t.id, focus, prices) <= spend) return { tier: t.id, focus };
+    if (packPrice(t.id, focus, prices, { eloShift }) <= spend)
+      return { tier: t.id, focus };
   return null;
 }
 

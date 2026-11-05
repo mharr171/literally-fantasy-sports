@@ -200,10 +200,28 @@ async function Guide() {
           attack, midfield, defence or goal ({pct(balance.packs.focusSurcharge)}{" "}
           dearer).
         </p>
+        <p>
+          You can also leave out 1, 2 or 3 chemistry colors so every player
+          comes in the colors you keep. That costs{" "}
+          {pct(balance.packs.excludeOne ?? 0.25)},{" "}
+          {pct(balance.packs.excludeTwo ?? 0.6)} or{" "}
+          {pct(balance.packs.excludeThree ?? 1.2)} more, on top of any position
+          focus.
+        </p>
+        {(balance.packs.eloPerOverall ?? 0) > 0 && (
+          <p>
+            Packs keep up as your club climbs: every{" "}
+            {balance.packs.eloPerOverall} Elo above 1500 moves the odds up one
+            overall point (and below 1500, down), from −10 to +15, and the price
+            moves {pct(balance.packs.pricePerOverall ?? 0.03)} per point. The
+            shop shows the odds for your Elo now.
+          </p>
+        )}
         <ul className="list-disc pl-5">
           {BOUGHT_TIERS.map((tier) => (
             <li key={tier.id}>
               {tier.name}: {money(balance.packs.tiers[tier.id] ?? tier.price)}
+              {(balance.packs.eloPerOverall ?? 0) > 0 ? " at Elo 1500" : ""}
             </li>
           ))}
         </ul>

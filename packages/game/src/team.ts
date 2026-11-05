@@ -138,10 +138,16 @@ export function openedContents(
     seed: string;
     focus: PackFocus;
     tier: string;
+    /** The pack's Elo shift and left-out colors (D179, D180). */
+    eloShift?: number;
+    excludedColors?: readonly number[];
   },
   settings: GenerationSettings,
 ): GeneratedPlayer[] {
-  return packContents(pack.seed, pack.focus, pack.tier, settings);
+  return packContents(pack.seed, pack.focus, pack.tier, settings, {
+    eloShift: pack.eloShift ?? 0,
+    excludedColors: pack.excludedColors ?? [],
+  });
 }
 
 export interface OpenPack {
@@ -149,6 +155,8 @@ export interface OpenPack {
   focus: PackFocus;
   tier: string;
   seed: string;
+  eloShift: number;
+  excludedColors: number[];
 }
 
 /** The team's bought pack waiting for keep-or-sell choices, if any. */
@@ -157,7 +165,7 @@ export async function loadOpenBoughtPack(
 ): Promise<OpenPack | null> {
   const { data, error } = await createServiceClient()
     .from("packs")
-    .select("id, focus, tier, seed")
+    .select("id, focus, tier, seed, elo_shift, excluded_colors")
     .eq("team_id", teamId)
     .eq("kind", "bought")
     .is("resolved_at", null)
@@ -166,7 +174,14 @@ export async function loadOpenBoughtPack(
   if (!data) return null;
   if (!isPackFocus(data.focus))
     throw new Error(`Bad pack focus: ${data.focus}`);
-  return { ...data, focus: data.focus };
+  return {
+    id: data.id,
+    focus: data.focus,
+    tier: data.tier,
+    seed: data.seed,
+    eloShift: (data.elo_shift as number | null) ?? 0,
+    excludedColors: (data.excluded_colors as number[] | null) ?? [],
+  };
 }
 
 export interface RosterPlayer {

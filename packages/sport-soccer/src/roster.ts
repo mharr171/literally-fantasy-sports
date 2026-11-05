@@ -146,22 +146,129 @@ export interface PackPrices {
   tiers: Record<string, number>;
   /** Position-focused packs cost this much more (0.2 = +20%). */
   focusSurcharge: number;
+  /**
+   * Elo points per overall point a bought pack's odds move (D179): 40 moves
+   * every band up 5 at Elo 1700. 0 = packs don't follow Elo.
+   */
+  eloPerOverall?: number;
+  /** How much more a pack costs per overall point it moves (0.03 = +3%). */
+  pricePerOverall?: number;
+  /** Surcharges for leaving out 1, 2 or 3 chemistry colors (D180). */
+  excludeOne?: number;
+  excludeTwo?: number;
+  excludeThree?: number;
 }
 
 export const DEFAULT_PACK_PRICES: PackPrices = {
   tiers: Object.fromEntries(BOUGHT_TIERS.map((t) => [t.id, t.price])),
   focusSurcharge: FOCUS_SURCHARGE,
+  // Off until a settings version turns it on (D179).
+  eloPerOverall: 0,
+  pricePerOverall: 0.03,
+  excludeOne: 0.25,
+  excludeTwo: 0.6,
+  excludeThree: 1.2,
 };
 
-/** What a pack costs: the tier's price, plus the surcharge for a position focus. */
+/** The Elo scaling Gary chose (D186), for the version that turns it on. */
+export const PROPOSED_ELO_PER_OVERALL = 40;
+
+/** How far a pack's odds can move with Elo (D179). */
+export const ELO_SHIFT_MIN = -10;
+export const ELO_SHIFT_MAX = 15;
+
+/** Overall points a bought pack's odds move for a club at this Elo (D179). */
+export function packEloShift(
+  elo: number,
+  prices: PackPrices = DEFAULT_PACK_PRICES,
+): number {
+  const per = prices.eloPerOverall ?? 0;
+  if (!per || !Number.isFinite(elo)) return 0;
+  return Math.max(
+    ELO_SHIFT_MIN,
+    Math.min(ELO_SHIFT_MAX, Math.round((elo - 1500) / per)),
+  );
+}
+
+/** A tier's odds moved by `shift` overall points, within 30–99 (D179). */
+export function shiftedTier<T extends PackTier>(tier: T, shift: number): T {
+  if (!shift) return tier;
+  const clamp = (v: number) => Math.max(30, Math.min(99, v));
+  return {
+    ...tier,
+    mean: clamp(tier.mean + shift),
+    min: clamp(tier.min + shift),
+    max: clamp(tier.max + shift),
+    ...(tier.bands
+      ? {
+          bands: tier.bands.map((b) => ({
+            ...b,
+            min: clamp(b.min + shift),
+            max: clamp(b.max + shift),
+          })),
+        }
+      : {}),
+  };
+}
+
+/** The five chemistry colors (D42). */
+export const CHEMISTRY_COLOR_COUNT = 5;
+
+/** Why a set of left-out colors can't be used, or null (D180): up to 3, each once. */
+export function excludedColorsError(colors: readonly number[]): string | null {
+  if (colors.length > 3) return "Leave out at most 3 colors.";
+  if (new Set(colors).size !== colors.length) return "A color is listed twice.";
+  if (
+    colors.some(
+      (c) => !Number.isInteger(c) || c < 0 || c >= CHEMISTRY_COLOR_COUNT,
+    )
+  )
+    return "That isn't a chemistry color.";
+  return null;
+}
+
+/** The colors a pack can hold once some are left out (D180); undefined = all. */
+export function allowedColors(
+  excluded: readonly number[] = [],
+): number[] | undefined {
+  if (excluded.length === 0) return undefined;
+  return Array.from({ length: CHEMISTRY_COLOR_COUNT }, (_, c) => c).filter(
+    (c) => !excluded.includes(c),
+  );
+}
+
+export interface PackChoice {
+  /** Overall points the odds move with the club's Elo (D179). */
+  eloShift?: number;
+  /** Chemistry colors left out (D180). */
+  excludedColors?: readonly number[];
+}
+
+/**
+ * What a pack costs: the tier's price, plus the surcharges for a position
+ * focus and for leaving out colors (they add up, D180), moved with the
+ * club's Elo shift (D179). Rounded to 50.
+ */
 export function packPrice(
   tierId: string,
   focus: PackFocus,
   prices: PackPrices = DEFAULT_PACK_PRICES,
+  choice: PackChoice = {},
 ): number {
   const price = prices.tiers[tierId] ?? boughtTier(tierId).price;
-  if (focus === "any") return price;
-  return Math.round((price * (1 + prices.focusSurcharge)) / 50) * 50;
+  const excluded = choice.excludedColors?.length ?? 0;
+  const surcharge =
+    (focus === "any" ? 0 : prices.focusSurcharge) +
+    (excluded === 0
+      ? 0
+      : excluded === 1
+        ? (prices.excludeOne ?? 0)
+        : excluded === 2
+          ? (prices.excludeTwo ?? 0)
+          : (prices.excludeThree ?? 0));
+  const elo = 1 + (choice.eloShift ?? 0) * (prices.pricePerOverall ?? 0);
+  if (surcharge === 0 && elo === 1) return price;
+  return Math.max(50, Math.round((price * (1 + surcharge) * elo) / 50) * 50);
 }
 
 /** The 22 starter packs a new team receives, in a stable order (D83). */
@@ -177,8 +284,15 @@ export function packContents(
   focus: PackFocus,
   tierId: string,
   settings: GenerationSettings = DEFAULT_GENERATION_SETTINGS,
+  choice: PackChoice = {},
 ): GeneratedPlayer[] {
-  return generatePack(createRng(seed), focus, packTier(tierId), settings);
+  return generatePack(
+    createRng(seed),
+    focus,
+    shiftedTier(packTier(tierId), choice.eloShift ?? 0),
+    settings,
+    allowedColors(choice.excludedColors),
+  );
 }
 
 export interface StarterPackState {
