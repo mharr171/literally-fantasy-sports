@@ -131,7 +131,9 @@ export function MatchView({
                   ? "After extra time"
                   : summary?.decidedBy === "penalties"
                     ? "After penalties"
-                    : "Full time"
+                    : summary?.decidedBy === "forfeit"
+                      ? "Forfeited: fewer than 7 players were fit"
+                      : "Full time"
                 : `${clock}'`}
             </span>
           </span>

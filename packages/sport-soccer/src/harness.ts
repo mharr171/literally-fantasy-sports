@@ -233,3 +233,55 @@ export function formatReport(r: HarnessReport): string {
   ];
   return lines.join("\n");
 }
+
+/**
+ * Even teams where one side starts a man down (D183): how often the side
+ * with 10 wins, draws and loses. The missing player is a random outfield
+ * starter; the short side alternates home and away.
+ */
+export function runManDown(options: {
+  matches: number;
+  seed: string;
+  baseStrength?: number;
+  config?: SoccerConfig;
+}): { matches: number; win: number; draw: number; loss: number } {
+  const config = options.config ?? defaultSoccerConfig();
+  const base = options.baseStrength ?? 60;
+  const rng = createRng(`${options.seed}:man-down`);
+  const tally = { win: 0, draw: 0, loss: 0 };
+  for (let i = 0; i < options.matches; i++) {
+    const a = generateTeam(rng, `md-a${i}`, base);
+    const b = generateTeam(rng, `md-b${i}`, base);
+    const outfield = a.lineup.filter((s) => s.slot !== "GK");
+    const gone = rng.pick(outfield);
+    const short = { ...a, lineup: a.lineup.filter((s) => s !== gone) };
+    const shortHome = i % 2 === 0;
+    const { result } = simulateMatch(
+      {
+        home: shortHome ? short : b,
+        away: shortHome ? b : short,
+        mode: "league",
+        config,
+      },
+      `${options.seed}:md:${i}`,
+    );
+    const side = shortHome ? "home" : "away";
+    if (result.winner === null) tally.draw++;
+    else if (result.winner === side) tally.win++;
+    else tally.loss++;
+  }
+  const n = options.matches;
+  return {
+    matches: n,
+    win: tally.win / n,
+    draw: tally.draw / n,
+    loss: tally.loss / n,
+  };
+}
+
+export function formatManDown(r: ReturnType<typeof runManDown>): string {
+  return [
+    `Even teams, one side a man down (${r.matches} matches), the side with 10:`,
+    `  win ${pct(r.win)}   draw ${pct(r.draw)}   loss ${pct(r.loss)}   (target: about 25–30% wins)`,
+  ].join("\n");
+}

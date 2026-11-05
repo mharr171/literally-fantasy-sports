@@ -258,15 +258,24 @@ describe("autoPickSquad with injuries, bans, fitness and form (M4)", () => {
     expect(squadProblems(squad, ids)).toEqual([]);
   });
 
-  it("fills the squad with unavailable players only when it must", () => {
+  it("never picks unavailable players; a slot nobody fit can fill stays empty (D183)", () => {
     const few = players.slice(0, 22);
     const out = new Set(few.slice(0, 3).map((p) => p.id));
     const squad = autoPickSquad(few, DEFAULT_FORMATION, {
       available: (id) => !out.has(id),
     });
-    expect(squad.lineup.some((id) => out.has(id))).toBe(false);
-    expect([...squad.lineup, ...squad.bench]).toHaveLength(22);
-    expect(squad.bench.slice(-3).every((id) => out.has(id))).toBe(true);
+    const picked = [...squad.lineup, ...squad.bench].filter(Boolean);
+    expect(picked.some((id) => out.has(id))).toBe(false);
+    expect(picked).toHaveLength(19);
+    expect(squad.lineup).toHaveLength(11);
+    // Only 9 fit: two slots stay empty, and the squad still saves.
+    const nine = new Set(few.slice(0, 9).map((p) => p.id));
+    const short = autoPickSquad(few, DEFAULT_FORMATION, {
+      available: (id) => nine.has(id),
+    });
+    expect(short.lineup.filter((id) => id === "")).toHaveLength(2);
+    expect(short.bench).toEqual([]);
+    expect(squadProblems(short, new Set(few.map((p) => p.id)))).toEqual([]);
   });
 
   it("prefers a fresher or in-form player when ratings are close", () => {

@@ -131,14 +131,38 @@ describe("availableSquad", () => {
     ).toHaveLength(1);
   });
 
-  it("refuses when fewer than 11 players can play", () => {
+  it("plays a man down when fewer than 11 are fit (D183)", () => {
     const fit = new Set(roster.slice(0, 10).map((p) => p.id));
-    expect(() =>
-      availableSquad(team.squad, roster, (id) => fit.has(id)),
-    ).toThrow(/at least 11/);
+    const out = availableSquad(team.squad, roster, (id) => fit.has(id));
+    expect(out.starters).toBe(10);
+    expect(out.squad.lineup).toHaveLength(11);
+    expect(out.squad.lineup.filter((id) => id === "")).toHaveLength(1);
+    expect(out.squad.bench).toEqual([]);
+    for (const id of out.squad.lineup.filter(Boolean))
+      expect(fit.has(id)).toBe(true);
     expect(() =>
       availableSquad({ ...team.squad, formation: "x" }, roster, () => true),
     ).toThrow(/formation/);
+  });
+
+  it("puts the best outfield player in goal when no keeper is fit", () => {
+    const keepers = new Set(
+      roster.filter((p) => p.primaryPosition === "GK").map((p) => p.id),
+    );
+    const out = availableSquad(team.squad, roster, (id) => !keepers.has(id));
+    const inGoal = out.squad.lineup[0] as string;
+    expect(inGoal).not.toBe("");
+    expect(keepers.has(inGoal)).toBe(false);
+    expect(out.keeperFromOutfield).toBe(inGoal);
+    // Plenty of fit outfield players: their slot is refilled from the
+    // bench first, so only a shortfall leaves a slot empty.
+    expect(out.starters).toBeGreaterThanOrEqual(10);
+  });
+
+  it("starts with as many as are fit, even below the forfeit line", () => {
+    const fit = new Set(roster.slice(1, 6).map((p) => p.id));
+    const out = availableSquad(team.squad, roster, (id) => fit.has(id));
+    expect(out.starters).toBe(5);
   });
 });
 

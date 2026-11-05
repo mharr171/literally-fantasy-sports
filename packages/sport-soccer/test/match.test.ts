@@ -123,9 +123,31 @@ describe("simulateMatch", () => {
     expect(wins / 200).toBeGreaterThan(0.75);
   });
 
-  it("rejects lineups without 11 players or without a goalkeeper", () => {
+  it("plays 7–10 starters, forfeits below 7, and still needs a keeper (D183)", () => {
     const ten: SoccerTeam = { id: "ten", lineup: teamA.lineup.slice(0, 10) };
-    expect(() => play("x", "league", ten, teamB)).toThrow(/10 starters/);
+    const short = play("x", "league", ten, teamB);
+    expect(short.result.decidedBy).toBeUndefined();
+    expect(Object.keys(short.result.players).length).toBeGreaterThan(10);
+    const six: SoccerTeam = { id: "six", lineup: teamA.lineup.slice(0, 6) };
+    const forfeit = play("x", "knockout", six, teamB);
+    expect(forfeit.result).toMatchObject({
+      score: { home: 0, away: 3 },
+      winner: "away",
+      decidedBy: "forfeit",
+      players: {},
+    });
+    expect(play("x", "league", teamB, six).result.score).toEqual({
+      home: 3,
+      away: 0,
+    });
+    const twelve: SoccerTeam = {
+      id: "twelve",
+      lineup: [
+        ...teamA.lineup,
+        teamA.lineup[1] as (typeof teamA.lineup)[number],
+      ],
+    };
+    expect(() => play("x", "league", twelve, teamB)).toThrow(/12 starters/);
     const noKeeper: SoccerTeam = {
       id: "nokeeper",
       lineup: teamA.lineup.map((s) =>
@@ -133,6 +155,24 @@ describe("simulateMatch", () => {
       ),
     };
     expect(() => play("x", "league", noKeeper, teamB)).toThrow(/no goalkeeper/);
+  });
+
+  it("a side a man down wins clearly less often (D183)", () => {
+    let full = 0;
+    let down = 0;
+    for (let i = 0; i < 300; i++) {
+      const r = createRng(`md${i}`);
+      const a = generateTeam(r, "a", 60);
+      const b = generateTeam(r, "b", 60);
+      const tenA = {
+        ...a,
+        lineup: a.lineup.filter((s) => s.slot !== "ST").slice(0, 10),
+      };
+      const w = play(`md${i}`, "league", tenA, b).result.winner;
+      if (w === "home") down++;
+      if (w === "away") full++;
+    }
+    expect(full).toBeGreaterThan(down * 1.3);
   });
 
   it("returns both influence maps in the home team's frame", () => {

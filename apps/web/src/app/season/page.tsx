@@ -3,6 +3,7 @@ import {
   availableSquad,
   FRESH,
   isAvailable,
+  MIN_PLAYERS,
   youthIntake,
 } from "@lfs/sport-soccer";
 import type { Metadata } from "next";
@@ -161,15 +162,14 @@ async function SeasonContent() {
     const out = roster.filter((p) => !isAvailable(p.condition));
     if (squad && out.length > 0) {
       const name = new Map(roster.map((p) => [p.id, p.displayName]));
-      let swaps: { out: string; in: string }[] = [];
-      let short = false;
-      try {
-        swaps = availableSquad(squad, roster, (id) =>
-          isAvailable(roster.find((p) => p.id === id)?.condition ?? FRESH),
-        ).replaced;
-      } catch {
-        short = true;
-      }
+      // Who plays (D183): the bench steps in; with nobody left the club
+      // plays a man down, and under 7 the match is forfeited.
+      const playing = availableSquad(squad, roster, (id) =>
+        isAvailable(roster.find((p) => p.id === id)?.condition ?? FRESH),
+      );
+      const swaps = playing.replaced;
+      const starters = playing.starters;
+      const keeper = playing.keeperFromOutfield;
       notice = (
         <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950/40">
           <p className="font-medium">
@@ -181,10 +181,16 @@ async function SeasonContent() {
               )
               .join(", ")}
           </p>
-          {short ? (
+          {starters < MIN_PLAYERS ? (
             <p className="text-red-700 dark:text-red-400">
-              Fewer than 11 players can play. Buy a pack or take youth players
-              to fill the squad.
+              Only {starters} players can play, so your next match will be
+              forfeited 3–0. Buy a pack or take youth players to fill the squad.
+            </p>
+          ) : starters < 11 ? (
+            <p className="text-red-700 dark:text-red-400">
+              Only {starters} players can play: you&apos;ll start{" "}
+              {11 - starters === 1 ? "a man" : `${11 - starters} men`} down. Buy
+              a pack or take youth players to fill the squad.
             </p>
           ) : (
             swaps.length > 0 && (
@@ -200,6 +206,12 @@ async function SeasonContent() {
                 .
               </p>
             )
+          )}
+          {keeper && (
+            <p className="text-zinc-700 dark:text-zinc-300">
+              No keeper is fit: {name.get(keeper)} goes in goal, out of
+              position.
+            </p>
           )}
         </div>
       );

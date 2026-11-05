@@ -330,7 +330,9 @@ export function SeasonView({
                           ? ` (${f.summary.penalties.home}–${f.summary.penalties.away} pens)`
                           : f.summary?.decidedBy === "extra_time"
                             ? " (aet)"
-                            : ""}
+                            : f.summary?.decidedBy === "forfeit"
+                              ? " (forfeit)"
+                              : ""}
                       </Link>
                       <span className="truncate">
                         {badge(f.awaySlot)} {name(f.awaySlot)}
@@ -379,7 +381,9 @@ function MatchCard({
         <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
           {summary.decidedBy === "penalties" && summary.penalties
             ? `Won ${Math.max(summary.penalties.home, summary.penalties.away)}–${Math.min(summary.penalties.home, summary.penalties.away)} on penalties`
-            : "After extra time"}
+            : summary.decidedBy === "forfeit"
+              ? "Forfeited: fewer than 7 players were fit"
+              : "After extra time"}
         </p>
       )}
       <div className="grid grid-cols-[1fr_auto_1fr] gap-x-3 text-sm">
@@ -434,6 +438,7 @@ function decided(f: BracketMatch["fixture"]): string | null {
   if (summary?.decidedBy === "penalties" && summary.penalties)
     return `${summary.penalties.home}–${summary.penalties.away} on penalties`;
   if (summary?.decidedBy === "extra_time") return "After extra time";
+  if (summary?.decidedBy === "forfeit") return "Forfeited";
   return null;
 }
 

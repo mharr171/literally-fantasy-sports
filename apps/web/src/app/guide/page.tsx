@@ -166,7 +166,9 @@ async function Guide() {
           substitutions in up to {t.maxSubWindows} different minutes. The match
           also makes subs for tiredness, injuries and red cards. Injured and
           banned players are replaced from the bench by someone who plays the
-          position.
+          position. If nobody fit is left, your club starts a man down, and with
+          fewer than 7 fit players the match is forfeited 3–0. With no fit
+          keeper, an outfield player goes in goal.
         </p>
         <p>
           A player is worth {pct(fit.primary)} more in their main position and{" "}
