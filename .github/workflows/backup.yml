@@ -1,8 +1,10 @@
 name: Nightly backup
 
-# Saves a SQL copy of lfs-prod to the private mharr171/lfs-backups repo (D70).
-# Each night overwrites lfs-prod.sql; Git history keeps every earlier night.
-# Restore steps: docs/backups.md.
+# Saves a gzipped SQL copy of lfs-prod to the private mharr171/lfs-backups
+# repo (D70, D123): nightly/ keeps the last 30 nights and monthly/ the first
+# night of each of the last 12 months. The repo keeps one commit, so old
+# nights really go. Before the dump, prune_old_data() trims what D120
+# doesn't keep. Restore steps: docs/backups.md.
 
 on:
   schedule:
@@ -29,6 +31,16 @@ jobs:
           token: ${{ secrets.BACKUP_REPO_TOKEN }}
           path: lfs-backups
 
+      - name: Trim old data
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: |
+          # Skipped until the migration that adds prune_old_data() has run.
+          docker run --rm -e DATABASE_URL postgres:17 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -At -c "
+            select case when to_regprocedure('public.prune_old_data()') is null
+              then 'prune_old_data() not there yet'
+              else public.prune_old_data()::text end"
+
       - name: Dump lfs-prod
         env:
           DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
@@ -36,26 +48,43 @@ jobs:
           # Postgres 17 tools to match Supabase. Accounts first (auth.users,
           # auth.identities; profiles reference them), then game data and
           # schema (public) and the migration history (drizzle).
-          # A fixed --restrict-key keeps unchanged data byte-identical, so
-          # quiet nights don't create commits.
           docker run --rm -e DATABASE_URL postgres:17 sh -ec '
             pg_dump "$DATABASE_URL" --no-owner --no-privileges --restrict-key=lfsbackup \
               --data-only --table=auth.users --table=auth.identities
             pg_dump "$DATABASE_URL" --no-owner --no-privileges --restrict-key=lfsbackup \
               --schema=public --schema=drizzle
-          ' > lfs-backups/lfs-prod.sql
-          test -s lfs-backups/lfs-prod.sql
-          echo "Backup size: $(du -h lfs-backups/lfs-prod.sql | cut -f1)"
+          ' > lfs-prod.sql
+          test -s lfs-prod.sql
+          echo "Dump size: $(du -h lfs-prod.sql | cut -f1)"
 
-      - name: Commit if changed
+      - name: Save tonight, keep 30 nights and 12 months
+        working-directory: lfs-backups
+        run: |
+          day=$(date -u +%Y-%m-%d)
+          mkdir -p nightly monthly
+          gzip -n -9 < ../lfs-prod.sql > "nightly/$day.sql.gz"
+          # The first backup of each month is kept for a year.
+          month=$(date -u +%Y-%m)
+          [ -e "monthly/$month.sql.gz" ] || cp "nightly/$day.sql.gz" "monthly/$month.sql.gz"
+          ls -1 nightly/*.sql.gz | sort -r | tail -n +31 | xargs -r rm --
+          ls -1 monthly/*.sql.gz | sort -r | tail -n +13 | xargs -r rm --
+          # The old single file, from before D123.
+          rm -f lfs-prod.sql
+          echo "Tonight: $(du -h "nightly/$day.sql.gz" | cut -f1); all kept: $(du -sh nightly monthly | tr '\n' ' ')"
+
+      - name: Replace the repo's history with what's kept
         working-directory: lfs-backups
         run: |
           git config user.name "lfs-backup-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add lfs-prod.sql
-          if git diff --cached --quiet; then
-            echo "No changes since the last backup."
-          else
-            git commit -m "backup: lfs-prod $(date -u +%Y-%m-%d)"
-            git push
+          # Once only: tag the history from before D123, so those nights
+          # aren't lost when the history is replaced.
+          if ! git ls-remote --exit-code --tags origin before-retention >/dev/null; then
+            git tag before-retention
+            git push origin before-retention
           fi
+          branch=$(git rev-parse --abbrev-ref HEAD)
+          git checkout --orphan kept
+          git add -A
+          git commit -q -m "backup: lfs-prod $(date -u +%Y-%m-%d)"
+          git push --force origin "kept:$branch"

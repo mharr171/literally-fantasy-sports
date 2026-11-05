@@ -82,14 +82,21 @@ async function Board() {
               >
                 <td className="px-3 py-1.5">{i + 1}</td>
                 <td className="px-3 py-1.5">
-                  <Link
-                    href={`/leaderboard/${e.id}`}
-                    className="inline-flex items-center gap-1.5 hover:underline"
-                    title="See this season's roster"
-                  >
-                    <ClubBadge name={e.teamName} colors={e.colors} />
-                    {e.teamName}
-                  </Link>
+                  {e.snapshotId ? (
+                    <Link
+                      href={`/leaderboard/${e.snapshotId}`}
+                      className="inline-flex items-center gap-1.5 hover:underline"
+                      title="See this season's roster"
+                    >
+                      <ClubBadge name={e.teamName} colors={e.colors} />
+                      {e.teamName}
+                    </Link>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5">
+                      <ClubBadge name={e.teamName} colors={e.colors} />
+                      {e.teamName}
+                    </span>
+                  )}
                 </td>
                 <td className="px-3 py-1.5 text-right">{e.seasonNumber}</td>
                 <td className="px-3 py-1.5 text-right tabular-nums">{e.elo}</td>

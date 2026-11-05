@@ -225,6 +225,20 @@
       "when": 1793830317323,
       "tag": "0031_club_colors_functions",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1793835107857,
+      "tag": "0032_season_records",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1793835112277,
+      "tag": "0033_season_records_functions",
+      "breakpoints": true
     }
   ]
 }

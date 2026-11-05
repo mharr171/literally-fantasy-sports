@@ -228,46 +228,73 @@ export interface LeaderboardEntry {
   elo: number;
   stats: SeasonStats;
   completedAt: string;
-  /** The club's current colors (D107); empty if it has none or is gone. */
+  /** The club's colors that season (D107), else its current ones. */
   colors: string[];
+  /** The roster as it finished, while it's kept. */
+  snapshotId: string | null;
 }
 
 /**
  * The soccer leaderboard (D19): finished seasons ranked by Elo, then by
- * that season's points, goal difference and goals.
+ * that season's points, goal difference and goals. Read from the season
+ * records kept forever (D120).
  */
 export async function loadLeaderboard(
   limit = 100,
 ): Promise<LeaderboardEntry[]> {
   const { data, error } = await createServiceClient()
-    .from("team_snapshots")
-    .select("id, team_id, team_name, season_number, elo, stats, completed_at")
+    .from("season_records")
+    .select(
+      "id, team_id, team_name, season_number, elo_after, position, played, won, drawn, lost, scored, conceded, points, playoffs, colors, snapshot_id, completed_at",
+    )
     .eq("sport", SOCCER)
-    .order("elo", { ascending: false })
+    .order("elo_after", { ascending: false })
     .limit(limit * 3);
   if (error) throw new Error(error.message);
-  const teamIds = [...new Set((data ?? []).map((s) => s.team_id as string))];
-  const colors = new Map<string, string[]>();
-  if (teamIds.length > 0) {
+  const rows = data ?? [];
+  const missing = [
+    ...new Set(
+      rows
+        .filter((r) => ((r.colors as string[] | null) ?? []).length === 0)
+        .map((r) => r.team_id as string),
+    ),
+  ];
+  const current = new Map<string, string[]>();
+  if (missing.length > 0) {
     const { data: teams, error: teamsError } = await createServiceClient()
       .from("teams")
       .select("id, colors")
-      .in("id", teamIds);
+      .in("id", missing);
     if (teamsError) throw new Error(teamsError.message);
     for (const t of teams ?? [])
-      colors.set(t.id as string, (t.colors as string[] | null) ?? []);
+      current.set(t.id as string, (t.colors as string[] | null) ?? []);
   }
-  return (data ?? [])
-    .map((s) => ({
-      id: s.id as string,
-      teamId: s.team_id as string,
-      teamName: s.team_name as string,
-      seasonNumber: s.season_number as number,
-      elo: s.elo as number,
-      stats: s.stats as SeasonStats,
-      completedAt: s.completed_at as string,
-      colors: colors.get(s.team_id as string) ?? [],
-    }))
+  return rows
+    .map((r) => {
+      const colors = (r.colors as string[] | null) ?? [];
+      return {
+        id: r.id as string,
+        teamId: r.team_id as string,
+        teamName: r.team_name as string,
+        seasonNumber: r.season_number as number,
+        elo: r.elo_after as number,
+        stats: {
+          position: r.position as number,
+          played: r.played as number,
+          won: r.won as number,
+          drawn: r.drawn as number,
+          lost: r.lost as number,
+          scored: r.scored as number,
+          conceded: r.conceded as number,
+          points: r.points as number,
+          playoffs: r.playoffs as SeasonStats["playoffs"],
+        },
+        completedAt: r.completed_at as string,
+        colors:
+          colors.length > 0 ? colors : (current.get(r.team_id as string) ?? []),
+        snapshotId: (r.snapshot_id as string | null) ?? null,
+      };
+    })
     .sort(
       (a, b) =>
         b.elo - a.elo ||

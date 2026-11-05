@@ -258,6 +258,13 @@ export const players = pgTable(
     yellowCards: integer().notNull().default(0),
     /** Recent form, −1 to 1 (M4). */
     form: doublePrecision().notNull().default(0),
+    /** Career totals for the retirement record (D120). */
+    appearances: integer().notNull().default(0),
+    goals: integer().notNull().default(0),
+    /** Season ends the player has been through. */
+    seasons: integer().notNull().default(0),
+    /** Highest overall so far (null until the first season end). */
+    bestOverall: integer(),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -435,6 +442,84 @@ export const teamSnapshots = pgTable(
     uniqueIndex("team_snapshots_season").on(t.seasonId),
     index("team_snapshots_sport_elo").on(t.sport, t.elo),
     check("team_snapshots_sport", sql`${t.sport} ${SPORT_CHECK}`),
+  ],
+).enableRLS();
+
+/**
+ * One line per club per season, kept forever (D120): the season's leaderboard
+ * entry and the club's history. Written when the season is closed. Only the
+ * server reads it; pages show the public fields.
+ */
+export const seasonRecords = pgTable(
+  "season_records",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    teamId: uuid()
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    seasonId: uuid().references(() => seasons.id, { onDelete: "set null" }),
+    sport: text().notNull(),
+    seasonNumber: integer().notNull(),
+    /** The club's name and colors that season. */
+    teamName: text().notNull(),
+    colors: text().array().notNull().default(sql`'{}'::text[]`),
+    eloBefore: integer().notNull(),
+    eloAfter: integer().notNull(),
+    position: integer().notNull(),
+    played: integer().notNull(),
+    won: integer().notNull(),
+    drawn: integer().notNull(),
+    lost: integer().notNull(),
+    scored: integer().notNull(),
+    conceded: integer().notNull(),
+    points: integer().notNull(),
+    /** How far the club got in the playoffs. */
+    playoffs: text().notNull(),
+    /** The roster as it finished, while that snapshot is kept (until ghosts, D116). */
+    snapshotId: uuid().references(() => teamSnapshots.id, {
+      onDelete: "set null",
+    }),
+    completedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("season_records_season").on(t.seasonId),
+    index("season_records_sport_elo").on(t.sport, t.eloAfter),
+    index("season_records_team").on(t.teamId),
+    check("season_records_sport", sql`${t.sport} ${SPORT_CHECK}`),
+    check(
+      "season_records_playoffs",
+      sql`${t.playoffs} in ('none', 'quarter', 'semi', 'final', 'champion')`,
+    ),
+  ],
+).enableRLS();
+
+/** A retired player's career, kept forever (D120). */
+export const playerCareers = pgTable(
+  "player_careers",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    teamId: uuid()
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    sport: text().notNull(),
+    firstName: text().notNull(),
+    lastName: text().notNull(),
+    displayName: text().notNull(),
+    nationality: text().notNull(),
+    primaryPosition: text().notNull(),
+    retiredAge: integer().notNull(),
+    seasons: integer().notNull(),
+    appearances: integer().notNull(),
+    goals: integer().notNull(),
+    bestOverall: integer().notNull(),
+    /** Clubs played for, as named when the player retired. */
+    clubs: text().array().notNull(),
+    retiredSeason: integer().notNull(),
+    retiredAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("player_careers_team").on(t.teamId),
+    check("player_careers_sport", sql`${t.sport} ${SPORT_CHECK}`),
   ],
 ).enableRLS();
 

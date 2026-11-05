@@ -15,6 +15,7 @@ import {
   squadProblems,
   squadToTeam,
 } from "@lfs/sport-soccer";
+import { scoreOnly } from "./match-kept";
 import {
   configFor,
   loadGhostTeams,
@@ -138,7 +139,8 @@ export async function playOneWeek(
       home_score: p.homeScore,
       away_score: p.awayScore,
       winner: p.winner,
-      summary: p.summary,
+      // Other clubs' matches keep only their score (D120).
+      summary: isMine(p.id) ? p.summary : scoreOnly(p.summary),
       manager_team: isMine(p.id) ? keptTeam : null,
     })),
     p_elo: Object.fromEntries(
@@ -169,6 +171,9 @@ export async function playOneWeek(
           outcome.managerReports[p.id],
           outcome.managerResult,
         ),
+        // Career totals for the retirement record (D120).
+        appeared: (outcome.managerReports[p.id]?.minutes ?? 0) > 0,
+        goals: outcome.managerReports[p.id]?.goals ?? 0,
       };
     }),
   });
