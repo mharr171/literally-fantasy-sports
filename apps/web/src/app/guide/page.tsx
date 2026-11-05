@@ -270,19 +270,17 @@ async function Guide() {
           </table>
         </div>
         {matchupsOn ? (
-          <>
-            <p>
-              If your dominant color beats your opponent&apos;s, your whole team
-              plays {pct(t.teamMatchup)} better
-              {t.teamMatchupSecond
-                ? `, and ${pct(t.teamMatchupSecond)} more if your second color beats theirs`
-                : ""}
-              .{" "}
-              {t.playerMatchup
-                ? `Each player also gains or loses up to ${pct(t.playerMatchup)} depending on the colors of the opponents they face where they meet on the pitch.`
-                : ""}
-            </p>
-          </>
+          <p>
+            If your dominant color beats your opponent&apos;s, your whole team
+            plays {pct(t.teamMatchup)} better
+            {t.teamMatchupSecond
+              ? `, and ${pct(t.teamMatchupSecond)} more if your second color beats theirs`
+              : ""}
+            .{" "}
+            {t.playerMatchup
+              ? `Each player also gains or loses up to ${pct(t.playerMatchup)} depending on the colors of the opponents they face where they meet on the pitch.`
+              : ""}
+          </p>
         ) : (
           <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
             Color matchups aren&apos;t switched on yet. When they are, a team
