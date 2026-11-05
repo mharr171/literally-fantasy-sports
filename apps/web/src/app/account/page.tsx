@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
+import { getCurrentUser } from "@/lib/auth";
+import { loadMyTeam } from "@/lib/team";
+import { StartOver } from "./start-over";
 import { ThemePicker } from "./theme-picker";
 
 export const metadata: Metadata = { title: "Account settings" };
 
-/** Account settings: the theme for now (D133); more settings come later. */
+/** Account settings: the theme (D133) and starting over (D141). */
 export default function AccountPage() {
   return (
     <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
@@ -20,6 +24,22 @@ export default function AccountPage() {
         </p>
         <ThemePicker />
       </div>
+      <Suspense fallback={null}>
+        <StartOverSection />
+      </Suspense>
     </section>
+  );
+}
+
+async function StartOverSection() {
+  const user = await getCurrentUser();
+  if (!user) return null;
+  const team = await loadMyTeam(user.id);
+  if (!team) return null;
+  return (
+    <div className="flex flex-col gap-2">
+      <h2 className="text-lg font-semibold">Start over</h2>
+      <StartOver clubName={team.name} />
+    </div>
   );
 }
