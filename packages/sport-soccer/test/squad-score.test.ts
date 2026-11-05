@@ -85,6 +85,24 @@ describe("squadScore (D110)", () => {
     expect(tired.today).toBeCloseTo(score.base * 0.8);
   });
 
+  it("counts team morale in today's score, not the base (D162)", () => {
+    const starter = [{ player: player(), slot: "CM" as const }];
+    const calm = squadScore(starter, 1);
+    const happy = squadScore(starter, 1, undefined, { morale: 1 });
+    const glum = squadScore(starter, 1, undefined, { morale: -1 });
+    expect(happy.base).toBeCloseTo(calm.base);
+    expect(happy.today).toBeGreaterThan(calm.today);
+    expect(glum.today).toBeLessThan(calm.today);
+  });
+
+  it("uses the season's out-of-position penalty (D135)", () => {
+    // A centre midfielder put in goal.
+    const starter = [{ player: player(), slot: "GK" as const }];
+    const off = squadScore(starter, 1);
+    const on = squadScore(starter, 1, undefined, { outOfPosition: -0.5 });
+    expect(on.base).toBeCloseTo(off.base * 0.5, 0);
+  });
+
   it("counts empty slots as nothing", () => {
     const one = squadScore([{ player: player(), slot: "CM" }]);
     const full = squadScore([{ player: player(), slot: "CM" }], 1);

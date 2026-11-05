@@ -25,6 +25,7 @@ import { ConditionBadge } from "@/components/condition-badge";
 import { Heatmap } from "@/components/player/heatmap";
 import { ChemistryDot, PlayerCardBody } from "@/components/player/player-card";
 import { useTemplates } from "@/components/player/templates-context";
+import { Popover } from "@/components/popover";
 import { pickOptions } from "@/lib/pick-options";
 import type { RosterPlayer } from "@/lib/team";
 import { saveSquad } from "../actions";
@@ -70,12 +71,15 @@ export function SquadBuilder({
   initial,
   saved,
   outOfPosition = 0,
+  morale = 0,
 }: {
   roster: RosterPlayer[];
   initial: MatchdaySquad;
   saved: boolean;
   /** The season's penalty for playing out of position (D135), 0 when off. */
   outOfPosition?: number;
+  /** Team morale, −1 to 1, for today's score (D162). */
+  morale?: number;
 }) {
   const byId = useMemo(() => new Map(roster.map((p) => [p.id, p])), [roster]);
   const rosterIds = useMemo(() => new Set(byId.keys()), [byId]);
@@ -157,7 +161,7 @@ export function SquadBuilder({
         : selected.id || null;
   const selectedPlayer = selectedId ? byId.get(selectedId) : undefined;
   // Squad score (D110): the starting 11 in their slots, with chemistry;
-  // "today" also counts this week's fitness and form.
+  // "today" also counts this week's fitness, form and morale (D162).
   const weights = pickOptions(roster).weight ?? (() => 1);
   const score = squadScore(
     slots.flatMap((slot, i) => {
@@ -166,6 +170,9 @@ export function SquadBuilder({
         ? [{ player: p, slot: slot.position, weight: weights(p.id) }]
         : [];
     }),
+    undefined,
+    undefined,
+    { outOfPosition, morale },
   );
   const boosts = lineupChemistry(present);
   const chemistry = new Map(present.map((p, i) => [p.id, boosts[i] ?? 0]));
@@ -284,10 +291,7 @@ export function SquadBuilder({
         >
           Rotated squad
         </button>
-        <span
-          className="tabular-nums"
-          title="Average rating of the starting 11 in their slots, with chemistry. Today also counts fitness and form."
-        >
+        <span className="inline-flex items-center gap-1 tabular-nums">
           Squad score <strong>{score.base.toFixed(1)}</strong>
           <span className="text-zinc-500">
             {" "}
@@ -302,6 +306,31 @@ export function SquadBuilder({
               {score.today.toFixed(1)}
             </strong>
           </span>
+          <Popover
+            label="What the squad scores mean"
+            width={288}
+            trigger={<span aria-hidden="true">ⓘ</span>}
+            triggerClassName="ml-0.5 rounded-full px-1 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+          >
+            <div className="flex w-64 flex-col gap-2 text-sm">
+              <p>
+                <strong>Squad score</strong> is the average rating of your
+                starting 11 in the slots you put them in: their overall there,
+                plus +25% in their main position and +10% in their second
+                {outOfPosition
+                  ? `, ${Math.round(outOfPosition * 100)}% anywhere else`
+                  : ""}
+                , plus chemistry.
+              </p>
+              <p>
+                <strong>Today</strong> is the same score counting this
+                week&apos;s fitness, form and team morale, as the next match
+                will. Fresh players in good form and a happy squad lift it above
+                the squad score; tired or out-of-form players pull it down (it
+                turns amber when it&apos;s more than 3 lower).
+              </p>
+            </div>
+          </Popover>
         </span>
         <span className="flex-1" />
         <span className="text-zinc-600 dark:text-zinc-400">
