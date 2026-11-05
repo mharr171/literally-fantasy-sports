@@ -75,5 +75,15 @@ jobs:
         run: pnpm --filter @lfs/db migrate
       - name: Apply migrations again (should do nothing)
         run: pnpm --filter @lfs/db migrate
+      - name: Migrations keep game data (D131)
+        # Applies the base branch's migrations, loads representative clubs,
+        # players and settings, applies this branch's migrations, and fails
+        # if any of those tables lost rows.
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch --depth=1 origin "${{ github.base_ref }}"
+          mkdir -p /tmp/base
+          git archive FETCH_HEAD packages/db/migrations packages/db/ci | tar -x -C /tmp/base
+          pnpm --filter @lfs/db persistence-check /tmp/base/packages/db
       - name: Test row-level security
         run: pnpm test:db

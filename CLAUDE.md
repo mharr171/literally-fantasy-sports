@@ -74,6 +74,11 @@ the same.
   Drizzle can't express (triggers, functions, grants) use
   `pnpm --filter @lfs/db drizzle-kit generate --custom --name=<what>`.
 - Never edit a migration that has reached `main`; add a new one.
+- Migrations never reset, reseed or delete real clubs, AI clubs, players or
+  game settings (D131): backfill, never wipe. CI's persistence check
+  (`packages/db/scripts/persistence-check.ts`, seeded by
+  `ci/persistence-seed.sql`) fails a PR whose migrations make any of those
+  tables lose rows. Add new game tables to its list and its seed.
 - Every table: row-level security on, explicit policies, and grants narrowed
   from Supabase's defaults. Add tests in `packages/db/test/` proving what each
   role can and can't do.

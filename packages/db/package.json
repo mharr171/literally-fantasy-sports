@@ -11,7 +11,8 @@
     "generate": "drizzle-kit generate",
     "migrate": "node scripts/migrate.ts",
     "typecheck": "tsc --noEmit",
-    "test:db": "vitest run"
+    "test:db": "vitest run",
+    "persistence-check": "node scripts/persistence-check.ts"
   },
   "dependencies": {
     "drizzle-orm": "0.45.4"
