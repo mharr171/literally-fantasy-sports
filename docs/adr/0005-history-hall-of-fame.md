@@ -1,8 +1,7 @@
 # ADR 0005: Season history, hall of fame and retirement tributes (M14)
 
-Status: proposed (Nov 5, 2026). Covers D121, built on the permanent records
-of D120 and the player stats of D143. Points marked **(proposed)** need
-Gary's OK.
+Status: accepted (Nov 5, 2026: Gary OK'd both proposed points). Covers
+D121, built on the permanent records of D120 and the player stats of D143.
 
 ## Context
 
@@ -51,7 +50,7 @@ The current season is at the top, marked "in progress".
 - who retired at the end of it, and who grew or declined (the season
   review that's already saved)
 
-**Other clubs' seasons:** not shown here **(proposed)**. Leaderboard
+**Other clubs' seasons:** not shown here. Leaderboard
 entries keep showing each club's best season (D111, D116).
 
 ### 2. Hall of fame, per club
@@ -106,7 +105,7 @@ Each player is shown with their club.
 clubs and real clubs look the same to players (D113). Admins see which is
 which (D171).
 
-**What's shown:** only club names, never managers' names **(proposed)**.
+**What's shown:** only club names, never managers' names.
 Players are generated, so no personal data is shown (D111).
 
 ### 4. Retirement tributes
@@ -157,7 +156,6 @@ check (D131) is unaffected.
 
 ## Needs Gary
 
-- OK the two **(proposed)** points:
-  - a season's page is only for your own club
-  - the global hall of fame shows club names, not manager names
-- Anything to add or drop from the lists above.
+- Done: Gary OK'd both points (Nov 5, 2026): a season's page is only for
+  your own club, and the global hall of fame shows club names, not manager
+  names.
