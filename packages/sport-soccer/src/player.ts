@@ -17,6 +17,8 @@ export interface SoccerPlayer {
   chemistryColor: number;
   /** Which of the primary position's templates the player uses (D84); default if absent. */
   templateVariant?: string;
+  /** Which of the secondary position's templates the player uses (D136); default if absent. */
+  secondaryTemplateVariant?: string;
 }
 
 /** The headline overall shown on a player card: the rating at the primary position. */
@@ -25,4 +27,28 @@ export function playerOverall(
   weights: OverallWeights = DEFAULT_OVERALL_WEIGHTS,
 ): number {
   return overallAt(player.attributes, player.primaryPosition, weights);
+}
+
+/**
+ * The player's own template variant in a slot: the primary one at their
+ * primary position (D84), the secondary one at their secondary position
+ * (D136), and none anywhere else (the slot's default applies).
+ */
+export function variantAt(
+  player: Pick<
+    SoccerPlayer,
+    | "primaryPosition"
+    | "secondaryPosition"
+    | "templateVariant"
+    | "secondaryTemplateVariant"
+  >,
+  slot: Position,
+): string | undefined {
+  const own =
+    player.primaryPosition === slot
+      ? player.templateVariant
+      : player.secondaryPosition === slot
+        ? player.secondaryTemplateVariant
+        : undefined;
+  return own && own !== "default" ? own : undefined;
 }

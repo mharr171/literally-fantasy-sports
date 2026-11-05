@@ -17,6 +17,7 @@ import {
   slotRating,
   squadProblems,
   squadScore,
+  variantAt,
 } from "@lfs/sport-soccer";
 import { type DragEvent, useMemo, useState } from "react";
 import { ConditionBadge } from "@/components/condition-badge";
@@ -116,11 +117,8 @@ export function SquadBuilder({
     side: SlotSide | undefined,
   ) => {
     if (!templates) return null;
-    const variant =
-      player.templateVariant !== "default" &&
-      player.primaryPosition === position
-        ? templates.variants[position]?.[player.templateVariant]
-        : undefined;
+    const own = variantAt(player, position);
+    const variant = own ? templates.variants[position]?.[own] : undefined;
     // A left or right slot of a shared position uses that version (D112).
     return sideGrid(variant ?? templates.templates[position], side);
   };

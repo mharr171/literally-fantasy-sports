@@ -1,0 +1,1 @@
+ALTER TABLE "players" ADD COLUMN "secondary_template_variant" text DEFAULT 'default' NOT NULL;

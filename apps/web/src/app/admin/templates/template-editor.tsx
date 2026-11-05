@@ -5,6 +5,7 @@ import {
   type HarnessReport,
   type SlotSide,
   sideGrid,
+  unpublishedVariantPositions,
 } from "@lfs/sport-soccer";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
@@ -44,6 +45,8 @@ interface Props {
   variants: Variants;
   /** Templates new players can be given (D84); "default" is the main one. */
   enabled: Enabled;
+  /** What the live version has ticked: what new players get now (D132). */
+  liveEnabled: Enabled;
   defaults: Templates;
 }
 
@@ -92,6 +95,8 @@ export function TemplateEditor(props: Props) {
   const usable = (name: string) =>
     (enabled[position] ?? [DEFAULT]).includes(name);
   const shared = SHARED.includes(position);
+  // Ticked here but not live: new players don't get these yet (D132).
+  const notLive = unpublishedVariantPositions(enabled, props.liveEnabled);
   const showSide = shared ? side : null;
 
   // Draw the pitch and the current template.
@@ -603,6 +608,13 @@ export function TemplateEditor(props: Props) {
           {dirty && (
             <p className="text-amber-700 dark:text-amber-400">
               Unsaved changes.
+            </p>
+          )}
+          {notLive.length > 0 && (
+            <p className="text-amber-700 dark:text-amber-400">
+              The templates ticked for {notLive.join(", ")} aren&apos;t live
+              yet: new players still get the live version&apos;s.{" "}
+              {dirty ? "Save and publish" : "Publish"} to give them these.
             </p>
           )}
           {message && (

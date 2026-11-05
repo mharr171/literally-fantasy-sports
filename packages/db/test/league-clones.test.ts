@@ -74,6 +74,7 @@ describe.runIf(sql)("leagues of copied clubs (D115)", () => {
           chemistryColor: 1,
           overall: 66,
           templateVariant: "default",
+          secondaryTemplateVariant: "default",
         },
       ],
       squad: { formation: "4-4-2", lineup: [player], bench: [], subPlan: [] },

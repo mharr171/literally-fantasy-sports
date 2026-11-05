@@ -257,6 +257,8 @@ export const players = pgTable(
     worth: integer().notNull(),
     chemistryColor: integer().notNull(),
     templateVariant: text().notNull().default("default"),
+    /** Template variant at the secondary position (D136). */
+    secondaryTemplateVariant: text().notNull().default("default"),
     /** Came from a free starter pack: can be released but not resold (D83). */
     fromStarterPack: boolean().notNull().default(false),
     /** Match fitness at the next kickoff, 0–100 (D45, M4). */

@@ -5,6 +5,7 @@ import {
   type Attributes,
   POSITION_NAMES,
   type Position,
+  variantAt,
 } from "@lfs/sport-soccer";
 import {
   type ReactNode,
@@ -29,6 +30,7 @@ export interface CardPlayer {
   potentialRange: [number, number];
   chemistryColor: number;
   templateVariant?: string;
+  secondaryTemplateVariant?: string;
   attributes?: Attributes;
   fitness?: number;
   form?: number;
@@ -65,14 +67,14 @@ const ATTRIBUTE_LABELS: Record<string, string> = {
   goalkeeping: "Goalkeeping",
 };
 
-/** The card itself: colour, heatmap at the primary position, and the numbers. */
+/** The card itself: colour, heatmaps at both positions, and the numbers. */
 export function PlayerCardBody({ player }: { player: CardPlayer }) {
   const grid = useTemplate(player.primaryPosition, player);
+  const second = player.secondaryPosition;
+  const secondGrid = useTemplate(second ?? player.primaryPosition, player);
   const color = chemistryColor(player.chemistryColor);
-  const variant =
-    player.templateVariant && player.templateVariant !== "default"
-      ? player.templateVariant
-      : null;
+  const variant = variantAt(player, player.primaryPosition);
+  const secondVariant = second ? variantAt(player, second) : undefined;
   return (
     <div className="flex w-72 flex-col gap-3 text-sm">
       <div>
@@ -94,6 +96,19 @@ export function PlayerCardBody({ player }: { player: CardPlayer }) {
             {player.primaryPosition}
             {variant ? ` · ${variant}` : ""}
           </span>
+          {second && (
+            <>
+              <Heatmap
+                grid={secondGrid}
+                width={78}
+                label={`Where ${player.displayName} has influence as a ${second}`}
+              />
+              <span className="text-[10px] uppercase tracking-wide text-zinc-500">
+                {second}
+                {secondVariant ? ` · ${secondVariant}` : ""}
+              </span>
+            </>
+          )}
         </div>
         <div className="flex flex-1 flex-col gap-2">
           <div className="flex items-center gap-2">

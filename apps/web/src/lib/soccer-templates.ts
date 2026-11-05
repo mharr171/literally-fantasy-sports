@@ -28,6 +28,8 @@ export interface EditorState {
   /** Named variants per position, and which templates new players can get (D82, D84). */
   variants: StoredVariants;
   enabled: EnabledVariants;
+  /** The live version's ticked templates: what new players get now (D132). */
+  liveEnabled: EnabledVariants;
   versions: SoccerVersion[];
   /** Newest published version, if any. */
   live: number | null;
@@ -92,11 +94,16 @@ export async function loadEditorState(
       templates,
       variants: {},
       enabled: {},
+      liveEnabled: {},
       versions,
       live,
     };
   }
-  const values = await loadVersionValues(chosen.version);
+  const [values, liveValues] = await Promise.all([
+    loadVersionValues(chosen.version),
+    live === null || live === chosen.version ? null : loadVersionValues(live),
+  ]);
+  const enabled = enabledVariantsFromValues(values);
   const stored = templatesFromValues(values);
   for (const p of POSITIONS) if (stored[p]) templates[p] = stored[p];
   return {
@@ -105,7 +112,13 @@ export async function loadEditorState(
     note: chosen.note,
     templates,
     variants: variantsFromValues(values),
-    enabled: enabledVariantsFromValues(values),
+    enabled,
+    liveEnabled:
+      live === null
+        ? {}
+        : liveValues
+          ? enabledVariantsFromValues(liveValues)
+          : enabled,
     versions,
     live,
   };

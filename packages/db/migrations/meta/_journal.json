@@ -316,6 +316,20 @@
       "when": 1793851677080,
       "tag": "0044_skip_idle_weeks",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1793852751852,
+      "tag": "0045_secondary_template_variant",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1793852782089,
+      "tag": "0046_secondary_variant_functions",
+      "breakpoints": true
     }
   ]
 }
