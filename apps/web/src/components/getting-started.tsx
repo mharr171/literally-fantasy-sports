@@ -69,12 +69,20 @@ export async function GettingStarted() {
           );
         })}
       </ol>
-      <Link
-        href={next.href}
-        className="mt-3 inline-block rounded-md bg-sky-700 px-3 py-1.5 font-medium text-white hover:bg-sky-600"
-      >
-        {next.action} →
-      </Link>
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <Link
+          href={next.href}
+          className="inline-block rounded-md bg-sky-700 px-3 py-1.5 font-medium text-white hover:bg-sky-600"
+        >
+          {next.action} →
+        </Link>
+        <Link
+          href="/guide"
+          className="text-sky-800 underline dark:text-sky-300"
+        >
+          New here? Read the game guide
+        </Link>
+      </div>
     </aside>
   );
 }
