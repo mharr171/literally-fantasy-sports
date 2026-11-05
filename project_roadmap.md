@@ -1,6 +1,6 @@
 # LiterallyFantasySports — Project Roadmap
 
-Nov 2, 2026 · @Gary · Last updated: Nov 5, 2026 (D152)
+Nov 2, 2026 · @Gary · Last updated: Nov 5, 2026 (D153)
 
 ## Review progress
 
@@ -173,6 +173,7 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D150 | Nov 5, 2026 | Matchup strengths (Gary, after the harness sweep in #90): team matchup 7%, second colors 3.5%, player matchups 9%, for the settings version that turns matchups on. Defaults stay 0 until that version is published | M11 |
 | D151 | Nov 5, 2026 | How D135 ships: the out-of-position penalty is a match tuning value (Admin → Soccer balance → Positions), 0 until a settings version sets it to −50%, so seasons under way and replays don't change. Auto-pick, cover for injured or banned starters, the AI and ghosts (through auto-pick) always choose players in their own position when anyone can fill the slot. In-match subs do too once the penalty is on. The squad page shows ratings with the penalty of the season being played | M11 |
 | D152 | Nov 5, 2026 | How D139 ships: a Schedule page (Season → Schedule and opponents' colors) lists every fixture with the opponent's starting 11 by chemistry color and whether your dominant color beats, loses to or is even with theirs, plus results once played. The matchday squad page shows the starting 11's colors (updating as you move players) and the whole roster's. Club pages use the same color bar | M11 |
+| D153 | Nov 5, 2026 | How D137 ships: a public Game guide page (`/guide`, linked from the getting-started checklist and the footer) covers your club, seasons, energy, squads and positions, packs, youth and ageing, chemistry and color matchups, with the cycle drawn as a ring and a beats / loses-to table. Its numbers (payouts, prices, energy, position bonuses, the out-of-position penalty and matchup strengths) come from the live settings, so the guide changes with admin. It says when matchups or the penalty aren't switched on yet | M11 |
 
 ## 1. Vision & goals
 
