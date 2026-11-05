@@ -662,6 +662,44 @@ export const sportSettings = pgTable(
 ).enableRLS();
 
 /**
+ * Formations (D140): the built-in presets (defined in code, so `slots` is
+ * null) and those admins create. Admins turn any of them on or off for
+ * every club. A formation's slots can't change once it exists and it can't
+ * be deleted, so every match that used one still replays the same.
+ * Everyone signed in can read them; only the server writes.
+ */
+export const formations = pgTable(
+  "formations",
+  {
+    sport: text().notNull(),
+    id: text().notNull(),
+    /** [{position, x, y}], keeper first; null for built-in presets. */
+    slots: jsonb(),
+    builtIn: boolean().notNull().default(false),
+    enabled: boolean().notNull().default(true),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.sport, t.id] }),
+    check("formations_sport", sql`${t.sport} ${SPORT_CHECK}`),
+    check(
+      "formations_id",
+      sql`${t.id} ~ '^[0-9]([0-9-]*[0-9])?[a-z]{0,2}$' and length(${t.id}) <= 16`,
+    ),
+    check(
+      "formations_slots",
+      sql`(${t.builtIn} and ${t.slots} is null) or (not ${t.builtIn} and jsonb_typeof(${t.slots}) = 'array' and jsonb_array_length(${t.slots}) = 11)`,
+    ),
+    pgPolicy("formations_select", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`true`,
+    }),
+  ],
+).enableRLS();
+
+/**
  * The AI world's switches (D113, D114), per sport: how many AI clubs to
  * keep and whether scheduled runs play them. Only the server reads it.
  */

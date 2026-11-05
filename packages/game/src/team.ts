@@ -11,6 +11,7 @@ import {
   packContents,
 } from "@lfs/sport-soccer";
 import { createServiceClient } from "./db";
+import { ensureFormations } from "./formations";
 import { sortPacks } from "./scouting";
 
 export const SOCCER = "soccer";
@@ -245,6 +246,7 @@ export async function loadSquad(teamId: string): Promise<MatchdaySquad | null> {
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) return null;
+  await ensureFormations([data.formation as string]);
   return {
     formation: data.formation,
     lineup: data.lineup as string[],

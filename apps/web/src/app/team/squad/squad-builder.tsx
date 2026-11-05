@@ -3,7 +3,7 @@
 import {
   autoPickSquad,
   BENCH_SIZE,
-  FORMATIONS,
+  type Formation,
   formation as findFormation,
   LATEST_PLAN_MINUTE,
   lineupChemistry,
@@ -11,6 +11,7 @@ import {
   type PlannedSub,
   type Position,
   positionFit,
+  registerFormations,
   type SlotSide,
   sideGrid,
   slotLabel,
@@ -72,7 +73,10 @@ export function SquadBuilder({
   saved,
   outOfPosition = 0,
   morale = 0,
+  formations,
 }: {
+  /** Formations that are on, plus the saved one if it's off (D140). */
+  formations: (Formation & { enabled: boolean })[];
   roster: RosterPlayer[];
   initial: MatchdaySquad;
   saved: boolean;
@@ -81,6 +85,8 @@ export function SquadBuilder({
   /** Team morale, −1 to 1, for today's score (D162). */
   morale?: number;
 }) {
+  // Admin-made formations (D140): the engine's checks run here too.
+  registerFormations(formations);
   const byId = useMemo(() => new Map(roster.map((p) => [p.id, p])), [roster]);
   const rosterIds = useMemo(() => new Set(byId.keys()), [byId]);
   const keep = (ids: readonly string[]) => ids.filter((id) => byId.has(id));
@@ -100,7 +106,7 @@ export function SquadBuilder({
   const [dirty, setDirty] = useState(!saved);
   const { error, pending, run } = useAction();
 
-  const shape = findFormation(formationId) ?? FORMATIONS[0];
+  const shape = findFormation(formationId) ?? formations[0];
   const slots = shape?.slots ?? [];
   const picked = new Set([...lineup, ...bench].filter(Boolean) as string[]);
   const reserves = roster
@@ -269,9 +275,9 @@ export function SquadBuilder({
             }}
             className="rounded-md border border-zinc-300 bg-transparent px-2 py-1 dark:border-zinc-700"
           >
-            {FORMATIONS.map((f) => (
+            {formations.map((f) => (
               <option key={f.id} value={f.id}>
-                {f.id}
+                {f.enabled ? f.id : `${f.id} (turned off)`}
               </option>
             ))}
           </select>
