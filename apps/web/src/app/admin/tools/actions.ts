@@ -4,6 +4,11 @@ import { refresh } from "next/cache";
 import { z } from "zod";
 import { getCurrentProfile } from "@/lib/auth";
 import { playOneWeek } from "@/lib/play-week";
+import {
+  previewSoftReset,
+  runSoftReset,
+  type SoftResetCounts,
+} from "@/lib/soft-reset";
 import { loadEnergySettings } from "@/lib/sport-settings";
 import { createServiceClient } from "@/lib/supabase/service";
 import { loadTeamById, type MyTeam } from "@/lib/team";
@@ -157,6 +162,52 @@ export async function deleteTeam(
       .eq("id", team.id);
     if (error) throw new Error(error.message);
     return done(`Deleted ${team.name}. Its manager can create a new team.`);
+  } catch (e) {
+    return failed(e);
+  }
+}
+
+const scopeSchema = z.enum(["ai", "real", "all"]);
+
+async function requireAdminId() {
+  const profile = await getCurrentProfile();
+  if (!profile?.isAdmin) throw new Error("Only admins can use testing tools.");
+  return profile.id;
+}
+
+/** Counts what a soft reset of this scope would touch (D142). */
+export async function softResetPreview(
+  scope: string,
+): Promise<
+  { ok: true; counts: SoftResetCounts } | { ok: false; error: string }
+> {
+  try {
+    await requireAdminId();
+    return {
+      ok: true,
+      counts: await previewSoftReset(scopeSchema.parse(scope)),
+    };
+  } catch (e) {
+    return failed(e) as { ok: false; error: string };
+  }
+}
+
+/** Runs the soft reset (D142, ADR 0004) once the phrase is typed. */
+export async function softReset(
+  scope: string,
+  confirm: string,
+): Promise<ToolResult> {
+  try {
+    const adminId = await requireAdminId();
+    const s = scopeSchema.parse(scope);
+    const counts = await runSoftReset(
+      adminId,
+      s,
+      z.string().max(40).parse(confirm),
+    );
+    return done(
+      `Soft reset done: ${counts.clubs} clubs back to the start, ${counts.players} players kept, ${counts.seasons} seasons, ${counts.season_records} season records, ${counts.ghosts} ghosts and ${counts.careers} careers removed.`,
+    );
   } catch (e) {
     return failed(e);
   }

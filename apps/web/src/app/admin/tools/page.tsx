@@ -8,6 +8,7 @@ import { loadEnergySettings } from "@/lib/sport-settings";
 import { createServiceClient } from "@/lib/supabase/service";
 import { listTeams, loadMyTeam, loadRoster, loadTeamById } from "@/lib/team";
 import { TeamPicker } from "../team-picker";
+import { SoftReset } from "./soft-reset";
 import { Tools } from "./tools";
 
 export const metadata: Metadata = { title: "Testing tools" };
@@ -72,6 +73,7 @@ async function Content({
       )}
       {team && <TeamStatus teamId={team.id} />}
       {team && <Tools key={team.id} teamId={team.id} teamName={team.name} />}
+      <SoftReset backupUrl="https://github.com/mharr171/literally-fantasy-sports/actions/workflows/backup.yml" />
       <Log />
     </div>
   );
