@@ -1,6 +1,6 @@
 # LiterallyFantasySports — Project Roadmap
 
-Nov 2, 2026 · @Gary · Last updated: Nov 5, 2026 (D169)
+Nov 2, 2026 · @Gary · Last updated: Nov 5, 2026 (D170)
 
 ## Review progress
 
@@ -190,6 +190,7 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D167 | Nov 5, 2026 | How D154 ships: players count `season_minutes` in their club's own matches (starter or substitute), reset when the season closes. A "Growth from playing time" setting in Admin → Soccer balance → Recovery, bans and growth (0 until a settings version sets it) scales a young player's growth by his minutes: regulars (70%+ of the club's minutes) grow fully, a player who didn't play grows (1 − weight) as much. Older players' decline is unchanged. At 0.5, an 18-year-old grows +12.0 as a regular, +8.1 with a quarter of the minutes and +6.0 without playing | M12 |
 | D168 | Nov 5, 2026 | Resets (D141, D142, proposed in ADR 0004): an account reset is confirmed by typing the club's name and deletes the club with everything that belongs to it (the account stays, and other leagues keep their frozen copies). A soft reset is chosen by scope, previewed with counts and confirmed by typing RESET AI / RESET REAL / RESET ALL. It keeps every player (healed, form 0), squads and unsorted packs, and wipes all seasons, season records, ghosts, careers and player stats, with Elo 1500, funds 10,000, energy full and morale 0. Both run in one transaction and are logged in `admin_actions` (Gary OK'd, Nov 5, 2026) | M13 |
 | D169 | Nov 5, 2026 | How D141 ships: Account → Start over deletes the manager's club by the `reset_account` database function, only after the club's exact name is typed (checked in the page, the server action and the database). The existing cascades remove players, packs, squad, seasons, season records, careers and the ghost; the account and profile stay, and other managers' leagues keep their frozen copies. Logged in `admin_actions` as `account_reset` with counts. Managers can't call the function directly | M13 |
+| D170 | Nov 5, 2026 | How D142 ships: Admin → Testing tools → Soft reset. The admin picks AI, real or all clubs, presses Preview to see the counts (clubs and players kept; seasons, season records, ghosts and careers deleted), then types RESET AI / RESET REAL / RESET ALL. The `admin_soft_reset` database function checks the admin and the phrase again, locks the clubs, and does the whole reset in one transaction; real clubs are `kind = 'human'`. Energy goes to the sport's `energy_max`. Logged in `admin_actions` as `soft_reset` with the scope and counts. Only the server can call it. A "Back up now" link opens the backup workflow; the page names the nightly time rather than reading the last run | M13 |
 
 ## 1. Vision & goals
 
