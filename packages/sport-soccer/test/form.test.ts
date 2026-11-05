@@ -115,3 +115,60 @@ describe("modifiers in a match", () => {
     expect(boosted).toBeGreaterThan(plain);
   });
 });
+
+describe("contributions in the match rating (D161)", () => {
+  const on = { contributions: true };
+
+  it("change nothing unless switched on", () => {
+    const r = report({ assists: 2, tackles: 8, saves: 5 });
+    expect(matchRating(r, "draw")).toBe(6);
+    expect(DEFAULT_FORM_SETTINGS.contributionRating).toBe(0);
+  });
+
+  it("count assists, tackles and saves, with caps", () => {
+    expect(matchRating(report({ assists: 2 }), "draw", on)).toBe(7);
+    expect(matchRating(report({ tackles: 4 }), "draw", on)).toBeCloseTo(6.4);
+    expect(matchRating(report({ tackles: 30 }), "draw", on)).toBe(7);
+    expect(matchRating(report({ saves: 4 }), "draw", on)).toBe(7);
+    expect(matchRating(report({ saves: 20 }), "draw", on)).toBe(7.5);
+  });
+
+  it("reward a clean sheet for keepers and defenders who played an hour", () => {
+    const clean = { ...on, conceded: 0 };
+    expect(matchRating(report({}), "draw", { ...clean, position: "GK" })).toBe(
+      7,
+    );
+    expect(matchRating(report({}), "draw", { ...clean, position: "CB" })).toBe(
+      6.5,
+    );
+    expect(matchRating(report({}), "draw", { ...clean, position: "ST" })).toBe(
+      6,
+    );
+    expect(
+      matchRating(report({ minutes: 45 }), "draw", {
+        ...clean,
+        position: "GK",
+      }),
+    ).toBe(6);
+    expect(
+      matchRating(report({}), "draw", { ...on, conceded: 1, position: "GK" }),
+    ).toBe(6);
+  });
+
+  it("let a busy keeper build form when switched on", () => {
+    const keeper = report({ saves: 6 });
+    const off = nextForm(0, keeper, "draw", DEFAULT_FORM_SETTINGS, {
+      position: "GK",
+      conceded: 0,
+    });
+    const onForm = nextForm(
+      0,
+      keeper,
+      "draw",
+      { ...DEFAULT_FORM_SETTINGS, contributionRating: 1 },
+      { position: "GK", conceded: 0 },
+    );
+    expect(off).toBe(0);
+    expect(onForm).toBeGreaterThan(0.3);
+  });
+});

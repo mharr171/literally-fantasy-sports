@@ -341,6 +341,8 @@ export interface WeekOutcome {
   managerReports: Record<string, PlayerMatchReport>;
   /** The manager's result this week, or null if they had no match. */
   managerResult: "win" | "draw" | "loss" | null;
+  /** Goals the manager's team let in this week (for clean sheets, D161), or null. */
+  managerConceded: number | null;
 }
 
 export interface ManagerSide {
@@ -390,6 +392,7 @@ export function playWeek(
   let managerFunds = 0;
   const managerReports: Record<string, PlayerMatchReport> = {};
   let managerResult: WeekOutcome["managerResult"] = null;
+  let managerConceded: number | null = null;
   const played: PlayedFixture[] = [];
   for (const f of fixtures) {
     const knockout = f.stage !== "league";
@@ -435,9 +438,12 @@ export function playWeek(
           : result.winner === managerSide
             ? "win"
             : "loss";
-    if (managerSide)
+    if (managerSide) {
       for (const [id, r] of Object.entries(result.players))
         if (r.side === managerSide) managerReports[id] = r;
+      managerConceded =
+        managerSide === "home" ? result.score.away : result.score.home;
+    }
     played.push({
       id: f.id,
       homeScore,
@@ -552,6 +558,7 @@ export function playWeek(
     week,
     managerReports,
     managerResult,
+    managerConceded,
   };
 }
 

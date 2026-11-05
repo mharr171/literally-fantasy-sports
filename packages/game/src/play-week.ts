@@ -182,6 +182,7 @@ export async function playOneWeek(
           outcome.managerReports[p.id],
           outcome.managerResult,
           balance.form,
+          { position: p.primaryPosition, conceded: outcome.managerConceded },
         ),
         // Career totals for the retirement record (D120, D143). Only the
         // club's own match counts, never its copies in other leagues.
