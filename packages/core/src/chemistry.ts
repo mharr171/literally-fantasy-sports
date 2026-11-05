@@ -107,3 +107,45 @@ export function chemistryBoostsByPlayer(
   const byColor = chemistryBoostsByColor(colorsOnField, colorCount, boosts);
   return colorsOnField.map((color) => byColor[color] as number);
 }
+
+/**
+ * A team's dominant and second colors on the field (D119), ranked the way
+ * chemistry ranks them: groups need `minGroupSize` players, and a tie for
+ * first means no dominant color (and no second). A tie for second means no
+ * second color.
+ */
+export function rankedColors(
+  colorsOnField: readonly number[],
+  minGroupSize = DEFAULT_CHEMISTRY_BOOSTS.minGroupSize,
+): { first: number | null; second: number | null } {
+  const counts = new Map<number, number>();
+  for (const c of colorsOnField) counts.set(c, (counts.get(c) ?? 0) + 1);
+  const groups = [...counts.entries()]
+    .filter(([, n]) => n >= Math.max(1, minGroupSize))
+    .sort((a, b) => b[1] - a[1]);
+  const [top, next, third] = groups;
+  if (!top || (next && next[1] === top[1]))
+    return { first: null, second: null };
+  if (!next || (third && third[1] === next[1]))
+    return { first: top[0], second: null };
+  return { first: top[0], second: next[0] };
+}
+
+/**
+ * How color `a` fares against color `b` on a ring of an odd number of
+ * colors (D138): +1 when `a` beats `b` (b is one of the next half of the
+ * ring after a), −1 when it loses, 0 for the same color or a color not on
+ * the ring.
+ */
+export function colorEdge(
+  a: number,
+  b: number,
+  ring: readonly number[],
+): -1 | 0 | 1 {
+  const n = ring.length;
+  const i = ring.indexOf(a);
+  const j = ring.indexOf(b);
+  if (i < 0 || j < 0 || i === j || n % 2 === 0) return 0;
+  const steps = (j - i + n) % n;
+  return steps <= (n - 1) / 2 ? 1 : -1;
+}

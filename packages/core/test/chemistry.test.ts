@@ -4,7 +4,9 @@ import {
   chemistryBoostsByColor,
   chemistryBoostsByPlayer,
   chemistryColorCount,
+  colorEdge,
   DEFAULT_CHEMISTRY_BOOSTS,
+  rankedColors,
   rollChemistryColor,
 } from "../src/chemistry";
 import { createRng } from "../src/rng";
@@ -155,5 +157,48 @@ describe("chemistryBoostsByPlayer", () => {
     expect(chemistryBoostsByPlayer([0, 0, 0, 1, 1, 2], 5)).toEqual([
       0.25, 0.25, 0.25, 0.1, 0.1, 0,
     ]);
+  });
+});
+
+describe("color matchups (D119, D138)", () => {
+  // Soccer's ring: Red 0 → Yellow 3 → Green 2 → Blue 1 → Purple 4.
+  const ring = [0, 3, 2, 1, 4];
+
+  it("has every color beat the next two and lose to the two before", () => {
+    expect(colorEdge(0, 3, ring)).toBe(1); // Red beats Yellow
+    expect(colorEdge(0, 2, ring)).toBe(1); // Red beats Green
+    expect(colorEdge(0, 1, ring)).toBe(-1); // Red loses to Blue
+    expect(colorEdge(0, 4, ring)).toBe(-1); // Red loses to Purple
+    expect(colorEdge(4, 0, ring)).toBe(1); // Purple beats Red
+    expect(colorEdge(2, 2, ring)).toBe(0);
+    for (const a of ring) {
+      const edges = ring.map((b) => colorEdge(a, b, ring));
+      expect(edges.filter((e) => e === 1)).toHaveLength(2);
+      expect(edges.filter((e) => e === -1)).toHaveLength(2);
+      for (const b of ring)
+        expect(colorEdge(b, a, ring) + colorEdge(a, b, ring)).toBe(0);
+    }
+  });
+
+  it("calls an unknown color or an even ring even", () => {
+    expect(colorEdge(0, 9, ring)).toBe(0);
+    expect(colorEdge(0, 1, [0, 1, 2, 3])).toBe(0);
+  });
+
+  it("ranks dominant and second colors the way chemistry does", () => {
+    expect(rankedColors([1, 1, 1, 2, 2, 3])).toEqual({ first: 1, second: 2 });
+    // A tie for first: no dominant color, and no second.
+    expect(rankedColors([1, 1, 2, 2, 3])).toEqual({
+      first: null,
+      second: null,
+    });
+    // A tie for second: no second color.
+    expect(rankedColors([1, 1, 1, 2, 2, 3, 3])).toEqual({
+      first: 1,
+      second: null,
+    });
+    // Lone players don't form a group (D79).
+    expect(rankedColors([1, 1, 2, 3])).toEqual({ first: 1, second: null });
+    expect(rankedColors([0, 1, 2])).toEqual({ first: null, second: null });
   });
 });

@@ -3,7 +3,7 @@
  * generated teams and reports the numbers the sim is tuned against.
  * Targets: about 2.5–2.8 goals per match and roughly 25% draws.
  */
-import { createRng, type Rng } from "@lfs/core";
+import { colorEdge, createRng, type Rng, rankedColors } from "@lfs/core";
 import {
   ATTRIBUTE_MAX,
   ATTRIBUTE_MIN,
@@ -12,6 +12,7 @@ import {
 } from "./attributes";
 import {
   defaultSoccerConfig,
+  SOCCER_COLOR_CYCLE,
   type SoccerConfig,
   type SoccerTeam,
   simulateMatch,
@@ -101,6 +102,12 @@ export interface HarnessReport {
   subsPerMatch: number;
   /** Win / draw / loss rate of the stronger team at each strength gap. */
   byGap: { gap: number; win: number; draw: number; loss: number }[];
+  /**
+   * Even teams (gap 0) where one side's dominant color beats the other's
+   * (ADR 0003): that side's results. Matchups are off unless the config's
+   * tuning turns them on.
+   */
+  colorMatchup: { matches: number; win: number; draw: number; loss: number };
 }
 
 export function runHarness(options: HarnessOptions): HarnessReport {
@@ -114,6 +121,9 @@ export function runHarness(options: HarnessOptions): HarnessReport {
   let highScoring = 0;
   const counts = { yellow: 0, red: 0, injury: 0, sub: 0 };
   const perGap = gaps.map((gap) => ({ gap, win: 0, draw: 0, loss: 0, n: 0 }));
+  const color = { matches: 0, win: 0, draw: 0, loss: 0 };
+  const dominant = (t: SoccerTeam) =>
+    rankedColors(t.lineup.map((s) => s.player.chemistryColor)).first;
 
   for (let i = 0; i < options.matches; i++) {
     const bucket = perGap[i % perGap.length] as (typeof perGap)[number];
@@ -143,6 +153,21 @@ export function runHarness(options: HarnessOptions): HarnessReport {
     if (result.winner === null) bucket.draw++;
     else if (result.winner === strongSide) bucket.win++;
     else bucket.loss++;
+
+    if (bucket.gap === 0) {
+      const a = dominant(strong);
+      const b = dominant(weak);
+      const edge =
+        a !== null && b !== null ? colorEdge(a, b, SOCCER_COLOR_CYCLE) : 0;
+      if (edge !== 0) {
+        const winnerSide =
+          edge > 0 ? strongSide : strongSide === "home" ? "away" : "home";
+        color.matches++;
+        if (result.winner === null) color.draw++;
+        else if (result.winner === winnerSide) color.win++;
+        else color.loss++;
+      }
+    }
   }
 
   const n = options.matches;
@@ -162,6 +187,12 @@ export function runHarness(options: HarnessOptions): HarnessReport {
       draw: m ? draw / m : 0,
       loss: m ? loss / m : 0,
     })),
+    colorMatchup: {
+      matches: color.matches,
+      win: color.matches ? color.win / color.matches : 0,
+      draw: color.matches ? color.draw / color.matches : 0,
+      loss: color.matches ? color.loss / color.matches : 0,
+    },
   };
 }
 
@@ -185,6 +216,9 @@ export function formatReport(r: HarnessReport): string {
       (g) =>
         `  ${String(g.gap).padStart(3)}   ${pct(g.win).padEnd(7)} ${pct(g.draw).padEnd(7)} ${pct(g.loss)}`,
     ),
+    "",
+    `Even teams, dominant color wins the matchup (${r.colorMatchup.matches} matches):`,
+    `  win ${pct(r.colorMatchup.win)}   draw ${pct(r.colorMatchup.draw)}   loss ${pct(r.colorMatchup.loss)}`,
   ];
   return lines.join("\n");
 }

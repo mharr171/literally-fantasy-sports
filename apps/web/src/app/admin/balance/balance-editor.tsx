@@ -46,6 +46,10 @@ const TUNING_GROUPS: [string, (keyof MatchTuning)[]][] = [
     ],
   ],
   ["Cards and injuries", ["injuryRate", "yellowRate", "redRate"]],
+  [
+    "Color matchups (Red → Yellow → Green → Blue → Purple; each beats the next two)",
+    ["teamMatchup", "teamMatchupSecond", "playerMatchup"],
+  ],
 ];
 
 /** Every field as a path, e.g. "tuning.phases" or "packs.tiers.basic". */
