@@ -12,10 +12,12 @@ import { Suspense } from "react";
 import { FormationMoved } from "@/components/formation-moved";
 import { GettingStarted } from "@/components/getting-started";
 import { WithTemplates } from "@/components/player/with-templates";
+import { RetirementTributes } from "@/components/retirement-tributes";
 import { SeasonReviewPanel as Review } from "@/components/season-review";
 import { adminView } from "@/lib/admin-view";
 import { getCurrentUser } from "@/lib/auth";
 import { loadClubOrigins } from "@/lib/club-view";
+import { loadTributes } from "@/lib/history";
 import { scoutPlayer } from "@/lib/scouting";
 import {
   liveGenerationSettings,
@@ -99,10 +101,14 @@ async function SeasonContent() {
         </div>
       );
     } else if (!season.intakeResolved) {
-      const roster = await loadRoster(team.id);
+      const [roster, tributes] = await Promise.all([
+        loadRoster(team.id),
+        loadTributes(team.id, season.number),
+      ]);
       wrapUp = (
         <div className="mt-3 flex flex-col gap-4">
           {season.review && <Review review={season.review} />}
+          <RetirementTributes tributes={tributes} />
           <YouthIntake
             prospects={youthIntake(
               season.seed,

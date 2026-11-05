@@ -73,3 +73,63 @@ export function seasonScorers(
     .map(([name, n]) => ({ name, goals: n }))
     .sort((a, b) => b.goals - a.goals || a.name.localeCompare(b.name));
 }
+
+/** A retired player's career, for their tribute (D121, ADR 0005). */
+export interface Tribute {
+  id: string;
+  name: string;
+  position: string;
+  age: number;
+  seasons: number;
+  games: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  goals: number;
+  assists: number;
+  tackles: number;
+  saves: number;
+  bestOverall: number;
+  retiredSeason: number;
+}
+
+const tribute = (r: Record<string, unknown>): Tribute => ({
+  id: r.id as string,
+  name: r.display_name as string,
+  position: r.primary_position as string,
+  age: r.retired_age as number,
+  seasons: r.seasons as number,
+  games: r.stat_games as number,
+  wins: r.wins as number,
+  draws: r.draws as number,
+  losses: r.losses as number,
+  goals: r.stat_goals as number,
+  assists: r.assists as number,
+  tackles: r.tackles as number,
+  saves: r.saves as number,
+  bestOverall: r.best_overall as number,
+  retiredSeason: r.retired_season as number,
+});
+
+const TRIBUTE_COLUMNS =
+  "id, display_name, primary_position, retired_age, seasons, stat_games, wins, draws, losses, stat_goals, assists, tackles, saves, best_overall, retired_season";
+
+/**
+ * Careers of the club's players who retired at the end of a season, or of
+ * every season when `seasonNumber` is left out, newest first.
+ */
+export async function loadTributes(
+  teamId: string,
+  seasonNumber?: number,
+): Promise<Tribute[]> {
+  let q = createServiceClient()
+    .from("player_careers")
+    .select(TRIBUTE_COLUMNS)
+    .eq("team_id", teamId);
+  if (seasonNumber !== undefined) q = q.eq("retired_season", seasonNumber);
+  const { data, error } = await q
+    .order("retired_season", { ascending: false })
+    .order("best_overall", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(tribute);
+}
