@@ -4,9 +4,8 @@ import {
   colorMatchups,
   DEFAULT_BALANCE,
   DEFAULT_POSITION_FIT_BONUSES,
+  DEFAULT_ROSTER_LIMITS,
   defaultSoccerConfig,
-  ROSTER_MAX,
-  ROSTER_MIN,
   SOCCER_COLOR_CYCLE,
 } from "@lfs/sport-soccer";
 import type { Metadata } from "next";
@@ -16,7 +15,7 @@ import { ColorRing } from "@/components/color-ring";
 import { ChemistryDot } from "@/components/player/player-card";
 import { CHEMISTRY_COLORS } from "@/lib/chemistry-colors";
 import { liveSoccerConfig } from "@/lib/season";
-import { loadEnergySettings } from "@/lib/sport-settings";
+import { loadEnergySettings, loadRosterLimits } from "@/lib/sport-settings";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 
 export const metadata: Metadata = {
@@ -53,12 +52,14 @@ async function settings() {
       config: defaultSoccerConfig(),
       balance: DEFAULT_BALANCE,
       energy: DEFAULT_ENERGY_SETTINGS,
+      limits: DEFAULT_ROSTER_LIMITS,
     };
-  const [{ config, balance }, energy] = await Promise.all([
+  const [{ config, balance }, energy, limits] = await Promise.all([
     liveSoccerConfig(),
     loadEnergySettings("soccer"),
+    loadRosterLimits("soccer"),
   ]);
-  return { config, balance, energy };
+  return { config, balance, energy, limits };
 }
 
 function Section({
@@ -85,7 +86,7 @@ function Section({
 }
 
 async function Guide() {
-  const { config, balance, energy } = await settings();
+  const { config, balance, energy, limits } = await settings();
   const t = config.tuning;
   // The live color cycle (D149).
   const cycle = t.colorCycle ?? SOCCER_COLOR_CYCLE;
@@ -121,7 +122,7 @@ async function Guide() {
       <Section id="club" title="Your club">
         <p>
           You start by naming your club and opening 22 free starter packs. Keep
-          between {ROSTER_MIN} and {ROSTER_MAX} players. Every player has an
+          between {limits.min} and {limits.max} players. Every player has an
           overall rating, a potential range (the real potential stays hidden), a
           main position, sometimes a second position, and a permanent chemistry
           color.
@@ -160,11 +161,12 @@ async function Guide() {
 
       <Section id="squad" title="Squads and positions">
         <p>
-          Your matchday squad is 11 starters in a formation and 11 substitutes.
-          You can plan up to {t.maxSubs} substitutions in up to{" "}
-          {t.maxSubWindows} different minutes. The match also makes subs for
-          tiredness, injuries and red cards. Injured and banned players are
-          replaced from the bench by someone who plays the position.
+          Your matchday squad is 11 starters in a formation and up to{" "}
+          {limits.benchMax} substitutes. You can plan up to {t.maxSubs}{" "}
+          substitutions in up to {t.maxSubWindows} different minutes. The match
+          also makes subs for tiredness, injuries and red cards. Injured and
+          banned players are replaced from the bench by someone who plays the
+          position.
         </p>
         <p>
           A player is worth {pct(fit.primary)} more in their main position and{" "}

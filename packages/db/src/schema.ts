@@ -656,10 +656,18 @@ export const sportSettings = pgTable(
     energyEnabled: boolean().notNull().default(true),
     energyRefillMinutes: integer().notNull().default(15),
     energyMax: integer().notNull().default(6),
+    /** Roster limits (D182): the fewest and most players, and the bench size. */
+    rosterMin: integer().notNull().default(11),
+    rosterMax: integer().notNull().default(33),
+    benchMax: integer().notNull().default(11),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     check("sport_settings_sport", sql`${t.sport} ${SPORT_CHECK}`),
+    check(
+      "sport_settings_roster",
+      sql`${t.rosterMin} between 11 and 30 and ${t.rosterMax} between 22 and 50 and ${t.rosterMin} <= ${t.rosterMax} and ${t.benchMax} between 0 and 11`,
+    ),
     check(
       "sport_settings_energy",
       sql`${t.energyRefillMinutes} between 1 and 1440 and ${t.energyMax} between 1 and 20`,

@@ -125,6 +125,12 @@ export const LINE_NEEDS: Record<Line, number> = {
 };
 
 /** Roster size each personality aims for, within 22–30 (D54). */
+/**
+ * AI clubs never hold more than this, whatever the sport allows, so their
+ * squads stay as before the limits moved (D182).
+ */
+export const AI_ROSTER_CAP = 30;
+
 export const ROSTER_TARGET: Record<Personality, number> = {
   builder: 28,
   spender: 25,
@@ -168,7 +174,11 @@ export function pickStarterKeeps(
   for (const [line, need] of Object.entries(LINE_NEEDS))
     for (const o of order.filter((x) => x.line === line).slice(0, need))
       kept.add(o.i);
-  const target = Math.min(ROSTER_MAX, ROSTER_TARGET[personality]);
+  const target = Math.min(
+    AI_ROSTER_CAP,
+    ROSTER_MAX,
+    ROSTER_TARGET[personality],
+  );
   for (const o of order) {
     if (kept.size >= target) break;
     kept.add(o.i);
@@ -217,7 +227,7 @@ export function choosePack(
   personality: Personality,
   prices: PackPrices = DEFAULT_PACK_PRICES,
 ): { tier: string; focus: PackFocus } | null {
-  if (roster.length >= ROSTER_MAX) return null;
+  if (roster.length >= Math.min(AI_ROSTER_CAP, ROSTER_MAX)) return null;
   const spend = funds - FUNDS_BUFFER[personality];
   const weakest = (Object.keys(LINE_NEEDS) as Line[])
     .map((line) => ({ line, cutoff: lineCutoff(roster, line, personality) }))
@@ -254,7 +264,7 @@ export function chooseKeeps(
         a.i - b.i,
     );
   for (const { p, i } of order) {
-    if (squad.length >= ROSTER_MAX) break;
+    if (squad.length >= Math.min(AI_ROSTER_CAP, ROSTER_MAX)) break;
     if (
       playerValue(p, personality) > lineCutoff(squad, lineOf(p), personality)
     ) {
@@ -315,7 +325,7 @@ export function chooseYouth(
   personality: Personality,
 ): number[] {
   const { most, minHigh } = YOUTH[personality];
-  const room = Math.max(0, ROSTER_MAX - rosterSize);
+  const room = Math.max(0, Math.min(AI_ROSTER_CAP, ROSTER_MAX) - rosterSize);
   return prospects
     .map((p, i) => ({ p, i }))
     .filter(({ p }) => p.potentialRange[1] >= minHigh)

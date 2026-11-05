@@ -1,0 +1,4 @@
+ALTER TABLE "sport_settings" ADD COLUMN "roster_min" integer DEFAULT 11 NOT NULL;--> statement-breakpoint
+ALTER TABLE "sport_settings" ADD COLUMN "roster_max" integer DEFAULT 33 NOT NULL;--> statement-breakpoint
+ALTER TABLE "sport_settings" ADD COLUMN "bench_max" integer DEFAULT 11 NOT NULL;--> statement-breakpoint
+ALTER TABLE "sport_settings" ADD CONSTRAINT "sport_settings_roster" CHECK ("sport_settings"."roster_min" between 11 and 30 and "sport_settings"."roster_max" between 22 and 50 and "sport_settings"."roster_min" <= "sport_settings"."roster_max" and "sport_settings"."bench_max" between 0 and 11);

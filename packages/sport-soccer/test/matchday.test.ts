@@ -107,16 +107,27 @@ describe("squadProblems", () => {
     string,
   ];
 
-  it("needs a formation, 11 starters, 11 subs and nobody twice", () => {
+  it("needs a formation, 11 starters, at most 11 subs and nobody twice", () => {
     expect(squadProblems({ ...base, formation: "x" }, ids)).toContain(
       "Pick a formation.",
     );
     expect(
       squadProblems({ ...base, lineup: base.lineup.slice(1) }, ids),
     ).toContain("Pick 11 starters (10 picked).");
+    // A shorter bench is fine (D182); more than the sport allows isn't.
+    expect(squadProblems({ ...base, bench: base.bench.slice(1) }, ids)).toEqual(
+      [],
+    );
+    expect(squadProblems({ ...base, bench: [] }, ids)).toEqual([]);
     expect(
-      squadProblems({ ...base, bench: base.bench.slice(1) }, ids),
-    ).toContain(`Pick ${BENCH_SIZE} substitutes (10 picked).`);
+      squadProblems(
+        { ...base, bench: base.bench.slice(0, 6) },
+        ids,
+        undefined,
+        5,
+      ),
+    ).toContain("Pick at most 5 substitutes (6 picked).");
+    expect(BENCH_SIZE).toBe(11);
     expect(
       squadProblems({ ...base, bench: [s1, ...base.bench.slice(1)] }, ids),
     ).toContain("A player is picked twice.");
@@ -265,5 +276,41 @@ describe("autoPickSquad with injuries, bans, fitness and form (M4)", () => {
     });
     const changed = squad.lineup.filter((id) => !base.lineup.includes(id));
     expect(changed.length).toBeGreaterThan(0);
+  });
+});
+
+describe("a short bench (D182)", () => {
+  it("auto-picks the subs a 14-player roster has and plays the match", () => {
+    const fourteen = players.slice(0, 14);
+    const squad = autoPickSquad(fourteen, "4-4-2");
+    expect(squad.lineup).toHaveLength(11);
+    expect(squad.bench).toHaveLength(3);
+    expect(squadProblems(squad, new Set(fourteen.map((p) => p.id)))).toEqual(
+      [],
+    );
+    expect(
+      autoPickSquad(players, "4-4-2", { benchSize: 5 }).bench,
+    ).toHaveLength(5);
+    const team = squadToTeam(
+      "short",
+      squad,
+      new Map(fourteen.map((p) => [p.id, p])),
+    );
+    const rivals = roster("rivals");
+    const other = squadToTeam(
+      "full",
+      autoPickSquad(rivals, "4-4-2"),
+      new Map(rivals.map((p) => [p.id, p])),
+    );
+    const out = simulateMatch(
+      {
+        home: team,
+        away: other,
+        mode: "league",
+        config: defaultSoccerConfig(),
+      },
+      "short-bench",
+    );
+    expect(out.result.score.home).toBeGreaterThanOrEqual(0);
   });
 });

@@ -24,7 +24,7 @@ import {
   liveSoccerConfig,
   loadLatestSeason,
 } from "@/lib/season";
-import { loadEnergySettings } from "@/lib/sport-settings";
+import { loadEnergySettings, loadRosterLimits } from "@/lib/sport-settings";
 import {
   loadMovedFrom,
   loadMyTeam,
@@ -118,6 +118,7 @@ async function SeasonContent() {
               await liveGenerationSettings(),
             ).map(scoutPlayer)}
             rosterSize={roster.length}
+            rosterMax={(await loadRosterLimits()).max}
           />
         </div>
       );

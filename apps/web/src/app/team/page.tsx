@@ -1,6 +1,7 @@
 import {
   formation,
   type MatchdaySquad,
+  type RosterLimits,
   rosterWarning,
   slotLabel,
   squadProblems,
@@ -15,6 +16,7 @@ import { WithTemplates } from "@/components/player/with-templates";
 import { getCurrentUser } from "@/lib/auth";
 import { FOCUS_LABELS, scoutPlayer } from "@/lib/scouting";
 import { liveGenerationSettings, liveSoccerConfig } from "@/lib/season";
+import { loadRosterLimits } from "@/lib/sport-settings";
 import {
   loadMyTeam,
   loadOpenBoughtPack,
@@ -55,15 +57,17 @@ async function TeamContent() {
   const team = await loadMyTeam(user.id);
   if (!team) return <CreateTeamForm />;
 
-  const [packs, generation] = await Promise.all([
+  const [packs, generation, limits] = await Promise.all([
     loadStarterPacks(team.id),
     liveGenerationSettings(),
+    loadRosterLimits(),
   ]);
   if (packs.some((p) => !p.resolved)) {
     return (
       <>
         <TeamHeading team={team} />
         <Scouting
+          limits={limits}
           packs={packs.map((p) => ({
             id: p.id,
             focus: p.focus,
@@ -123,9 +127,10 @@ async function TeamContent() {
           title={`${tierName(openPack.tier)} pack · ${FOCUS_LABELS[openPack.focus]}`}
           players={openedContents(openPack, generation).map(scoutPlayer)}
           rosterSize={roster.length}
+          rosterMax={limits.max}
         />
       )}
-      <Roster players={roster} squad={squadRoles(squad)} />
+      <Roster players={roster} squad={squadRoles(squad)} limits={limits} />
       <Shop
         funds={team.funds}
         hasOpenPack={openPack !== null}
@@ -168,24 +173,26 @@ function squadRoles(squad: MatchdaySquad | null): Record<string, SquadRole> {
 function Roster({
   players,
   squad,
+  limits,
 }: {
   players: RosterPlayer[];
   squad: Record<string, SquadRole>;
+  limits: RosterLimits;
 }) {
-  const warning = rosterWarning(players.length);
+  const warning = rosterWarning(players.length, limits);
   return (
     <div className="flex flex-col gap-3">
       <div>
         <h2 className="text-xl font-semibold">Roster</h2>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          {players.length} players (22–30 to play). Click a column to sort.
-          Starter-pack players can be released but not sold.
+          {players.length} players ({limits.min}–{limits.max} to play). Click a
+          column to sort. Starter-pack players can be released but not sold.
         </p>
       </div>
       {warning && (
         <p className="text-sm text-amber-700 dark:text-amber-400">{warning}</p>
       )}
-      <RosterTable players={players} squad={squad} />
+      <RosterTable players={players} squad={squad} rosterMin={limits.min} />
     </div>
   );
 }

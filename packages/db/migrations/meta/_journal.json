@@ -421,6 +421,20 @@
       "when": 1793869157052,
       "tag": "0059_hall_of_fame_clubs",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1793919689233,
+      "tag": "0060_roster_limits",
+      "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1793919696161,
+      "tag": "0061_roster_limits_grants",
+      "breakpoints": true
     }
   ]
 }

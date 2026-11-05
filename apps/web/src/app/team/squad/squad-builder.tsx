@@ -74,7 +74,10 @@ export function SquadBuilder({
   outOfPosition = 0,
   morale = 0,
   formations,
+  benchMax = BENCH_SIZE,
 }: {
+  /** The sport's bench size (D182): up to this many substitutes. */
+  benchMax?: number;
   /** Formations that are on, plus the saved one if it's off (D140). */
   formations: (Formation & { enabled: boolean })[];
   roster: RosterPlayer[];
@@ -96,7 +99,7 @@ export function SquadBuilder({
     pad(keep(initial.lineup), 11),
   );
   const [bench, setBench] = useState<Slot[]>(() =>
-    pad(keep(initial.bench), BENCH_SIZE),
+    pad(keep(initial.bench).slice(0, benchMax), benchMax),
   );
   const [plan, setPlan] = useState<PlannedSub[]>(initial.subPlan);
   const [selected, setSelected] = useState<Loc | null>(null);
@@ -119,7 +122,7 @@ export function SquadBuilder({
     bench: bench.filter(Boolean) as string[],
     subPlan: plan,
   };
-  const problems = squadProblems(squad, rosterIds);
+  const problems = squadProblems(squad, rosterIds, undefined, benchMax);
 
   const starters = lineup.map((id) => (id ? byId.get(id) : undefined));
   const present = starters.filter(Boolean) as RosterPlayer[];
@@ -245,13 +248,12 @@ export function SquadBuilder({
   });
 
   function autoPick(rotate = false) {
-    const squad = autoPickSquad(
-      roster,
-      formationId,
-      pickOptions(roster, { rotate }),
-    );
+    const squad = autoPickSquad(roster, formationId, {
+      ...pickOptions(roster, { rotate }),
+      benchSize: benchMax,
+    });
     setLineup(pad(squad.lineup, 11));
-    setBench(pad(squad.bench, BENCH_SIZE));
+    setBench(pad(squad.bench.slice(0, benchMax), benchMax));
     setPlan([]);
     setSelected(null);
     setDirty(true);
@@ -481,7 +483,7 @@ export function SquadBuilder({
             <ChemistryShares title="Whole roster" players={roster} />
           </div>
           <PlayerList
-            title={`Bench (${squad.bench.length}/${BENCH_SIZE})`}
+            title={`Bench (${squad.bench.length}/${benchMax})`}
             rows={bench.map((id, i) => ({
               loc: { area: "bench", index: i } as Loc,
               label: `S${i + 1}`,

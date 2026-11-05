@@ -75,4 +75,44 @@ describe.runIf(sql)("sport settings: energy switches (D93)", () => {
       ),
     ).rejects.toThrow(/sport_settings_energy/);
   });
+
+  it("starts soccer at 11–33 players with a bench of 11, admins change them (D182)", async () => {
+    expect(
+      await asUser(
+        db,
+        player,
+        (tx) =>
+          tx`select roster_min, roster_max, bench_max from sport_settings where sport = 'soccer'`,
+      ),
+    ).toEqual([{ roster_min: 11, roster_max: 33, bench_max: 11 }]);
+    expect(
+      await asUser(
+        db,
+        admin,
+        (tx) =>
+          tx`update sport_settings set roster_min = 16, roster_max = 30, bench_max = 7
+            where sport = 'soccer' returning roster_min, roster_max, bench_max`,
+      ),
+    ).toEqual([{ roster_min: 16, roster_max: 30, bench_max: 7 }]);
+    expect(
+      await asUser(
+        db,
+        player,
+        (tx) =>
+          tx`update sport_settings set roster_max = 50 where sport = 'soccer' returning sport`,
+      ),
+    ).toEqual([]);
+    for (const bad of [
+      db`roster_min = 10`,
+      db`roster_min = 30, roster_max = 25`,
+      db`bench_max = 12`,
+    ])
+      await expect(
+        asUser(
+          db,
+          admin,
+          (tx) => tx`update sport_settings set ${bad} where sport = 'soccer'`,
+        ),
+      ).rejects.toThrow(/sport_settings_roster/);
+  });
 });

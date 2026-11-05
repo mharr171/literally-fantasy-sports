@@ -50,7 +50,10 @@ const SORTS: { key: Column; label: string; firstDir: "asc" | "desc" }[] = [
 export function RosterTable({
   players,
   squad,
+  rosterMin = ROSTER_MIN,
 }: {
+  /** The sport's minimum roster (D182): nobody can leave at or below it. */
+  rosterMin?: number;
   players: RosterPlayer[];
   /** Matchday squad roles by player id; empty when no squad is saved. */
   squad: Record<string, SquadRole>;
@@ -77,7 +80,7 @@ export function RosterTable({
     form: (p) => p.form,
     fitness: (p) => p.condition.fitness,
   });
-  const canRemove = players.length > ROSTER_MIN;
+  const canRemove = players.length > rosterMin;
 
   const remove = (p: RosterPlayer, mode: "release" | "sell") => {
     const question =

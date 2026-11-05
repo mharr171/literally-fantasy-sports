@@ -168,6 +168,7 @@ export const FORMATIONS: readonly Formation[] = (
 ).map(withSides);
 
 export const DEFAULT_FORMATION = "4-4-2";
+/** The most substitutes soccer allows (D182); a sport's bench may be smaller. */
 export const BENCH_SIZE = 11;
 export const LATEST_PLAN_MINUTE = 89;
 
@@ -292,6 +293,7 @@ export function squadProblems(
   squad: MatchdaySquad,
   rosterIds: ReadonlySet<string>,
   tuning: Pick<MatchTuning, "maxSubs" | "maxSubWindows"> = DEFAULT_MATCH_TUNING,
+  benchMax: number = BENCH_SIZE,
 ): string[] {
   const problems: string[] = [];
   const shape = formation(squad.formation);
@@ -300,9 +302,10 @@ export function squadProblems(
     problems.push(
       `Pick ${PLAYERS_ON_FIELD} starters (${squad.lineup.length} picked).`,
     );
-  if (squad.bench.length !== BENCH_SIZE)
+  // Up to the sport's bench size (D182); fewer just means fewer subs.
+  if (squad.bench.length > benchMax)
     problems.push(
-      `Pick ${BENCH_SIZE} substitutes (${squad.bench.length} picked).`,
+      `Pick at most ${benchMax} substitutes (${squad.bench.length} picked).`,
     );
   const everyone = [...squad.lineup, ...squad.bench];
   if (new Set(everyone).size !== everyone.length)
@@ -374,6 +377,8 @@ export interface PickOptions {
    * out-of-form players (1 = no change).
    */
   weight?: (id: string) => number;
+  /** Substitutes to pick, up to the sport's bench size (D182); 11 by default. */
+  benchSize?: number;
 }
 
 /**
@@ -418,16 +423,18 @@ export function autoPickSquad(
   const rest = [...free.values()].sort(
     (a, b) => score(b, b.overall) - score(a, a.overall),
   );
-  const bench = rest.slice(0, BENCH_SIZE);
+  const benchSize = options.benchSize ?? BENCH_SIZE;
+  const bench = rest.slice(0, benchSize);
   const spareKeeper = rest.find(
     (p) => p.primaryPosition === "GK" && available(p.id),
   );
   if (
     spareKeeper &&
     !bench.includes(spareKeeper) &&
-    bench.length === BENCH_SIZE
+    benchSize > 0 &&
+    bench.length === benchSize
   )
-    bench[BENCH_SIZE - 1] = spareKeeper;
+    bench[benchSize - 1] = spareKeeper;
   return {
     formation: shape.id,
     lineup: lineup.filter(Boolean),

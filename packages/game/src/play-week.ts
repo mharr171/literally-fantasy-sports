@@ -25,7 +25,7 @@ import {
   playedIds,
   type StoredManagerTeam,
 } from "./season";
-import { loadEnergySettings } from "./sport-settings";
+import { loadEnergySettings, loadRosterLimits } from "./sport-settings";
 import { loadRoster, loadSquad, loadStarterPacks, type MyTeam } from "./team";
 
 /**
@@ -36,15 +36,21 @@ export async function readyToPlay(team: MyTeam) {
   const packs = await loadStarterPacks(team.id);
   if (packs.some((p) => !p.resolved))
     throw new Error("Pick your starting squad first.");
-  const [roster, saved] = await Promise.all([
+  const [roster, saved, limits] = await Promise.all([
     loadRoster(team.id),
     loadSquad(team.id),
+    loadRosterLimits(),
   ]);
-  const warning = rosterWarning(roster.length);
+  const warning = rosterWarning(roster.length, limits);
   if (warning) throw new Error(warning);
   if (!saved) throw new Error("Save a matchday squad first.");
   const squad = await moveOffTurnedOff(team.id, saved, roster);
-  const problems = squadProblems(squad, new Set(roster.map((p) => p.id)));
+  const problems = squadProblems(
+    squad,
+    new Set(roster.map((p) => p.id)),
+    undefined,
+    limits.benchMax,
+  );
   if (problems.length > 0)
     throw new Error(`Fix your matchday squad first: ${problems.join(" ")}`);
   return { team, roster, squad };

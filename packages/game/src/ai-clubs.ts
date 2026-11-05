@@ -31,6 +31,7 @@ import {
   loadLatestSeason,
 } from "./season";
 import { endSeasonFor, startSeasonFor, takeYouthFor } from "./season-steps";
+import { loadRosterLimits } from "./sport-settings";
 import {
   loadOpenBoughtPack,
   loadRoster,
@@ -213,8 +214,13 @@ async function pickFirstSquad(team: MyTeam, profile: AiProfile) {
 }
 
 async function saveSquad(team: MyTeam, profile: AiProfile) {
-  const roster = await loadRoster(team.id);
-  await saveSquadFor(team, aiSquad(roster, profile));
+  const [roster, { benchMax }] = await Promise.all([
+    loadRoster(team.id),
+    loadRosterLimits(),
+  ]);
+  const squad = aiSquad(roster, profile);
+  // A sport with a shorter bench (D182) keeps the best of the AI's subs.
+  await saveSquadFor(team, { ...squad, bench: squad.bench.slice(0, benchMax) });
 }
 
 /** Keeps what's worth keeping from an open bought pack, sells the rest. */
@@ -329,7 +335,12 @@ export async function aiClubTurn(
       }
       if (turn.weeksPlayed >= weeks) break;
       // Over the roster limit (after a youth intake): trim before playing.
-      if (rosterWarning((await loadRoster(teamId)).length))
+      if (
+        rosterWarning(
+          (await loadRoster(teamId)).length,
+          await loadRosterLimits(),
+        )
+      )
         await trim(team, profile, turn.notes);
       await saveSquad(team, profile);
       try {
