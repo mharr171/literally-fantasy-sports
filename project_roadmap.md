@@ -1,6 +1,6 @@
 # LiterallyFantasySports — Project Roadmap
 
-Nov 2, 2026 · @Gary · Last updated: Nov 5, 2026 (D185)
+Nov 2, 2026 · @Gary · Last updated: Nov 5, 2026 (D186)
 
 ## Review progress
 
@@ -206,6 +206,7 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D183 | Nov 5, 2026 | Playing a man down (Gary): injured or suspended players never fill in. If fewer than 11 players are available, the club starts a man (or more) down, and the empty slots add no influence, so the opponent dominates that area of the pitch. Auto-pick and the AI leave those slots empty. If no keeper is available, the best available outfield player goes in goal with the out-of-position penalty, leaving an outfield slot empty instead (Gary OK'd, Nov 5, 2026) | M15 |
 | D184 | Nov 5, 2026 | Playoff bracket (Gary): the season page draws the bracket (play-in, quarter-finals, semi-finals, final) with each club's seed and results, filling in as rounds are played. Each past season in History shows the same bracket (planned in ADR 0005, not yet built) | M15 |
 | D185 | Nov 5, 2026 | Soccer feature freeze (Gary): after M15, soccer gets only bug fixes and balance tweaks; new soccer ideas go into the backlog until baseball ships. Baseball (backlog #1) is split into three milestones: making `packages/game` and the web app sport-agnostic through the `Sport` interface (with an ADR), the baseball engine and harness, then baseball's UI, AI clubs and settings | M15 |
+| D186 | Nov 5, 2026 | M15 plan (ADR 0006, Gary OK'd): rosters 11–33 with a bench of 0–11 in `sport_settings`; empty slots add no influence and a club with fewer than 7 available players forfeits 3–0; form weights per position line tuned until every line averages within ±0.1, and form moves with minutes / 90; bought packs shift 1 overall per 40 Elo (−10 to +15) with prices +3% per point; color exclusion +25/60/120% on top of focus; Prospect (17–20, Basic −10, potential +10, Silver price), Veteran (30–33, Silver +3, 70% of Silver), Wildcard (15% at 40–49 and 15% at 80–89) and Reward packs; a drawn playoff bracket. Match changes switch on with a settings version | M15 |
 
 ## 1. Vision & goals
 

@@ -1,8 +1,7 @@
 # ADR 0006: Packs, rosters and playoffs (M15)
 
-Status: proposed (Nov 5, 2026). Covers D178–D184. Gary already OK'd the
-proposed points in D180, D181 and D183. Points marked **(proposed)** here
-need Gary's OK.
+Status: accepted (Nov 5, 2026: Gary OK'd every proposed point). Covers
+D178–D184 and D186.
 
 ## Context
 
@@ -62,7 +61,7 @@ on:
    into the keeper's slot with the out-of-position penalty (D135).
    Their own slot is left empty instead.
 5. A club with fewer than **7 players** available forfeits the match
-   3–0, as in real soccer **(proposed)**.
+   3–0, as in real soccer.
 
 **Auto-pick and the AI:** they leave unavailable players out instead of
 padding the lineup with them (this replaces part of D97). The squad page
@@ -108,7 +107,7 @@ form players carry in.
 **The shift:** each bought tier's skill bands move with the club's Elo
 when the pack is bought:
 - `shift = round((elo − 1500) ÷ eloPerOverall)`
-- `eloPerOverall` defaults to **40** **(proposed)**. That's half as
+- `eloPerOverall` defaults to **40**. That's half as
   steep as AI clubs, where 20 Elo is one overall point, so packs trail a
   club's strength and strong clubs can't run away.
 - The shift is capped at **−10 and +15**.
@@ -116,7 +115,7 @@ when the pack is bought:
 
 **Prices:** move with the shift.
 - `price × (1 + shift × pricePerOverall)`
-- `pricePerOverall` defaults to **3%** **(proposed)**.
+- `pricePerOverall` defaults to **3%**.
 - So a Gold pack at Elo 1900 (shift +10) costs 39,000 instead of 30,000.
 
 **The shop:** shows the odds and price for the club's Elo now.
@@ -144,9 +143,9 @@ A bought pack can leave out 1, 2 or 3 of the five chemistry colors.
 
 | Pack | Ages | Skill | Potential | Price |
 | --- | --- | --- | --- | --- |
-| **Prospect** | 17–20 | Basic's bands −10 | Rolled higher: the potential range starts 10 above overall **(proposed)** | Like Silver |
-| **Veteran** | 30–33 | Silver's bands +3 | At or below overall | 70% of Silver **(proposed)** |
-| **Wildcard** | Any | Wider bands: 15% at 40–49, 15% at 80–89, the rest across 50–79 **(proposed)** | Normal | Like Silver |
+| **Prospect** | 17–20 | Basic's bands −10 | Rolled higher: the potential range starts 10 above overall | Like Silver |
+| **Veteran** | 30–33 | Silver's bands +3 | At or below overall | 70% of Silver |
+| **Wildcard** | Any | Wider bands: 15% at 40–49, 15% at 80–89, the rest across 50–79 | Normal | Like Silver |
 | **Reward** | Any | Gold, Silver or Basic | Normal | Free |
 
 **Shared rules:** all of them follow the Elo shift and can take a position
@@ -184,8 +183,6 @@ It appears on the season page and on every past season in History. Old
 
 ## Needs Gary
 
-OK the **(proposed)** points:
-1. Forfeit 3–0 below 7 available players.
-2. Packs move 1 overall per 40 Elo, capped at −10 and +15, with prices
-   moving 3% per overall point.
-3. The Prospect, Veteran and Wildcard numbers in §6.
+- Done: Gary OK'd the forfeit below 7 players, packs moving 1 overall per
+  40 Elo (−10 to +15) with prices 3% per point, and the Prospect, Veteran
+  and Wildcard numbers (Nov 5, 2026).
