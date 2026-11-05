@@ -1,8 +1,8 @@
 # ADR 0004: Account reset and admin soft reset (M13)
 
-Status: proposed (Nov 5, 2026). Covers D141 and D142. Both delete game data,
-so they are the only ways to remove it besides deleting an account (D131).
-Gary to OK.
+Status: accepted (Nov 5, 2026: Gary OK'd the confirmations and what a soft
+reset keeps and wipes). Covers D141 and D142. Both delete game data, so
+they are the only ways to remove it besides deleting an account (D131).
 
 ## Context
 
@@ -142,8 +142,5 @@ aren't migrations, and they only run when someone asks.
 
 ## Needs Gary
 
-1. OK the confirmations: the club name for an account reset, and
-   `RESET AI` / `RESET REAL` / `RESET ALL` for a soft reset.
-2. OK what a soft reset keeps (rosters, squads, unsorted packs) and what it
-   wipes (all seasons, history and player stats; Elo, funds, energy and
-   morale back to the start).
+- Done: Gary OK'd the confirmations and what a soft reset keeps and wipes
+  (Nov 5, 2026).
