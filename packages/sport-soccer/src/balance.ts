@@ -14,7 +14,15 @@ import {
   type ConditionSettings,
   DEFAULT_CONDITION_SETTINGS,
 } from "./condition";
-import { DEFAULT_FORM_SETTINGS, type FormSettings } from "./form";
+import {
+  DEFAULT_FORM_SETTINGS,
+  FORM_LINES,
+  FORM_STATS,
+  type FormLine,
+  type FormSettings,
+  type FormStat,
+  type FormWeightKey,
+} from "./form";
 import {
   colorCycleError,
   DEFAULT_MATCH_TUNING,
@@ -287,6 +295,35 @@ export const CONDITION_LIMITS: Record<keyof ConditionSettings, Limit> = {
   },
 };
 
+const STAT_NAME: Record<FormStat, string> = {
+  goals: "Goal",
+  assists: "Assist",
+  tackles: "Tackle",
+  saves: "Save",
+  cleanSheet: "Clean sheet",
+};
+const LINE_NAME: Record<FormLine, string> = {
+  GK: "keeper",
+  DEF: "defender",
+  MID: "midfielder",
+  ATT: "attacker",
+};
+
+/** What each stat adds to a match rating, per line (D178). */
+const FORM_WEIGHT_LIMITS = Object.fromEntries(
+  FORM_STATS.flatMap((stat) =>
+    FORM_LINES.map((line) => [
+      `${stat}${line}`,
+      {
+        label: `${STAT_NAME[stat]}, ${LINE_NAME[line]}`,
+        help: `What one ${STAT_NAME[stat].toLowerCase()} adds to a ${LINE_NAME[line]}'s match rating when form weights by position are on${stat === "tackles" ? " (up to 10 tackles count)" : stat === "saves" ? " (up to 6 saves count)" : ""}.`,
+        min: 0,
+        max: 3,
+      },
+    ]),
+  ),
+) as Record<FormWeightKey, Limit>;
+
 export const FORM_LIMITS: Record<keyof FormSettings, Limit> = {
   formEffect: {
     label: "Form effect",
@@ -324,6 +361,21 @@ export const FORM_LIMITS: Record<keyof FormSettings, Limit> = {
     min: 0,
     max: 1,
   },
+  positionWeights: {
+    label: "Form weights by position",
+    help: "1 = each stat counts with the weights below for the player's line (keeper, defence, midfield, attack), so every position builds form alike; 0 = one set of weights for everyone. D178.",
+    min: 0,
+    max: 1,
+    integer: true,
+  },
+  minutesScaling: {
+    label: "Form moves with minutes",
+    help: "1 = form moves in step with minutes played (a full 90 most, a cameo little), instead of halving cameos. D178.",
+    min: 0,
+    max: 1,
+    integer: true,
+  },
+  ...FORM_WEIGHT_LIMITS,
   contributionRating: {
     label: "Contributions count for form",
     help: "1 = assists, tackles, saves and clean sheets raise a player's match rating, so defenders and keepers build form too; 0 = goals, results and cards only. D161.",

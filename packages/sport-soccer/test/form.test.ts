@@ -3,11 +3,14 @@ import { describe, expect, it } from "vitest";
 import { generateAiTeam } from "../src/ai-team";
 import {
   DEFAULT_FORM_SETTINGS,
+  formLine,
   formModifier,
   matchRating,
   nextForm,
   nextMorale,
+  PROPOSED_FORM_WEIGHTS,
 } from "../src/form";
+import { runFormByLine } from "../src/harness";
 import {
   defaultSoccerConfig,
   type PlayerMatchReport,
@@ -170,5 +173,99 @@ describe("contributions in the match rating (D161)", () => {
     );
     expect(off).toBe(0);
     expect(onForm).toBeGreaterThan(0.3);
+  });
+});
+
+describe("form by position and minutes (D178)", () => {
+  const report = (
+    over: Partial<PlayerMatchReport> = {},
+  ): PlayerMatchReport => ({
+    side: "home",
+    minutes: 90,
+    energy: 50,
+    yellowCards: 0,
+    redCard: false,
+    injuryWeeks: 0,
+    goals: 0,
+    assists: 0,
+    tackles: 0,
+    saves: 0,
+    ...over,
+  });
+  const weights = { ...DEFAULT_FORM_SETTINGS, ...PROPOSED_FORM_WEIGHTS };
+
+  it("weights each stat by the player's line, with today's weights by default", () => {
+    const r = report({ tackles: 5, goals: 1 });
+    const ctx = { contributions: true, conceded: 1 } as const;
+    // The default weights give the same rating as before, on any line.
+    for (const position of ["GK", "CB", "CM", "ST"] as const)
+      expect(
+        matchRating(r, "draw", {
+          ...ctx,
+          position,
+          weights: DEFAULT_FORM_SETTINGS,
+        }),
+      ).toBeCloseTo(matchRating(r, "draw", { ...ctx, position }));
+    // Tuned: a midfielder's tackles count for more than a forward's.
+    expect(
+      matchRating(r, "draw", { ...ctx, position: "CM", weights }),
+    ).toBeGreaterThan(
+      matchRating(r, "draw", { ...ctx, position: "ST", weights }),
+    );
+    expect(formLine("LB")).toBe("DEF");
+    expect(formLine("AM")).toBe("MID");
+  });
+
+  it("counts a midfielder's clean sheet when tuned, and caps tackles and saves", () => {
+    const clean = { contributions: true, conceded: 0, weights } as const;
+    expect(
+      matchRating(report(), "draw", { ...clean, position: "DM" }),
+    ).toBeCloseTo(6 + PROPOSED_FORM_WEIGHTS.cleanSheetMID);
+    expect(
+      matchRating(report({ tackles: 30 }), "draw", {
+        contributions: true,
+        conceded: 2,
+        position: "CB",
+        weights,
+      }),
+    ).toBeCloseTo(6 + 10 * PROPOSED_FORM_WEIGHTS.tacklesDEF);
+  });
+
+  it("moves form in step with minutes when minutes scaling is on", () => {
+    const s = { ...DEFAULT_FORM_SETTINGS, minutesScaling: 1 };
+    const good = report({ goals: 2 });
+    const full = nextForm(0, good, "win", s, { position: "ST" });
+    const half = nextForm(0, { ...good, minutes: 45 }, "win", s, {
+      position: "ST",
+    });
+    expect(full).toBeGreaterThan(0);
+    expect(half).toBeCloseTo(full / 2, 2);
+    // A bad cameo pulls form down a little, not by half a full match.
+    const poor = nextForm(
+      0.5,
+      report({ minutes: 9, yellowCards: 1 }),
+      "loss",
+      s,
+    );
+    expect(poor).toBeLessThan(0.5);
+    expect(poor).toBeGreaterThan(0.4);
+    // Off: the old cameo halving and blend.
+    expect(nextForm(0, good, "win")).toBe(
+      nextForm(0, good, "win", DEFAULT_FORM_SETTINGS),
+    );
+  });
+
+  it("the tuned weights level every line's average rating (harness)", () => {
+    const r = runFormByLine({
+      matches: 400,
+      seed: "form-test",
+      form: { ...weights, positionWeights: 1 },
+    });
+    const values = Object.values(r);
+    expect(Math.max(...values) - Math.min(...values)).toBeLessThan(0.2);
+    const before = Object.values(
+      runFormByLine({ matches: 400, seed: "form-test" }),
+    );
+    expect(Math.max(...before) - Math.min(...before)).toBeGreaterThan(0.3);
   });
 });
