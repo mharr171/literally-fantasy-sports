@@ -187,6 +187,8 @@ export async function playOneWeek(
         // Career totals for the retirement record (D120, D143). Only the
         // club's own match counts, never its copies in other leagues.
         appeared: (outcome.managerReports[p.id]?.minutes ?? 0) > 0,
+        // Playing time this season, for growth at season end (D154).
+        minutes: Math.round(outcome.managerReports[p.id]?.minutes ?? 0),
         ...matchStats(outcome.managerReports[p.id], outcome.managerResult),
       };
     }),

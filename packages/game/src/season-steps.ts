@@ -7,6 +7,7 @@ import { playerWorth } from "@lfs/core";
 import {
   endOfSeason,
   FRESH,
+  MANAGER_SLOT,
   nearestLeague,
   type PlayerCondition,
   seasonReset,
@@ -18,6 +19,7 @@ import { createServiceClient } from "./db";
 import { readyToPlay } from "./play-week";
 import { playerRow } from "./scouting";
 import {
+  configFor,
   liveGenerationSettings,
   liveSoccerConfig,
   loadLatestSeason,
@@ -107,7 +109,17 @@ export async function endSeasonFor(team: MyTeam): Promise<void> {
     stats: seasonStats(season.slots, season.fixtures),
     game_version: process.env.GAME_VERSION ?? "unknown",
   };
-  const result = endOfSeason(season.seed, players);
+  // Young players grow with their minutes, if the season's settings say so (D154).
+  const { balance } = await configFor(season.configVersion);
+  const ownMatches = season.fixtures.filter(
+    (f) =>
+      f.homeScore !== null &&
+      (f.homeSlot === MANAGER_SLOT || f.awaySlot === MANAGER_SLOT),
+  ).length;
+  const result = endOfSeason(season.seed, players, undefined, undefined, {
+    weight: balance.condition.playingTimeGrowth,
+    clubMinutes: ownMatches * 90,
+  });
   const byId = new Map(players.map((p) => [p.id, p]));
   const updates = result.aged.map((a) => {
     const p = byId.get(a.id) as (typeof players)[number];

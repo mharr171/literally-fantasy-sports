@@ -101,6 +101,7 @@ describe.runIf(sql)("data kept (D120)", () => {
               appeared: true,
               goals: 2,
               games: 1,
+              minutes: 90,
               wins: 1,
               assists: 1,
               tackles: 3,
@@ -127,7 +128,7 @@ describe.runIf(sql)("data kept (D120)", () => {
       const season = await startSeason(tx, "s1");
       await playWeek(tx, season, "finished");
       const counts =
-        await tx`select display_name, appearances, goals, stat_games, stat_goals,
+        await tx`select display_name, appearances, goals, stat_games, stat_goals, season_minutes,
           wins, draws, losses,
           assists, tackles, saves from players
         where team_id = ${team} order by display_name`;
@@ -145,7 +146,7 @@ describe.runIf(sql)("data kept (D120)", () => {
           assists, tackles, saves, best_overall, clubs, retired_season
         from player_careers where team_id = ${team}`;
       const [kept] = await tx`
-        select seasons, best_overall, overall from players where id = ${young}`;
+        select seasons, best_overall, overall, season_minutes from players where id = ${young}`;
       return { counts, record, careers, kept };
     });
     expect(result.counts).toEqual([
@@ -155,6 +156,7 @@ describe.runIf(sql)("data kept (D120)", () => {
         goals: 2,
         stat_games: 1,
         stat_goals: 2,
+        season_minutes: 90,
         wins: 1,
         draws: 0,
         losses: 0,
@@ -168,6 +170,7 @@ describe.runIf(sql)("data kept (D120)", () => {
         goals: 0,
         stat_games: 1,
         stat_goals: 0,
+        season_minutes: 0,
         wins: 1,
         draws: 0,
         losses: 0,
@@ -215,7 +218,13 @@ describe.runIf(sql)("data kept (D120)", () => {
       },
     ]);
     // Best overall is taken before the season's change, then follows it up.
-    expect(result.kept).toEqual({ seasons: 1, best_overall: 55, overall: 58 });
+    // Playing time starts again from zero for the next season (D154).
+    expect(result.kept).toEqual({
+      seasons: 1,
+      best_overall: 55,
+      overall: 58,
+      season_minutes: 0,
+    });
   });
 
   it("trims old seasons, other clubs' match details and sorted packs", async () => {

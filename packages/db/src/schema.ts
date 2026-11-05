@@ -277,6 +277,8 @@ export const players = pgTable(
     /** More career totals (D143), counted from the club's own matches. */
     /** Games and goals counted from when player stats started (D147), so
      * they agree with the wins, draws and losses on the card. */
+    /** Minutes in the club's own matches this season, reset at season end (D154). */
+    seasonMinutes: integer().notNull().default(0),
     statGames: integer().notNull().default(0),
     statGoals: integer().notNull().default(0),
     wins: integer().notNull().default(0),
