@@ -60,12 +60,13 @@ async function AccountMenu() {
           Admin
         </Link>
       )}
-      <span
-        className="truncate text-zinc-600 dark:text-zinc-400"
-        title={user.email ?? undefined}
+      <Link
+        href="/account"
+        className="truncate text-zinc-600 hover:underline dark:text-zinc-400"
+        title={`${user.email ?? ""} · account settings`}
       >
         {user.displayName}
-      </span>
+      </Link>
       <form action={signOut}>
         <button
           type="submit"

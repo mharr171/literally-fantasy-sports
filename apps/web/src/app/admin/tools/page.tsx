@@ -1,13 +1,13 @@
 import { currentEnergy } from "@lfs/core";
 import { isAvailable } from "@lfs/sport-soccer";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Suspense } from "react";
 import { requireAdmin } from "@/lib/auth";
 import { loadLatestSeason } from "@/lib/season";
 import { loadEnergySettings } from "@/lib/sport-settings";
 import { createServiceClient } from "@/lib/supabase/service";
 import { listTeams, loadMyTeam, loadRoster, loadTeamById } from "@/lib/team";
+import { TeamPicker } from "../team-picker";
 import { Tools } from "./tools";
 
 export const metadata: Metadata = { title: "Testing tools" };
@@ -44,24 +44,32 @@ async function Content({
 
   return (
     <div className="flex flex-col gap-4">
-      <nav
-        aria-label="Teams"
-        className="flex flex-wrap items-center gap-2 text-sm"
-      >
-        <span className="text-zinc-500">Team:</span>
-        {teams.length === 0 && <span>No teams yet.</span>}
-        {teams.map((t) => (
-          <Link
-            key={t.id}
-            href={`/admin/tools?team=${t.id}`}
-            className={`rounded px-2 py-0.5 ${t.id === team?.id ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" : "border border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"}`}
-          >
-            {t.name}
-            {t.kind === "ai" ? " (AI)" : ""}
-            {t.id === mine?.id ? " (you)" : ""}
-          </Link>
-        ))}
-      </nav>
+      {teams.length === 0 ? (
+        <p className="text-sm text-zinc-500">No teams yet.</p>
+      ) : (
+        <TeamPicker
+          value={team?.id ?? null}
+          teams={teams.map((t) => ({
+            value: t.id,
+            label: t.name,
+            hint:
+              t.id === mine?.id
+                ? "(you)"
+                : t.kind === "ai"
+                  ? "(AI)"
+                  : undefined,
+            group: t.kind === "ai" ? "ai" : "real",
+          }))}
+          hrefPrefix="/admin/tools?team="
+        />
+      )}
+      {team && (
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          Showing <strong>{team.name}</strong>
+          {team.kind === "ai" ? " (AI)" : ""}
+          {team.id === mine?.id ? " (you)" : ""}
+        </p>
+      )}
       {team && <TeamStatus teamId={team.id} />}
       {team && <Tools key={team.id} teamId={team.id} teamName={team.name} />}
       <Log />

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { listAiClubs, listAiRuns, loadAiSettings } from "@/lib/ai-clubs";
 import { requireAdmin } from "@/lib/auth";
+import { TeamPicker } from "../team-picker";
 import { AiControls } from "./ai-controls";
 
 export const metadata: Metadata = { title: "AI clubs" };
@@ -47,6 +48,17 @@ async function Content() {
   return (
     <div className="flex flex-col gap-6">
       <AiControls settings={settings} clubs={clubs.length} />
+      {clubs.length > 0 && (
+        <TeamPicker
+          label="Find an AI club (opens its testing tools)"
+          teams={clubs.map((c) => ({
+            value: c.id,
+            label: c.name,
+            hint: `(${c.profile.personality}, ${c.profile.pace}, Elo ${c.elo})`,
+          }))}
+          hrefPrefix="/admin/tools?team="
+        />
+      )}
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
         {clubs.length} of {settings.poolSize} clubs · builders{" "}
         {count("personality", "builder")}, spenders{" "}
