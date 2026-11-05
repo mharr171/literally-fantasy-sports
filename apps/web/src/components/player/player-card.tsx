@@ -9,14 +9,8 @@ import {
   variantAt,
   winPercent,
 } from "@lfs/sport-soccer";
-import {
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-} from "react";
+import type { ReactNode } from "react";
+import { Popover } from "@/components/popover";
 import { chemistryColor } from "@/lib/chemistry-colors";
 import { Heatmap } from "./heatmap";
 import { useTemplate } from "./templates-context";
@@ -236,86 +230,13 @@ export function PlayerCard({
   children?: ReactNode;
   className?: string;
 }) {
-  const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
-  const trigger = useRef<HTMLButtonElement>(null);
-  const card = useRef<HTMLDivElement>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const id = useId();
-
-  const place = useCallback(() => {
-    const r = trigger.current?.getBoundingClientRect();
-    if (!r) return;
-    const width = 304;
-    const left = Math.max(8, Math.min(r.left, window.innerWidth - width - 8));
-    const below = r.bottom + 6;
-    const top =
-      below + 320 > window.innerHeight ? Math.max(8, r.top - 326) : below;
-    setPos({ top, left });
-  }, []);
-
-  const show = useCallback(() => {
-    if (timer.current) clearTimeout(timer.current);
-    place();
-    setOpen(true);
-  }, [place]);
-  const hideSoon = () => {
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => setOpen(false), 200);
-  };
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
-    const onDown = (e: PointerEvent) => {
-      const t = e.target as Node;
-      if (!card.current?.contains(t) && !trigger.current?.contains(t))
-        setOpen(false);
-    };
-    const onScroll = () => setOpen(false);
-    window.addEventListener("keydown", onKey);
-    window.addEventListener("pointerdown", onDown);
-    window.addEventListener("scroll", onScroll, true);
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      window.removeEventListener("pointerdown", onDown);
-      window.removeEventListener("scroll", onScroll, true);
-    };
-  }, [open]);
-
   return (
-    <>
-      <button
-        ref={trigger}
-        type="button"
-        aria-expanded={open}
-        aria-controls={id}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          if (open) setOpen(false);
-          else show();
-        }}
-        onPointerEnter={(e) => e.pointerType === "mouse" && show()}
-        onPointerLeave={(e) => e.pointerType === "mouse" && hideSoon()}
-        className={`cursor-help text-left underline decoration-dotted decoration-zinc-400 underline-offset-2 hover:decoration-zinc-700 ${className}`}
-      >
-        {children ?? player.displayName}
-      </button>
-      {open && pos && (
-        <div
-          ref={card}
-          id={id}
-          role="dialog"
-          aria-label={`${player.displayName}'s card`}
-          onPointerEnter={(e) => e.pointerType === "mouse" && show()}
-          onPointerLeave={(e) => e.pointerType === "mouse" && hideSoon()}
-          style={{ top: pos.top, left: pos.left }}
-          className="fixed z-50 rounded-lg border border-zinc-200 bg-white p-3 text-zinc-900 shadow-xl dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
-        >
-          <PlayerCardBody player={player} />
-        </div>
-      )}
-    </>
+    <Popover
+      label={`${player.displayName}'s card`}
+      trigger={children ?? player.displayName}
+      triggerClassName={`cursor-help text-left underline decoration-dotted decoration-zinc-400 underline-offset-2 hover:decoration-zinc-700 ${className}`}
+    >
+      <PlayerCardBody player={player} />
+    </Popover>
   );
 }
