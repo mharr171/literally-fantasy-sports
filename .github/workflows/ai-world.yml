@@ -1,8 +1,12 @@
 name: AI world
 
-# Every 2 hours, every AI club gets a turn against lfs-prod (D114, ADR 0002):
-# new clubs up to the pool size, then each club plays its pace's share of
-# weeks, within the same energy rules as managers. Switched on and off in
+# Every 2 hours, every AI club gets a turn against lfs-prod (D114, ADR 0002).
+# Supabase's scheduler starts it (workflow_dispatch, D177,
+# docs/ai-world-scheduler.sql); GitHub's schedule below is a fallback, since
+# it often runs late or not at all. Each run plays the time since the last
+# finished run, so extra or missed runs don't change the AI clubs' pace.
+# Each run adds new clubs up to the pool size, then each club plays its
+# pace's share of weeks, within the same energy rules as managers. Switched on and off in
 # Admin → AI clubs; while it's off, runs do nothing. Each run is logged in
 # ai_runs and shown on that page.
 #

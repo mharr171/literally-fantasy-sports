@@ -9,11 +9,13 @@ import {
   chooseReleases,
   chooseYouth,
   LINE_NEEDS,
+  MAX_RUNS_OWED,
   PACE_SEASONS_PER_DAY,
   pickStarterKeeps,
   playerValue,
   ROSTER_TARGET,
   rollAiIdentity,
+  runsOwed,
   weeksThisRun,
 } from "../src/ai-manager";
 import { FRESH } from "../src/condition";
@@ -334,5 +336,29 @@ describe("an AI club's seasons, decision by decision", () => {
       expect(roster.length).toBeLessThanOrEqual(ROSTER_MAX);
       funds += 30_000 + Math.floor(rng.next() * 5_000);
     }
+  });
+});
+
+describe("catching up missed runs (D177)", () => {
+  const now = new Date("2026-11-05T12:00:00Z");
+  it("owes the time since the last run over the time between runs, capped", () => {
+    expect(runsOwed(null, now, 12)).toBe(1);
+    expect(runsOwed("2026-11-05T10:00:00Z", now, 12)).toBeCloseTo(1);
+    expect(runsOwed("2026-11-05T11:30:00Z", now, 12)).toBeCloseTo(0.25);
+    expect(runsOwed("2026-11-05T04:00:00Z", now, 12)).toBeCloseTo(4);
+    expect(runsOwed("2026-11-04T00:00:00Z", now, 12)).toBe(MAX_RUNS_OWED);
+    expect(runsOwed("2026-11-05T13:00:00Z", now, 12)).toBe(0);
+  });
+
+  it("plays that many runs' worth of weeks on average", () => {
+    const rng = createRng("catch-up");
+    let total = 0;
+    for (let i = 0; i < 1_200; i++)
+      total += weeksThisRun(rng, "normal", 12, 26, undefined, 3);
+    expect(total / 1_200).toBeCloseTo(
+      ((PACE_SEASONS_PER_DAY.normal * 26) / 12) * 3,
+      0,
+    );
+    expect(weeksThisRun(createRng("x"), "fast", 12, 26, undefined, 0)).toBe(0);
   });
 });

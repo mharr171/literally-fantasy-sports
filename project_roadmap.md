@@ -1,6 +1,6 @@
 # LiterallyFantasySports — Project Roadmap
 
-Nov 2, 2026 · @Gary · Last updated: Nov 5, 2026 (D176)
+Nov 2, 2026 · @Gary · Last updated: Nov 5, 2026 (D177)
 
 ## Review progress
 
@@ -197,6 +197,7 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D174 | Nov 5, 2026 | How D149 ships: the color cycle is a match tuning value (`colorCycle`, the five color indexes in ring order) in each settings version, edited in Admin → Soccer balance → Color matchups by moving colors up or down round a live ring. Any order of five is balanced (each beats the next two), so the only check is that each color appears once. A version without it plays the built-in rainbow cycle, so seasons under way and replays are unchanged. The game guide shows the live cycle, and the season schedule the cycle its season plays by | M13 |
 | D175 | Nov 5, 2026 | M14 plan (ADR 0005, Gary OK'd): a History tab on My team lists every season and opens each one (final table, bracket, results, top scorers, retirements); the club's hall of fame shows its all-time greats and honours; a public `/hall-of-fame` ranks clubs and players across the game by club name only (no manager names); each retiring player gets a tribute card. Season pages are for your own club only. Built on existing records; only indexes are added | M14 |
 | D176 | Nov 5, 2026 | Versions (Gary): release-please had not cut `v1.5.0` before M13 and M14 merged, so M12, M13 and M14 all shipped together in `v1.5.0`, as M10 and M11 did in `v1.4.0` (D164). This replaces D164's plan of `v1.6.0` and `v1.7.0`. The next milestone takes the next minor version | M14 |
+| D177 | Nov 5, 2026 | AI world runs reliably (Gary): GitHub's schedule ran 1 of about 9 due runs on its first day, so Supabase's scheduler (`pg_cron` and `pg_net` on `lfs-prod`) starts the AI world workflow every 2 hours with a token that can only start workflows (`docs/ai-world-scheduler.sql`); GitHub's schedule stays as a fallback. Each run plays the time since the last finished run (runs owed = hours since it / hours between runs, at most 6), so late, missed or extra runs keep each club at its pace; energy still caps how many weeks a club can play at once | M9 |
 
 ## 1. Vision & goals
 

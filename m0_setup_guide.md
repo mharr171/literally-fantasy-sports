@@ -182,7 +182,13 @@ update public.profiles set is_admin = true where id = (select id from auth.users
   - `PROD_SUPABASE_URL`: in Supabase, **`lfs-prod` → Project Settings → API → Project URL** (it looks like `https://xxxx.supabase.co`).
   - `PROD_SUPABASE_SECRET_KEY`: in the same place, the **secret** key (`sb_secret_…`), the same value Vercel has as `SUPABASE_SECRET_KEY`. Paste it straight into GitHub, never into a chat.
   - Then **Actions → AI world → Run workflow** once: it should say the AI world is switched off. Switch it on in **Admin → AI clubs** when you're ready.
-- [ ] **Every year:** renew the domain at Squarespace, the backup access token (`BACKUP_REPO_TOKEN`) and the release token (`RELEASE_PLEASE_TOKEN`).
+- [ ] **AI world scheduler** (D177): GitHub's own schedule often skips runs, so Supabase starts the AI world every 2 hours instead. Do this in **`lfs-prod` only**:
+  1. **A GitHub token that can only start workflows.** GitHub → your avatar → **Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token**. Name it `lfs-ai-world-scheduler`, expiry 1 year, **Repository access → Only select repositories → `literally-fantasy-sports`**, and under **Repository permissions** set **Actions** to **Read and write** (nothing else). Generate it and keep the page open.
+  2. **Switch on two extensions.** Supabase → `lfs-prod` → **Database → Extensions**: search for and enable **`pg_cron`** and **`pg_net`** (accept the default schema).
+  3. **Save the token in Vault.** Supabase → `lfs-prod` → **Project Settings → Vault → Secrets → Add new secret** (or **Integrations → Vault**): name **`github_ai_world_token`**, value: the token from step 1. If you can't find Vault there, use **SQL Editor → New query** instead and run `select vault.create_secret('PASTE-THE-TOKEN-HERE', 'github_ai_world_token');` with the token in place of `PASTE-THE-TOKEN-HERE`. Never paste it into a chat.
+  4. **Schedule it.** Supabase → `lfs-prod` → **SQL Editor → New query**: paste the whole of [`docs/ai-world-scheduler.sql`](docs/ai-world-scheduler.sql) and **Run**. It should return one row with a job number.
+  5. **Check it.** After the next :23 past an even hour (UTC), GitHub → **Actions → AI world** shows a new run started by **workflow_dispatch**. If not, run the two check queries at the bottom of that file and send me what they say (no token appears in them).
+- [ ] **Every year:** renew the domain at Squarespace, the backup access token (`BACKUP_REPO_TOKEN`) the release token (`RELEASE_PLEASE_TOKEN`) and the AI world scheduler token (`github_ai_world_token` in Vault).
 
 ## Accounts summary
 
