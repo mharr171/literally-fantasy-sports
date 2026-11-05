@@ -127,8 +127,7 @@ describe.runIf(sql)("data kept (D120)", () => {
         ${tx.json({ players: [], squad: {}, stats: STATS, game_version: "1.2.0" })})`;
       const [record] = await tx`
         select season_number, team_name, colors, elo_before, elo_after, position,
-          played, won, drawn, lost, scored, conceded, points, playoffs,
-          snapshot_id is not null as has_snapshot
+          played, won, drawn, lost, scored, conceded, points, playoffs
         from season_records where season_id = ${season}`;
       const careers = await tx`
         select display_name, nationality, primary_position, retired_age, seasons,
@@ -157,7 +156,6 @@ describe.runIf(sql)("data kept (D120)", () => {
       conceded: 14,
       points: 27,
       playoffs: "final",
-      has_snapshot: true,
     });
     expect(result.careers).toEqual([
       {
@@ -191,7 +189,13 @@ describe.runIf(sql)("data kept (D120)", () => {
                (${team}, 'soccer', 'bought', 'any', 'basic', 'b', now(), now()),
                (${team}, 'soccer', 'bought', 'any', 'basic', 'c', null, null),
                (${team}, 'soccer', 'starter', 'any', 'starter', 'd', now() - interval '3 days', now() - interval '2 days')`;
+      // League copies of older seasons go too (D115, D120).
+      await tx`update season_teams set clone = '{"players":[]}'
+        where slot = 1 and season_id in ${tx(seasons)}`;
       const [pruned] = await tx`select public.prune_old_data() as r`;
+      const clones = await tx`select s.number from season_teams st
+        join seasons s on s.id = st.season_id
+        where st.clone is not null and s.id in ${tx(seasons)} order by s.number`;
       const fixtures = await tx`
         select s.number, f.home_slot, f.summary is not null as has_summary,
           f.summary ? 'possession' as full_summary, f.manager_team is not null as has_replay
@@ -200,14 +204,16 @@ describe.runIf(sql)("data kept (D120)", () => {
       const packs =
         await tx`select seed from packs where team_id = ${team} order by seed`;
       const [again] = await tx`select public.prune_old_data() as r`;
-      return { pruned: pruned?.r, fixtures, packs, again: again?.r };
+      return { pruned: pruned?.r, fixtures, packs, again: again?.r, clones };
     });
     expect(result.pruned).toEqual({
       fixtures_deleted: 1,
       replays_cleared: 1,
       summaries_trimmed: 2,
       packs_deleted: 1,
+      clones_cleared: 1,
     });
+    expect(result.clones).toEqual([{ number: 2 }, { number: 3 }]);
     expect(result.fixtures).toEqual([
       // Season 1 is older than the previous one: own match only, no replay.
       {
@@ -252,6 +258,7 @@ describe.runIf(sql)("data kept (D120)", () => {
       replays_cleared: 0,
       summaries_trimmed: 0,
       packs_deleted: 0,
+      clones_cleared: 0,
     });
   });
 

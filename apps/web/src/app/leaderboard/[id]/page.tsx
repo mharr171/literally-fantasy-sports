@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { ClubViewPanel } from "@/components/club-view";
-import { loadSnapshotClub } from "@/lib/club-view";
+import { loadGhostClub } from "@/lib/club-view";
 import { getSupabaseEnv } from "@/lib/supabase/env";
 
 export const metadata: Metadata = { title: "Leaderboard entry" };
@@ -33,7 +33,7 @@ async function Entry({
   await connection();
   const { id } = await params;
   if (!UUID.test(id) || !getSupabaseEnv()) notFound();
-  const club = await loadSnapshotClub(id);
+  const club = await loadGhostClub(id);
   if (!club) notFound();
   return <ClubViewPanel club={club} />;
 }

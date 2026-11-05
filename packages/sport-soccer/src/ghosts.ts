@@ -1,8 +1,9 @@
 /**
- * Ghost teams (D8, D33, D59) and season stats for the leaderboard (D19).
- * When a season ends, the manager's team is frozen into a snapshot: its
- * players (as the match engine needs them), its matchday squad and its Elo.
- * Snapshots then appear as opponents in other managers' leagues.
+ * Ghost teams (D8, D59, D116) and season stats for the leaderboard (D19).
+ * When a season ends, the club is frozen as it finished: its players (as
+ * the match engine needs them), its matchday squad and its Elo. Each real
+ * club keeps one ghost, from its best season by Elo, which plays in other
+ * clubs' leagues (never its own, D115).
  */
 import type { Rng } from "@lfs/core";
 import type { Attributes } from "./attributes";
@@ -143,7 +144,7 @@ export function seasonStats(
 /** A ghost that could join a league. */
 export interface GhostCandidate {
   id: string;
-  /** The team the ghost came from: at most one ghost per team in a league (D33). */
+  /** The club the ghost came from (each club has one ghost, D116). */
   teamId: string;
   name: string;
   elo: number;

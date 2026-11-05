@@ -122,7 +122,7 @@ export async function playOneWeek(
     {
       team: managerTeam,
       names: managerNames,
-      ghosts: await loadGhostTeams(season.slots),
+      ghosts: await loadGhostTeams(season.id),
     },
     config,
     balance.payouts,

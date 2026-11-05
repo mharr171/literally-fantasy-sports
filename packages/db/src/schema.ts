@@ -411,41 +411,6 @@ export const seasons = pgTable(
 ).enableRLS();
 
 /**
- * A team frozen at the end of a season (D19, D59): plays as a ghost in other
- * managers' leagues and is the season's leaderboard entry. Rosters stay
- * server-side; the leaderboard is rendered on the server from the public
- * fields.
- */
-export const teamSnapshots = pgTable(
-  "team_snapshots",
-  {
-    id: uuid().primaryKey().defaultRandom(),
-    teamId: uuid()
-      .notNull()
-      .references(() => teams.id, { onDelete: "cascade" }),
-    seasonId: uuid()
-      .notNull()
-      .references(() => seasons.id, { onDelete: "cascade" }),
-    sport: text().notNull(),
-    teamName: text().notNull(),
-    seasonNumber: integer().notNull(),
-    elo: integer().notNull(),
-    /** Players as the match engine needs them (no hidden potential). */
-    players: jsonb().notNull(),
-    squad: jsonb().notNull(),
-    /** League record and playoff result. */
-    stats: jsonb().notNull(),
-    gameVersion: text().notNull(),
-    completedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-  },
-  (t) => [
-    uniqueIndex("team_snapshots_season").on(t.seasonId),
-    index("team_snapshots_sport_elo").on(t.sport, t.elo),
-    check("team_snapshots_sport", sql`${t.sport} ${SPORT_CHECK}`),
-  ],
-).enableRLS();
-
-/**
  * One line per club per season, kept forever (D120): the season's leaderboard
  * entry and the club's history. Written when the season is closed. Only the
  * server reads it; pages show the public fields.
@@ -475,10 +440,6 @@ export const seasonRecords = pgTable(
     points: integer().notNull(),
     /** How far the club got in the playoffs. */
     playoffs: text().notNull(),
-    /** The roster as it finished, while that snapshot is kept (until ghosts, D116). */
-    snapshotId: uuid().references(() => teamSnapshots.id, {
-      onDelete: "set null",
-    }),
     completedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -523,6 +484,36 @@ export const playerCareers = pgTable(
   ],
 ).enableRLS();
 
+/**
+ * Each real club's ghost (D116): the club frozen as it finished its best
+ * season by Elo, before ageing. Replaced at season end only when the club
+ * finishes with a higher Elo. Leagues copy it when they start (D115), so a
+ * newer best season never changes a league already under way. Rosters stay
+ * server-side.
+ */
+export const ghosts = pgTable(
+  "ghosts",
+  {
+    teamId: uuid()
+      .primaryKey()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    seasonId: uuid().references(() => seasons.id, { onDelete: "set null" }),
+    sport: text().notNull(),
+    teamName: text().notNull(),
+    seasonNumber: integer().notNull(),
+    elo: integer().notNull(),
+    /** Players as the match engine needs them (no hidden potential). */
+    players: jsonb().notNull(),
+    squad: jsonb().notNull(),
+    gameVersion: text().notNull(),
+    frozenAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("ghosts_sport_elo").on(t.sport, t.elo),
+    check("ghosts_sport", sql`${t.sport} ${SPORT_CHECK}`),
+  ],
+).enableRLS();
+
 /** The teams in a season's league, by slot (0 = the manager's team). */
 export const seasonTeams = pgTable(
   "season_teams",
@@ -535,10 +526,14 @@ export const seasonTeams = pgTable(
     name: text().notNull(),
     startRating: integer().notNull(),
     elo: integer().notNull(),
-    /** For a ghost: the snapshot it plays as. If the snapshot goes, it plays as an AI club. */
-    snapshotId: uuid().references(() => teamSnapshots.id, {
-      onDelete: "set null",
-    }),
+    /** The club this place copies (a ghost's club, D115). */
+    sourceTeamId: uuid().references(() => teams.id, { onDelete: "set null" }),
+    /**
+     * The copy it plays as, frozen for the season (D115): players (no hidden
+     * potential) and matchday squad. Cleared once the season's replays go
+     * (D120); without it the place plays as an AI club.
+     */
+    clone: jsonb(),
   },
   (t) => [
     primaryKey({ columns: [t.seasonId, t.slot] }),

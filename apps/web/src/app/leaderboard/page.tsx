@@ -83,9 +83,9 @@ async function Board() {
               >
                 <td className="px-3 py-1.5">{i + 1}</td>
                 <td className="px-3 py-1.5">
-                  {e.snapshotId ? (
+                  {e.ghostTeamId ? (
                     <Link
-                      href={`/leaderboard/${e.snapshotId}`}
+                      href={`/leaderboard/${e.ghostTeamId}`}
                       className="inline-flex items-center gap-1.5 hover:underline"
                       title="See this season's roster"
                     >

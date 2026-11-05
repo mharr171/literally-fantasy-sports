@@ -90,7 +90,7 @@ export interface LeagueSlot {
   kind: "manager" | "ai" | "ghost";
   /** Rating at season start; AI squads are built from it. */
   startRating: number;
-  /** For a ghost: the snapshot it plays as (D8, D33). */
+  /** For a ghost: the club it copies (D115, D116). */
   ghostId?: string | null;
 }
 
@@ -105,7 +105,7 @@ export interface NewFixture {
  * A new league around the manager (D8, D32, D33): up to a few ghosts of
  * finished seasons near the manager's Elo, AI clubs for the other places,
  * and the schedule. Each ghost takes the AI place closest to its rating.
- * The manager's own ghost may appear, under a made-up name.
+ * A club never meets its own ghost (D115).
  */
 export function newLeague(
   seed: string,
@@ -118,10 +118,13 @@ export function newLeague(
   const ratings = aiOpponentRatings(manager.elo, size - 1);
   // Ghost places: each picked ghost replaces the free AI place nearest its Elo.
   const ghostAt = new Map<number, GhostCandidate>();
+  const others = ghosts.filter(
+    (g) => manager.teamId === undefined || g.teamId !== manager.teamId,
+  );
   for (const g of pickGhosts(
     createRng(seed).fork("ghosts"),
     manager.elo,
-    ghosts,
+    others,
     ghostSettings,
   )) {
     let best = -1;
@@ -150,12 +153,9 @@ export function newLeague(
       startRating: manager.elo,
     },
   ];
-  // Ghosts keep their club's name (their own manager's is disguised).
+  // Ghosts keep their club's name, unless another club already has it.
   for (const [slot, g] of [...ghostAt].sort((a, b) => a[0] - b[0])) {
-    let name =
-      g.teamId === manager.teamId
-        ? aiTeamName(createRng(seed).fork(`disguise-${slot}`))
-        : g.name;
+    let name = g.name;
     for (let k = 0; clash(name); k++)
       name = aiTeamName(createRng(seed).fork(`ghost-name-${slot}-${k}`));
     used.add(name.toLowerCase());
@@ -171,7 +171,7 @@ export function newLeague(
         name: ghost.name,
         kind: "ghost",
         startRating: ghost.elo,
-        ghostId: ghost.id,
+        ghostId: ghost.teamId,
       });
       return;
     }
@@ -270,7 +270,7 @@ export interface ManagerSide {
   team: SoccerTeam;
   /** Player names by id, for match summaries. */
   names: ReadonlyMap<string, string>;
-  /** Ghost opponents by slot. A ghost whose snapshot is gone plays as an AI club. */
+  /** Ghost opponents by slot, from the league's copies. A ghost without one plays as an AI club. */
   ghosts?: ReadonlyMap<
     number,
     { team: SoccerTeam; names: ReadonlyMap<string, string> }
@@ -490,8 +490,8 @@ export function matchSeed(seasonSeed: string, fixtureId: string): string {
 
 /**
  * The team in a league slot as the engine plays it, with names for match
- * reports: the manager's own, a ghost from its snapshot, or an AI club
- * rebuilt from the season seed (also a ghost whose snapshot is gone).
+ * reports: the manager's own, a ghost from the league's copy, or an AI club
+ * rebuilt from the season seed (also a ghost whose copy is gone).
  */
 function slotTeam(
   seed: string,

@@ -84,7 +84,7 @@ async function MatchContent({
       {
         team: match.managerTeam?.team,
         names: new Map(Object.entries(match.managerTeam?.names ?? {})),
-        ghosts: await loadGhostTeams(slots),
+        ghosts: await loadGhostTeams(match.seasonId),
       },
       config,
     );

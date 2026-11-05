@@ -39,6 +39,7 @@ export async function startSeasonFor(teamIn: MyTeam): Promise<void> {
   const ghosts = await loadGhostCandidates(
     team.elo,
     DEFAULT_GHOST_SETTINGS.eloWindow,
+    team.id,
   );
   const league = newLeague(
     seed,
@@ -54,7 +55,8 @@ export async function startSeasonFor(teamIn: MyTeam): Promise<void> {
       kind: s.kind,
       name: s.name,
       start_rating: s.startRating,
-      snapshot_id: s.ghostId ?? null,
+      // Ghosts are copied from the club's ghost by start_season (D115).
+      source_team_id: s.ghostId ?? null,
     })),
     p_fixtures: league.fixtures.map((f) => ({
       week: f.week,
@@ -89,7 +91,7 @@ export async function endSeasonFor(team: MyTeam): Promise<void> {
     loadRoster(team.id),
     loadSquad(team.id),
   ]);
-  // Freeze the team as it finished the season: its ghost and leaderboard entry (D59).
+  // The team as it finished the season: its ghost, if it's its best (D116).
   const ghost = snapshotTeam(
     roster.map((p) => ({
       id: p.id,

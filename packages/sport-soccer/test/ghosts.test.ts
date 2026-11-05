@@ -111,20 +111,31 @@ describe("leagues with ghosts", () => {
     8,
   );
 
-  it("puts ghosts in the AI places nearest their Elo, disguising the manager's own", () => {
+  it("puts ghosts in the AI places nearest their Elo, never the club's own (D115)", () => {
     const ghostSlots = league.slots.filter((s) => s.kind === "ghost");
-    expect(ghostSlots).toHaveLength(2);
-    const lions = ghostSlots.find((s) => s.ghostId === "g1");
-    expect(lions).toMatchObject({
+    expect(ghostSlots).toHaveLength(1);
+    expect(ghostSlots[0]).toMatchObject({
       slot: 6,
       name: "Northside Lions",
       startRating: 1700,
+      ghostId: "T1",
     });
-    const mine = ghostSlots.find((s) => s.ghostId === "g2");
-    expect(mine?.slot).toBe(4);
-    expect(mine?.name).not.toBe("My Club");
+    expect(league.slots.some((s) => s.ghostId === "ME")).toBe(false);
     expect(new Set(league.slots.map((s) => s.name.toLowerCase())).size).toBe(8);
-    expect(league.slots.filter((s) => s.kind === "ai")).toHaveLength(5);
+    expect(league.slots.filter((s) => s.kind === "ai")).toHaveLength(6);
+  });
+
+  it("renames a ghost whose name another club in the league has", () => {
+    const twin = newLeague(
+      "twin-names",
+      { name: "Northside Lions", elo: 1500, teamId: "ME" },
+      [candidate("g1", "T1", 1700, "Northside Lions")],
+      undefined,
+      undefined,
+      8,
+    );
+    const ghost = twin.slots.find((s) => s.kind === "ghost");
+    expect(ghost?.name).not.toBe("Northside Lions");
   });
 
   it("plays ghosts with their snapshot squads, or as AI if the snapshot is gone", () => {
