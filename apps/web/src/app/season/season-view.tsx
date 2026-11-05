@@ -41,7 +41,10 @@ export function SeasonView({
   morale,
   skipIdleWeeks = false,
   adminLabels,
+  archive,
 }: {
+  /** A past season on its history page (D175): no live links or buttons. */
+  archive?: { eloBefore: number; eloAfter: number };
   /** Admins only (D163): each club's origin, by slot. */
   adminLabels?: Record<number, string>;
   /** Weeks without the manager's match play by themselves (D134). */
@@ -104,12 +107,24 @@ export function SeasonView({
             Season {season.number}
           </h1>
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            {teamName} · {stageLabel(season)} · Elo {elo}
-            {morale !== undefined && ` · Morale ${moraleLabel(morale)}`} · Funds{" "}
-            {funds.toLocaleString("en-US")}
+            {archive ? (
+              <>
+                {teamName} · Elo {archive.eloBefore} → {archive.eloAfter} (
+                {archive.eloAfter >= archive.eloBefore ? "+" : ""}
+                {archive.eloAfter - archive.eloBefore})
+              </>
+            ) : (
+              <>
+                {teamName} · {stageLabel(season)} · Elo {elo}
+                {morale !== undefined && ` · Morale ${moraleLabel(morale)}`} ·
+                Funds {funds.toLocaleString("en-US")}
+              </>
+            )}
           </p>
         </div>
-        <div className="flex flex-col items-start gap-1 text-sm font-medium sm:items-end">
+        <div
+          className={`flex flex-col items-start gap-1 text-sm font-medium sm:items-end ${archive ? "hidden" : ""}`}
+        >
           <Link href="/season/schedule" className="hover:underline">
             Schedule and opponents&apos; colors →
           </Link>
@@ -203,14 +218,21 @@ export function SeasonView({
                   >
                     <td className="px-3 py-1.5">{i + 1}</td>
                     <td className="px-3 py-1.5">
-                      <Link
-                        href={`/season/club/${slot}`}
-                        className="inline-flex items-center gap-1.5 hover:underline"
-                        title="See this club's roster"
-                      >
-                        {badge(slot)}
-                        {info?.name}
-                      </Link>
+                      {archive ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          {badge(slot)}
+                          {info?.name}
+                        </span>
+                      ) : (
+                        <Link
+                          href={`/season/club/${slot}`}
+                          className="inline-flex items-center gap-1.5 hover:underline"
+                          title="See this club's roster"
+                        >
+                          {badge(slot)}
+                          {info?.name}
+                        </Link>
+                      )}
                       {adminLabels?.[slot] && (
                         <span className="ml-2">
                           <AdminTag>{adminLabels[slot]}</AdminTag>
