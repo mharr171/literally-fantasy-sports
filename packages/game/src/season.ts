@@ -22,6 +22,7 @@ import {
   soccerConfigFromValues,
 } from "@lfs/sport-soccer";
 import { createServiceClient } from "./db";
+import { ensureFormations } from "./formations";
 import { SOCCER } from "./team";
 
 /** What season end did (stored on the season, shown to the manager). */
@@ -239,9 +240,11 @@ export async function loadClones(
     .eq("season_id", seasonId)
     .not("clone", "is", null);
   if (error) throw new Error(error.message);
-  return new Map(
-    (data ?? []).map((r) => [r.slot as number, r.clone as ClubClone]),
+  const clones = (data ?? []).map(
+    (r) => [r.slot as number, r.clone as ClubClone] as const,
   );
+  await ensureFormations(clones.map(([, c]) => c.squad?.formation));
+  return new Map(clones);
 }
 
 /** The ghosts in a season, by slot, as the engine plays them. */

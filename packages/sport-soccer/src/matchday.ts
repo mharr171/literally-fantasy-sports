@@ -171,8 +171,79 @@ export const DEFAULT_FORMATION = "4-4-2";
 export const BENCH_SIZE = 11;
 export const LATEST_PLAN_MINUTE = 89;
 
+/**
+ * Formations admins created (D140). They can't be changed once made, so a
+ * match that used one replays the same; loaded from the database and
+ * registered here before squads that may use them are read.
+ */
+const custom = new Map<string, Formation>();
+
+/**
+ * Adds admin-made formations to the lookup. Built-in ids are ignored, and a
+ * formation already registered keeps its first definition.
+ */
+export function registerFormations(
+  list: readonly { id: string; slots: readonly FormationSlot[] }[],
+): void {
+  for (const f of list) {
+    if (FORMATIONS.some((b) => b.id === f.id) || custom.has(f.id)) continue;
+    custom.set(f.id, buildFormation(f.id, f.slots));
+  }
+}
+
 export function formation(id: string): Formation | undefined {
-  return FORMATIONS.find((f) => f.id === id);
+  return FORMATIONS.find((f) => f.id === id) ?? custom.get(id);
+}
+
+/** A formation from its slots, keeper first, with left and right worked out (D112). */
+export function buildFormation(
+  id: string,
+  slots: readonly Pick<FormationSlot, "position" | "x" | "y">[],
+): Formation {
+  const ordered = [
+    ...slots.filter((s) => s.position === "GK"),
+    ...slots.filter((s) => s.position !== "GK"),
+  ].map((s) => ({ position: s.position, x: s.x, y: s.y }));
+  return withSides({ id, slots: ordered });
+}
+
+/** Ids look like "4-4-2" or "4-3-2-1b": digits and dashes, a letter or two allowed. */
+export const FORMATION_ID = /^[0-9](?:[0-9-]*[0-9])?[a-z]{0,2}$/;
+
+/**
+ * Everything wrong with a new formation (D140), in plain English: an unused
+ * id, 11 slots with exactly one keeper, outfield positions only elsewhere,
+ * places on the pitch, and no two slots on the same spot.
+ */
+export function formationProblems(
+  id: string,
+  slots: readonly Pick<FormationSlot, "position" | "x" | "y">[],
+  existing: readonly string[],
+): string[] {
+  const problems: string[] = [];
+  if (!FORMATION_ID.test(id) || id.length > 16)
+    problems.push('Name it like "4-5-1" or "4-3-2-1b".');
+  else if (existing.includes(id) || formation(id))
+    problems.push(`${id} already exists.`);
+  if (slots.length !== PLAYERS_ON_FIELD)
+    problems.push(`Use ${PLAYERS_ON_FIELD} slots (${slots.length} now).`);
+  const keepers = slots.filter((s) => s.position === "GK").length;
+  if (keepers !== 1) problems.push("Use exactly one goalkeeper.");
+  if (
+    slots.some(
+      (s) =>
+        !Number.isInteger(s.x) ||
+        !Number.isInteger(s.y) ||
+        s.x < 0 ||
+        s.x > 100 ||
+        s.y < 0 ||
+        s.y > 100,
+    )
+  )
+    problems.push("Place every slot on the pitch (0 to 100 each way).");
+  const spots = new Set(slots.map((s) => `${s.x},${s.y}`));
+  if (spots.size !== slots.length) problems.push("Two slots share a spot.");
+  return problems;
 }
 
 /** What the manager saves: player ids by slot, the bench in order, and a sub plan. */

@@ -17,11 +17,13 @@ import {
   starterSelectionError,
 } from "@lfs/sport-soccer";
 import { createServiceClient } from "./db";
+import { loadFormations } from "./formations";
 import { playerRow } from "./scouting";
 import { liveGenerationSettings, liveSoccerConfig } from "./season";
 import {
   loadOpenBoughtPack,
   loadRoster,
+  loadSquad,
   loadStarterPacks,
   type MyTeam,
   openedContents,
@@ -211,7 +213,18 @@ export async function saveSquadFor(
   team: MyTeam,
   squad: MatchdaySquad,
 ): Promise<void> {
-  const roster = await loadRoster(team.id);
+  const [roster, saved, formations] = await Promise.all([
+    loadRoster(team.id),
+    loadSquad(team.id),
+    loadFormations(),
+  ]);
+  // A formation that's off can't be newly picked; a squad already in it can
+  // still be saved until the club moves off it (D140).
+  const picked = formations.find((f) => f.id === squad.formation);
+  if (picked && !picked.enabled && saved?.formation !== squad.formation)
+    throw new Error(
+      `${squad.formation} is turned off. Pick another formation.`,
+    );
   const problems = squadProblems(squad, new Set(roster.map((p) => p.id)));
   if (problems.length > 0) throw new Error(problems.join(" "));
   const { error } = await createServiceClient().from("matchday_squads").upsert({

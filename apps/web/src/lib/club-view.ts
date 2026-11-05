@@ -7,6 +7,7 @@ import {
   type Position,
   type SnapshotPlayer,
 } from "@lfs/sport-soccer";
+import { ensureFormations } from "./formations";
 import { loadClones, loadLatestSeason } from "./season";
 import { createServiceClient } from "./supabase/service";
 import { loadMyTeam, loadRoster, loadSquad, SOCCER } from "./team";
@@ -290,6 +291,7 @@ export async function loadGhostClub(
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) return null;
+  await ensureFormations([(data.squad as MatchdaySquad | null)?.formation]);
   const { data: team } = await db
     .from("teams")
     .select("colors")

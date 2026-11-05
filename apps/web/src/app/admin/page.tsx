@@ -53,6 +53,17 @@ async function Overview() {
           </p>
         </li>
         <li className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+          <Link
+            href="/admin/formations"
+            className="font-medium hover:underline"
+          >
+            Formations →
+          </Link>
+          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+            Turn formations on or off for every club, or create new ones.
+          </p>
+        </li>
+        <li className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
           <Link href="/admin/ai" className="font-medium hover:underline">
             AI clubs →
           </Link>

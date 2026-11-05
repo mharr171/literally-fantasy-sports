@@ -43,3 +43,15 @@ VALUES ('soccer', 900, 'persistence check');
 INSERT INTO public.game_config (scope, version, key, value)
 VALUES ('soccer', 900, 'variants.enabled', '{"ST":["poacher"]}');
 UPDATE public.game_config_versions SET published_at = now() WHERE scope = 'soccer' AND version = 900;
+
+-- An admin-made formation, turned off (D140). Skipped on a base branch
+-- from before formations existed.
+DO $$
+BEGIN
+  IF to_regclass('public.formations') IS NOT NULL THEN
+    INSERT INTO public.formations (sport, id, slots, built_in, enabled)
+    VALUES ('soccer', '4-5-1', '[{"position":"GK","x":50,"y":6},{"position":"LB","x":12,"y":26},{"position":"CB","x":37,"y":22},{"position":"CB","x":63,"y":22},{"position":"RB","x":88,"y":26},{"position":"LM","x":12,"y":58},{"position":"CM","x":30,"y":52},{"position":"CM","x":50,"y":48},{"position":"CM","x":70,"y":52},{"position":"RM","x":88,"y":58},{"position":"ST","x":50,"y":85}]', false, false)
+    ON CONFLICT DO NOTHING;
+  END IF;
+END
+$$;

@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { GettingStarted } from "@/components/getting-started";
 import { WithTemplates } from "@/components/player/with-templates";
 import { getCurrentUser } from "@/lib/auth";
+import { loadFormations } from "@/lib/formations";
 import { pickOptions } from "@/lib/pick-options";
 import { currentOutOfPosition } from "@/lib/season";
 import {
@@ -38,12 +39,17 @@ async function SquadContent() {
   if (!user) redirect("/sign-in");
   const team = await loadMyTeam(user.id);
   if (!team) redirect("/team");
-  const [packs, roster, saved, outOfPosition] = await Promise.all([
+  const [packs, roster, saved, outOfPosition, all] = await Promise.all([
     loadStarterPacks(team.id),
     loadRoster(team.id),
     loadSquad(team.id),
     currentOutOfPosition(team.id),
+    loadFormations(),
   ]);
+  // The ones that are on, and the saved one even if it's off (D140).
+  const formations = all
+    .filter((f) => f.enabled || f.id === saved?.formation)
+    .map((f) => ({ ...f.formation, enabled: f.enabled }));
   if (packs.some((p) => !p.resolved)) redirect("/team");
 
   return (
@@ -64,7 +70,15 @@ async function SquadContent() {
       </div>
       <SquadBuilder
         roster={roster}
-        initial={saved ?? autoPickSquad(roster, undefined, pickOptions(roster))}
+        formations={formations}
+        initial={
+          saved ??
+          autoPickSquad(
+            roster,
+            formations.find((f) => f.enabled)?.id,
+            pickOptions(roster),
+          )
+        }
         saved={saved !== null}
         outOfPosition={outOfPosition}
         morale={team.morale}

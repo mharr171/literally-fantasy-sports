@@ -11,6 +11,7 @@ const NAV = [
   { href: "/admin/settings", label: "Game settings" },
   { href: "/admin/templates", label: "Templates" },
   { href: "/admin/balance", label: "Balance" },
+  { href: "/admin/formations", label: "Formations" },
   { href: "/admin/tools", label: "Testing tools" },
 ] as const;
 
