@@ -6,8 +6,11 @@ import {
   balanceFromValues,
   balanceToRows,
   DEFAULT_BALANCE,
+  fatiguePerMatch,
   TUNING_LIMITS,
 } from "../src/balance";
+import { DEFAULT_CONDITION_SETTINGS } from "../src/condition";
+import { DEFAULT_FORM_SETTINGS } from "../src/form";
 import { DEFAULT_MATCH_TUNING } from "../src/match";
 import { DEFAULT_PACK_PRICES, packPrice } from "../src/roster";
 import { soccerConfigFromValues } from "../src/stored-config";
@@ -98,6 +101,8 @@ describe("balance settings (M5)", () => {
         tiers: { ...DEFAULT_PACK_PRICES.tiers, basic: 6000 },
         focusSurcharge: DEFAULT_PACK_PRICES.focusSurcharge,
       },
+      condition: DEFAULT_CONDITION_SETTINGS,
+      form: DEFAULT_FORM_SETTINGS,
     });
     expect(soccerConfigFromValues("v", values).tuning.goalRate).toBe(0.5);
   });
@@ -116,5 +121,42 @@ describe("balance settings (M5)", () => {
     expect(packPrice("basic", "goal", prices)).toBe(10500);
     // A tier missing from the prices keeps its built-in price.
     expect(packPrice("gold", "any", prices)).toBe(30000);
+  });
+});
+
+describe("recovery, bans and form in admin (D157, D158)", () => {
+  it("loads versions saved before these settings with today's values", () => {
+    const old = balanceFromValues({ tuning: { phases: 30 } });
+    expect(old.condition).toEqual(DEFAULT_CONDITION_SETTINGS);
+    expect(old.form).toEqual(DEFAULT_FORM_SETTINGS);
+    expect(old.condition.weeklyRecovery).toBe(20);
+  });
+
+  it("stores and reads them back, and checks their limits", () => {
+    const changed = {
+      ...DEFAULT_BALANCE,
+      condition: { ...DEFAULT_CONDITION_SETTINGS, weeklyRecovery: 25 },
+      form: { ...DEFAULT_FORM_SETTINGS, formEffect: 0.08 },
+    };
+    const values = Object.fromEntries(
+      balanceToRows(changed).map((r) => [r.key, r.value]),
+    );
+    const back = balanceFromValues(values);
+    expect(back.condition.weeklyRecovery).toBe(25);
+    expect(back.form.formEffect).toBe(0.08);
+    expect(
+      balanceErrors({
+        ...changed,
+        condition: { ...changed.condition, yellowsForBan: 0 },
+      }),
+    ).toContain("Yellow cards for a ban must be between 1 and 20.");
+  });
+
+  it("shows fatigue as fitness lost over a full match", () => {
+    // Default: 1 × (1.5 − 0.6) × 30 phases = 27 for an average player.
+    const loss = fatiguePerMatch(DEFAULT_MATCH_TUNING);
+    expect(loss.outfield).toBeCloseTo(27);
+    expect(loss.keeper).toBeCloseTo(27 * 0.3);
+    expect(fatiguePerMatch(DEFAULT_MATCH_TUNING, 100).outfield).toBeCloseTo(15);
   });
 });

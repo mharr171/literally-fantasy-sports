@@ -2,10 +2,16 @@
 
 import type { PayoutSettings } from "@lfs/core";
 import {
+  AVERAGE_STAMINA,
   type BalanceSettings,
   BOUGHT_TIERS,
   balanceErrors,
+  CONDITION_LIMITS,
+  type ConditionSettings,
   FOCUS_SURCHARGE_LIMIT,
+  FORM_LIMITS,
+  type FormSettings,
+  fatiguePerMatch,
   type Limit,
   type MatchTuning,
   PACK_PRICE_LIMIT,
@@ -63,6 +69,9 @@ function toFields(s: BalanceSettings): Fields {
   for (const t of BOUGHT_TIERS)
     f[`packs.tiers.${t.id}`] = String(s.packs.tiers[t.id] ?? t.price);
   f["packs.focusSurcharge"] = String(s.packs.focusSurcharge);
+  for (const [k, v] of Object.entries(s.condition))
+    f[`condition.${k}`] = String(v);
+  for (const [k, v] of Object.entries(s.form)) f[`form.${k}`] = String(v);
   return f;
 }
 
@@ -80,6 +89,11 @@ function fromFields(f: Fields): BalanceSettings {
       ),
       focusSurcharge: n("packs.focusSurcharge"),
     },
+    condition: pick<ConditionSettings>(
+      "condition",
+      Object.keys(CONDITION_LIMITS),
+    ),
+    form: pick<FormSettings>("form", Object.keys(FORM_LIMITS)),
   };
 }
 
@@ -196,8 +210,29 @@ export function BalanceEditor(props: {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {keys.map((k) => field(`tuning.${k}`, TUNING_LIMITS[k]))}
           </div>
+          {keys.includes("fatiguePerPhase") && <FatigueSummary {...settings} />}
         </fieldset>
       ))}
+
+      <fieldset className="flex flex-col gap-3">
+        <legend className="mb-2 text-lg font-semibold">
+          Recovery and bans between weeks
+        </legend>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {(Object.keys(CONDITION_LIMITS) as (keyof ConditionSettings)[]).map(
+            (k) => field(`condition.${k}`, CONDITION_LIMITS[k]),
+          )}
+        </div>
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-3">
+        <legend className="mb-2 text-lg font-semibold">Form and morale</legend>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {(Object.keys(FORM_LIMITS) as (keyof FormSettings)[]).map((k) =>
+            field(`form.${k}`, FORM_LIMITS[k]),
+          )}
+        </div>
+      </fieldset>
 
       <fieldset className="flex flex-col gap-3">
         <legend className="mb-2 text-lg font-semibold">Season payouts</legend>
@@ -353,3 +388,50 @@ const primary =
   "rounded-md bg-zinc-900 px-3 py-1.5 font-medium text-white hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900";
 const publishStyle =
   "rounded-md bg-emerald-700 px-3 py-1.5 font-medium text-white hover:bg-emerald-600 disabled:opacity-40";
+
+/**
+ * Fatigue in plain terms (D157): the fitness an average player and a
+ * keeper lose over a full match with these values, and how much a week's
+ * recovery gives back.
+ */
+function FatigueSummary({ tuning, condition }: BalanceSettings) {
+  if (
+    ![tuning.phases, tuning.fatiguePerPhase, tuning.keeperFatigueFactor].every(
+      Number.isFinite,
+    )
+  )
+    return null;
+  const loss = fatiguePerMatch(tuning);
+  const fmt = (x: number) => Math.round(x).toString();
+  const recovery = Number.isFinite(condition.weeklyRecovery)
+    ? condition.weeklyRecovery
+    : null;
+  return (
+    <p className="rounded-md bg-zinc-50 px-3 py-2 text-sm text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+      Over a full match, an average player (stamina {AVERAGE_STAMINA}) loses
+      about <strong className="tabular-nums">{fmt(loss.outfield)}</strong>{" "}
+      fitness and a keeper about{" "}
+      <strong className="tabular-nums">{fmt(loss.keeper)}</strong>.
+      {recovery !== null &&
+        (recovery >= loss.outfield ? (
+          <>
+            {" "}
+            A week&apos;s recovery of{" "}
+            <strong className="tabular-nums">{fmt(recovery)}</strong> gives all
+            of that back, so players who play every full match stay fresh.
+          </>
+        ) : (
+          <>
+            {" "}
+            A week&apos;s recovery of{" "}
+            <strong className="tabular-nums">{fmt(recovery)}</strong> gives some
+            back, so a player who plays every full match loses about{" "}
+            <strong className="tabular-nums">
+              {fmt(loss.outfield - recovery)}
+            </strong>{" "}
+            fitness a week overall (substitutions and rest bring it back).
+          </>
+        ))}
+    </p>
+  );
+}
