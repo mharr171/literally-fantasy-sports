@@ -49,11 +49,7 @@ export function matchStats(
   };
 }
 
-/**
- * Share of games won, as a whole percentage; null before the first. Games
- * played before D143 have no result kept, so this counts only the games
- * with one (wins + draws + losses), not every appearance.
- */
+/** Share of games won, as a whole percentage; null before the first. */
 export function winPercent(
   stats: Pick<PlayerStats, "wins" | "draws" | "losses">,
 ): number | null {

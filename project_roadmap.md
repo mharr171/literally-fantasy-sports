@@ -1,6 +1,6 @@
 # LiterallyFantasySports — Project Roadmap
 
-Nov 2, 2026 · @Gary · Last updated: Nov 5, 2026 (D146)
+Nov 2, 2026 · @Gary · Last updated: Nov 5, 2026 (D147)
 
 ## Review progress
 
@@ -167,6 +167,7 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D144 | Nov 5, 2026 | How D133 ships: the theme (Light / Dark / System) is chosen on a new Account page (`/account`, linked from your name in the header) and kept in the browser, applied before the page draws; System follows the computer. Every dropdown takes the page's colors in both themes. The shared searchable dropdown (type to filter, arrow keys, Enter, Escape, optional tabs) is used for the club picker on Admin → Testing tools (All / Real / AI) and to find an AI club on Admin → AI clubs | M10 |
 | D145 | Nov 5, 2026 | How D132 and D136 ship: players gain a secondary template variant, rolled on its own random stream so every other part of a pack, youth or AI player stays as it was. Matches, the squad heatmap and the player card (now with a second heatmap) use it at the secondary position. Existing players with a secondary position got one at random from the live version's ticked templates, once, by migration. League copies and ghosts taken before this play with the default there, as frozen copies. Old replays are unchanged. The template editor warns when ticked templates aren't live yet, and the admin overview counts players on the default template at each position | M10 |
 | D146 | Nov 5, 2026 | How D143 ships: a tackle is credited whenever an attack is stopped before it becomes a chance, to an outfield defender weighted by defensive influence and defending (about 10 a team per match). 80% of goals get an assist, to a teammate weighted by attacking influence and passing. Each save goes to whoever is in goal. Assists and tackles have their own random streams, and a test pins 200 matches to prove scores and events don't change. Games are the existing appearances. Results weren't kept before, so win % counts only games with a recorded result (wins + draws + losses). Players' and careers' new totals start at 0 | M10 |
+| D147 | Nov 5, 2026 | Player stats on one start (Gary, after playing a week: one match showed "16 games, 100% win, 1-0-0"): every number on the player card counts from when player stats started (D143). New `stat_games` and `stat_goals` sit beside the totals since v1.3 (appearances and goals), which stay for the career record. Existing games were set to wins + draws + losses, and goals since the start were counted once from the club's own match summaries. Win % is wins / games. This replaces D146's win % rule. Soft resets (D142) clear all of these | M10 |
 
 ## 1. Vision & goals
 
