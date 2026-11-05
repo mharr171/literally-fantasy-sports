@@ -24,6 +24,9 @@ const report = (r: Partial<PlayerMatchReport>): PlayerMatchReport => ({
   redCard: false,
   injuryWeeks: 0,
   goals: 0,
+  assists: 0,
+  tackles: 0,
+  saves: 0,
   ...r,
 });
 

@@ -274,6 +274,13 @@ export const players = pgTable(
     /** Career totals for the retirement record (D120). */
     appearances: integer().notNull().default(0),
     goals: integer().notNull().default(0),
+    /** More career totals (D143), counted from the club's own matches. */
+    wins: integer().notNull().default(0),
+    draws: integer().notNull().default(0),
+    losses: integer().notNull().default(0),
+    assists: integer().notNull().default(0),
+    tackles: integer().notNull().default(0),
+    saves: integer().notNull().default(0),
     /** Season ends the player has been through. */
     seasons: integer().notNull().default(0),
     /** Highest overall so far (null until the first season end). */
@@ -485,6 +492,13 @@ export const playerCareers = pgTable(
     seasons: integer().notNull(),
     appearances: integer().notNull(),
     goals: integer().notNull(),
+    /** Totals added by D143; zero for careers that ended before. */
+    wins: integer().notNull().default(0),
+    draws: integer().notNull().default(0),
+    losses: integer().notNull().default(0),
+    assists: integer().notNull().default(0),
+    tackles: integer().notNull().default(0),
+    saves: integer().notNull().default(0),
     bestOverall: integer().notNull(),
     /** Clubs played for, as named when the player retired. */
     clubs: text().array().notNull(),

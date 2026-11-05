@@ -3,9 +3,11 @@
 import {
   ATTRIBUTES,
   type Attributes,
+  type PlayerStats,
   POSITION_NAMES,
   type Position,
   variantAt,
+  winPercent,
 } from "@lfs/sport-soccer";
 import {
   type ReactNode,
@@ -32,6 +34,8 @@ export interface CardPlayer {
   templateVariant?: string;
   secondaryTemplateVariant?: string;
   attributes?: Attributes;
+  /** Career totals (D143), for the club's own players. */
+  stats?: PlayerStats;
   fitness?: number;
   form?: number;
 }
@@ -173,6 +177,48 @@ export function PlayerCardBody({ player }: { player: CardPlayer }) {
           })}
         </ul>
       )}
+      {player.stats && (
+        <CareerStats
+          stats={player.stats}
+          keeper={player.primaryPosition === "GK"}
+        />
+      )}
+    </div>
+  );
+}
+
+/** Career totals (D143): games, win %, and what the player does best. */
+function CareerStats({
+  stats,
+  keeper,
+}: {
+  stats: PlayerStats;
+  keeper: boolean;
+}) {
+  const win = winPercent(stats);
+  const items: [string, string][] = [
+    ["Games", String(stats.games)],
+    ["Win %", win === null ? "–" : `${win}%`],
+    ["Goals", String(stats.goals)],
+    ["Assists", String(stats.assists)],
+    keeper
+      ? ["Saves", String(stats.saves)]
+      : ["Tackles", String(stats.tackles)],
+    ["W-D-L", `${stats.wins}-${stats.draws}-${stats.losses}`],
+  ];
+  return (
+    <div className="flex flex-col gap-1 border-t border-zinc-200 pt-2 dark:border-zinc-800">
+      <p className="text-[10px] uppercase tracking-wide text-zinc-500">
+        Career
+      </p>
+      <dl className="grid grid-cols-3 gap-x-2 gap-y-1 text-xs">
+        {items.map(([label, value]) => (
+          <div key={label} className="flex flex-col">
+            <dt className="text-zinc-500">{label}</dt>
+            <dd className="tabular-nums">{value}</dd>
+          </div>
+        ))}
+      </dl>
     </div>
   );
 }

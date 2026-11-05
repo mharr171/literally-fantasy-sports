@@ -100,6 +100,9 @@ describe.runIf(sql)("data kept (D120)", () => {
               yellow_cards: 0,
               appeared: true,
               goals: 2,
+              wins: 1,
+              assists: 1,
+              tackles: 3,
             },
             {
               id: old,
@@ -107,19 +110,23 @@ describe.runIf(sql)("data kept (D120)", () => {
               injured_weeks: 0,
               suspended_weeks: 0,
               yellow_cards: 0,
-              appeared: false,
+              appeared: true,
               goals: 0,
+              wins: 1,
+              tackles: 4,
+              saves: 2,
             },
           ])}, null)`;
       },
     );
 
-  it("counts appearances and goals, and keeps a season record and careers", async () => {
+  it("counts appearances, goals and player stats, and keeps a season record and careers", async () => {
     const result = await asService(db, async (tx) => {
       const season = await startSeason(tx, "s1");
       await playWeek(tx, season, "finished");
       const counts =
-        await tx`select display_name, appearances, goals from players
+        await tx`select display_name, appearances, goals, wins, draws, losses,
+          assists, tackles, saves from players
         where team_id = ${team} order by display_name`;
       await tx`select public.close_season(${season},
         ${tx.json([{ id: young, age: 20, attributes: {}, overall: 58, worth: 2600 }])},
@@ -131,15 +138,36 @@ describe.runIf(sql)("data kept (D120)", () => {
         from season_records where season_id = ${season}`;
       const careers = await tx`
         select display_name, nationality, primary_position, retired_age, seasons,
-          appearances, goals, best_overall, clubs, retired_season
+          appearances, goals, wins, draws, losses, assists, tackles, saves,
+          best_overall, clubs, retired_season
         from player_careers where team_id = ${team}`;
       const [kept] = await tx`
         select seasons, best_overall, overall from players where id = ${young}`;
       return { counts, record, careers, kept };
     });
     expect(result.counts).toEqual([
-      { display_name: "Al Y", appearances: 1, goals: 2 },
-      { display_name: "Bo O", appearances: 0, goals: 0 },
+      {
+        display_name: "Al Y",
+        appearances: 1,
+        goals: 2,
+        wins: 1,
+        draws: 0,
+        losses: 0,
+        assists: 1,
+        tackles: 3,
+        saves: 0,
+      },
+      {
+        display_name: "Bo O",
+        appearances: 1,
+        goals: 0,
+        wins: 1,
+        draws: 0,
+        losses: 0,
+        assists: 0,
+        tackles: 4,
+        saves: 2,
+      },
     ]);
     expect(result.record).toEqual({
       season_number: 1,
@@ -164,8 +192,14 @@ describe.runIf(sql)("data kept (D120)", () => {
         primary_position: "CB",
         retired_age: 36,
         seasons: 1,
-        appearances: 0,
+        appearances: 1,
         goals: 0,
+        wins: 1,
+        draws: 0,
+        losses: 0,
+        assists: 0,
+        tackles: 4,
+        saves: 2,
         best_overall: 60,
         clubs: [`${tag} Rovers`],
         retired_season: 1,
@@ -288,7 +322,8 @@ describe.runIf(sql)("data kept (D120)", () => {
       db,
       owner,
       (tx) =>
-        tx`select appearances, goals, seasons, best_overall from players where id = ${young}`,
+        tx`select appearances, goals, seasons, best_overall, wins, draws, losses,
+          assists, tackles, saves from players where id = ${young}`,
     );
     expect(own).toHaveLength(1);
   });

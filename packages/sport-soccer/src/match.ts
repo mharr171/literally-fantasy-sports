@@ -229,7 +229,19 @@ export interface PlayerMatchReport {
   injuryWeeks: number;
   /** Goals scored in open play (not shoot-out penalties). */
   goals: number;
+  /** Goals set up for a teammate (D143). */
+  assists: number;
+  /** Attacks stopped before they became a chance (D143). */
+  tackles: number;
+  /** Shots on target kept out, for the keeper (D143). */
+  saves: number;
 }
+
+/**
+ * Share of goals with an assist (D143). Player stats only: assists and
+ * tackles are rolled on their own streams, so they never change a score.
+ */
+export const ASSIST_SHARE = 0.8;
 
 export interface SoccerResult extends MatchResult {
   decidedBy?: "extra_time" | "penalties";
@@ -369,6 +381,8 @@ interface MatchState {
     penalties: Rng;
     injuries: Rng;
     cards: Rng;
+    assists: Rng;
+    tackles: Rng;
   };
 }
 
@@ -733,7 +747,10 @@ function playAttack(state: MatchState, side: Side, minute: number): void {
         tuning.chanceSharpness,
       ),
   );
-  if (!rng.chances.chance(pChance)) return;
+  if (!rng.chances.chance(pChance)) {
+    creditTackle(state, def);
+    return;
+  }
   events.push({ minute, type: "chance", side });
 
   const shooters = att.onField.filter((p) => p.slot !== "GK");
@@ -759,9 +776,48 @@ function playAttack(state: MatchState, side: Side, minute: number): void {
     score[side]++;
     events.push({ minute, type: "goal", side, playerId });
     report(state, playerId).goals++;
+    creditAssist(state, att, playerId);
   } else {
     events.push({ minute, type: "saved", side, playerId });
+    if (keeper) report(state, keeper.player.id).saves++;
   }
+}
+
+/** Picks one of `players` by weight on its own stream, or none if all weigh 0. */
+function pickBy(
+  rng: Rng,
+  players: readonly OnField[],
+  weight: (p: OnField) => number,
+): OnField | undefined {
+  const weights = players.map(weight);
+  if (!weights.some((w) => w > 0)) return undefined;
+  return players[rng.weightedIndex(weights)];
+}
+
+/** A stopped attack goes to a defender, by defensive influence and defending (D143). */
+function creditTackle(state: MatchState, def: TeamState): void {
+  const tackler = pickBy(
+    state.rng.tackles,
+    def.onField.filter((p) => p.slot !== "GK"),
+    (p) => p.zones.defence * p.player.attributes.defending,
+  );
+  if (tackler) report(state, tackler.player.id).tackles++;
+}
+
+/** Most goals have an assist, by attacking influence and passing (D143). */
+function creditAssist(
+  state: MatchState,
+  att: TeamState,
+  scorerId: string,
+): void {
+  const rng = state.rng.assists;
+  if (!rng.chance(ASSIST_SHARE)) return;
+  const provider = pickBy(
+    rng,
+    att.onField.filter((p) => p.slot !== "GK" && p.player.id !== scorerId),
+    (p) => p.zones.attack * p.player.attributes.passing,
+  );
+  if (provider) report(state, provider.player.id).assists++;
 }
 
 function playPhases(
@@ -872,6 +928,9 @@ function prepareTeam(
       redCard: false,
       injuryWeeks: 0,
       goals: 0,
+      assists: 0,
+      tackles: 0,
+      saves: 0,
     };
   }
   const t: TeamState = {
@@ -935,6 +994,9 @@ export function simulateMatch(
       penalties: root.fork("penalties"),
       injuries: root.fork("injuries"),
       cards: root.fork("cards"),
+      // Player stats only (D143): their own streams, so scores never change.
+      assists: root.fork("assists"),
+      tackles: root.fork("tackles"),
     },
   } as unknown as MatchState;
   state.teams = {
