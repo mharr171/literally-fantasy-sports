@@ -9,13 +9,16 @@
  */
 import {
   aiOpponentRatings,
+  bracketSemis,
   createRng,
   DEFAULT_PAYOUTS,
   type Fixture,
   leagueTable,
   matchPayout,
   type PayoutSettings,
+  playIn,
   playoffSemis,
+  quarterFinals,
   roundRobin,
   type Side,
   type Standing,
@@ -43,10 +46,42 @@ import {
 } from "./match";
 import { squadToTeam } from "./matchday";
 
-export const LEAGUE_SIZE = 8;
+/** Clubs in a new league (D115, D117). Seasons from before had 8 (D16). */
+export const LEAGUE_SIZE = 12;
 export const MANAGER_SLOT = 0;
 
-export type Stage = "league" | "semi" | "final";
+export type Stage = "league" | "play_in" | "quarter" | "semi" | "final";
+
+/** Round names for the season page, e.g. "Quarter-finals". */
+export const STAGE_NAMES: Record<Stage, string> = {
+  league: "League",
+  play_in: "Play-in",
+  quarter: "Quarter-finals",
+  semi: "Semi-finals",
+  final: "Final",
+};
+
+/** One match of a round, e.g. "quarter-final". */
+export const STAGE_MATCH_NAMES: Record<Stage, string> = {
+  league: "league match",
+  play_in: "play-in",
+  quarter: "quarter-final",
+  semi: "semi-final",
+  final: "final",
+};
+
+/**
+ * A 12-club league ends in a play-in and an 8-club bracket (D117); the
+ * 8-team leagues from before end in top-4 semi-finals (D30).
+ */
+export function hasBracket(slots: readonly unknown[]): boolean {
+  return slots.length >= 12;
+}
+
+/** League weeks for a league of this many clubs: a double round-robin. */
+export function leagueWeeks(clubs: number): number {
+  return (clubs - (clubs % 2 === 0 ? 1 : 0)) * 2;
+}
 export type SeasonStatus = "regular" | "playoffs" | "finished";
 
 export interface LeagueSlot {
@@ -78,8 +113,9 @@ export function newLeague(
   ghosts: readonly GhostCandidate[] = [],
   ghostSettings: GhostSettings = DEFAULT_GHOST_SETTINGS,
   settings: AiTeamSettings = DEFAULT_AI_TEAM_SETTINGS,
+  size: number = LEAGUE_SIZE,
 ): { slots: LeagueSlot[]; fixtures: NewFixture[] } {
-  const ratings = aiOpponentRatings(manager.elo, LEAGUE_SIZE - 1);
+  const ratings = aiOpponentRatings(manager.elo, size - 1);
   // Ghost places: each picked ghost replaces the free AI place nearest its Elo.
   const ghostAt = new Map<number, GhostCandidate>();
   for (const g of pickGhosts(
@@ -243,7 +279,9 @@ export interface ManagerSide {
 
 /**
  * Plays every match of the current week. League weeks run to the last
- * league week, then the top 4 go into single-match semi-finals and a final
+ * league week. A 12-club league then plays a play-in (8th v 9th) and an
+ * 8-club bracket of single matches (D117); an 8-team league from before
+ * sends its top 4 to semi-finals and a final
  * (D30). Elo moves after every match, AI v AI included (D40).
  */
 export function playWeek(
@@ -351,27 +389,64 @@ export function playWeek(
   let week = state.week + 1;
   const newFixtures: NewFixture[] = [];
   const stage = fixtures[0]?.stage;
-  if (stage === "league" && state.week === lastLeagueWeek) {
-    const semis = playoffSemis(table(state.slots, after));
-    status = "playoffs";
-    for (const s of semis)
+  const add = (round: Stage, pairs: readonly Fixture[]) => {
+    for (const p of pairs)
       newFixtures.push({
         week,
-        stage: "semi",
-        homeSlot: Number(s.home),
-        awaySlot: Number(s.away),
+        stage: round,
+        homeSlot: Number(p.home),
+        awaySlot: Number(p.away),
       });
-    if (
-      newFixtures.some(
-        (f) => f.homeSlot === MANAGER_SLOT || f.awaySlot === MANAGER_SLOT,
+  };
+  const managerIn = (round: readonly Fixture[]) =>
+    round.some(
+      (p) => Number(p.home) === MANAGER_SLOT || Number(p.away) === MANAGER_SLOT,
+    );
+  const winnerOf = (p: PlayedFixture) => {
+    const f = fixtures.find((x) => x.id === p.id) as SeasonFixture;
+    return p.winner === "home" ? f.homeSlot : f.awaySlot;
+  };
+  const standings = () => table(state.slots, after);
+  // Knockout rounds of this week, in the order they were drawn.
+  const roundWinners = () =>
+    [...fixtures]
+      .sort(
+        (a, b) =>
+          seedOf(standings(), a.homeSlot) - seedOf(standings(), b.homeSlot),
       )
-    )
-      managerFunds += payouts.playoffs;
+      .map((f) => winnerOf(played.find((p) => p.id === f.id) as PlayedFixture));
+  const bracket = hasBracket(state.slots);
+
+  if (stage === "league" && state.week === lastLeagueWeek) {
+    status = "playoffs";
+    const final = standings();
+    if (bracket) {
+      // D117: 8th v 9th; 1st–7th are already in the quarter-finals.
+      add("play_in", [playIn(final)]);
+      const place = final.findIndex((r) => Number(r.team) === MANAGER_SLOT);
+      if (place >= 0 && place < 7) managerFunds += payouts.quarter;
+    } else {
+      const semis = playoffSemis(final);
+      add("semi", semis);
+      if (managerIn(semis)) managerFunds += payouts.playoffs;
+    }
+  } else if (stage === "play_in") {
+    const winner = winnerOf(played[0] as PlayedFixture);
+    add("quarter", quarterFinals(standings(), String(winner)));
+    if (winner === MANAGER_SLOT) managerFunds += payouts.quarter;
+  } else if (stage === "quarter") {
+    // Quarter-finals were drawn 1/play-in, 2/7, 3/6, 4/5: by home seed.
+    const winners = roundWinners().map(String) as [
+      string,
+      string,
+      string,
+      string,
+    ];
+    const semis = bracketSemis(standings(), winners);
+    add("semi", semis);
+    if (managerIn(semis)) managerFunds += payouts.playoffs;
   } else if (stage === "semi") {
-    const winners = played.map((p) => {
-      const f = fixtures.find((x) => x.id === p.id) as SeasonFixture;
-      return p.winner === "home" ? f.homeSlot : f.awaySlot;
-    });
+    const winners = bracket ? roundWinners() : played.map((p) => winnerOf(p));
     newFixtures.push({
       week,
       stage: "final",
@@ -382,9 +457,7 @@ export function playWeek(
   } else if (stage === "final") {
     status = "finished";
     week = state.week;
-    const p = played[0] as PlayedFixture;
-    const f = fixtures[0] as SeasonFixture;
-    if ((p.winner === "home" ? f.homeSlot : f.awaySlot) === MANAGER_SLOT)
+    if (winnerOf(played[0] as PlayedFixture) === MANAGER_SLOT)
       managerFunds += payouts.champion;
   }
 
@@ -403,6 +476,11 @@ export function playWeek(
     managerReports,
     managerResult,
   };
+}
+
+/** A slot's league place (0 = top). */
+function seedOf(standings: readonly Standing[], slot: number): number {
+  return standings.findIndex((r) => Number(r.team) === slot);
 }
 
 /** A fixture's match seed: from the season seed and the fixture's id. */

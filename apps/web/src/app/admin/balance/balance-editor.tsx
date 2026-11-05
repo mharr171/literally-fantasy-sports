@@ -164,11 +164,11 @@ export function BalanceEditor(props: {
   );
 
   const { payouts } = settings;
-  // A middling season: 14 matches, about 36% wins and 27% draws.
+  // A middling season: 22 league matches, about 36% wins and 27% draws.
   const typicalSeason =
-    14 * payouts.perMatch +
-    Math.round(14 * 0.36) * payouts.win +
-    Math.round(14 * 0.27) * payouts.draw;
+    22 * payouts.perMatch +
+    Math.round(22 * 0.36) * payouts.win +
+    Math.round(22 * 0.27) * payouts.draw;
 
   return (
     <div className="flex flex-col gap-6">
@@ -203,7 +203,7 @@ export function BalanceEditor(props: {
         </div>
         {errors.length === 0 && (
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            A middling 14-match season (about 5 wins and 4 draws) pays{" "}
+            A middling 22-match season (about 8 wins and 6 draws) pays{" "}
             <strong className="tabular-nums">
               {typicalSeason.toLocaleString("en-US")}
             </strong>

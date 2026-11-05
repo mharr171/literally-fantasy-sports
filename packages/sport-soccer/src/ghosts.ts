@@ -87,7 +87,7 @@ export function ghostTeam(
   };
 }
 
-export type PlayoffResult = "none" | "semi" | "final" | "champion";
+export type PlayoffResult = "none" | "quarter" | "semi" | "final" | "champion";
 
 /** A finished season's record for the leaderboard (D19). */
 export interface SeasonStats {
@@ -111,7 +111,7 @@ export function seasonStats(
   const index = rows.findIndex((r) => Number(r.team) === slot);
   const row = rows[index];
   if (!row) throw new Error(`No team in slot ${slot}.`);
-  const inStage = (stage: "semi" | "final") =>
+  const inStage = (stage: "quarter" | "semi" | "final") =>
     fixtures.some(
       (f) => f.stage === stage && (f.homeSlot === slot || f.awaySlot === slot),
     );
@@ -134,7 +134,9 @@ export function seasonStats(
         ? "final"
         : inStage("semi")
           ? "semi"
-          : "none",
+          : inStage("quarter")
+            ? "quarter"
+            : "none",
   };
 }
 

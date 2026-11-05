@@ -3,6 +3,7 @@ import {
   type PlayLine,
   playByPlay,
   replayFixture,
+  STAGE_MATCH_NAMES,
 } from "@lfs/sport-soccer";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -64,7 +65,7 @@ async function MatchContent({
   const title =
     fixture.stage === "league"
       ? `Season ${match.seasonNumber} · week ${fixture.week}`
-      : `Season ${match.seasonNumber} · ${fixture.stage === "semi" ? "semi-final" : "final"}`;
+      : `Season ${match.seasonNumber} · ${STAGE_MATCH_NAMES[fixture.stage]}`;
   const mine =
     fixture.homeSlot === MANAGER_SLOT || fixture.awaySlot === MANAGER_SLOT;
 
