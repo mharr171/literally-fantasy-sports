@@ -1,6 +1,6 @@
 # LiterallyFantasySports — Project Roadmap
 
-Nov 2, 2026 · @Gary · Last updated: Nov 5, 2026 (D145)
+Nov 2, 2026 · @Gary · Last updated: Nov 5, 2026 (D146)
 
 ## Review progress
 
@@ -166,6 +166,7 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D143 | Nov 5, 2026 | Player stats (Gary): each player keeps career totals of games played, wins, draws and losses (shown as win %), goals, assists, tackles and saves. The engine credits an assist on a goal (weighted by attacking influence and passing) and a tackle when a chance is stopped (weighted by defensive influence and defending), each on its own random stream so scores and existing replays don't change; the defending keeper gets each save. Only a club's own season counts, not its copies in other leagues. Totals are updated as each week is played (before D120 trims detail), carried into `player_careers` at retirement and shown on player cards. Career totals only, no per-season lines. Built early so the hall of fame (M13) has data | M10 |
 | D144 | Nov 5, 2026 | How D133 ships: the theme (Light / Dark / System) is chosen on a new Account page (`/account`, linked from your name in the header) and kept in the browser, applied before the page draws; System follows the computer. Every dropdown takes the page's colors in both themes. The shared searchable dropdown (type to filter, arrow keys, Enter, Escape, optional tabs) is used for the club picker on Admin → Testing tools (All / Real / AI) and to find an AI club on Admin → AI clubs | M10 |
 | D145 | Nov 5, 2026 | How D132 and D136 ship: players gain a secondary template variant, rolled on its own random stream so every other part of a pack, youth or AI player stays as it was. Matches, the squad heatmap and the player card (now with a second heatmap) use it at the secondary position. Existing players with a secondary position got one at random from the live version's ticked templates, once, by migration. League copies and ghosts taken before this play with the default there, as frozen copies. Old replays are unchanged. The template editor warns when ticked templates aren't live yet, and the admin overview counts players on the default template at each position | M10 |
+| D146 | Nov 5, 2026 | How D143 ships: a tackle is credited whenever an attack is stopped before it becomes a chance, to an outfield defender weighted by defensive influence and defending (about 10 a team per match). 80% of goals get an assist, to a teammate weighted by attacking influence and passing. Each save goes to whoever is in goal. Assists and tackles have their own random streams, and a test pins 200 matches to prove scores and events don't change. Games are the existing appearances. Results weren't kept before, so win % counts only games with a recorded result (wins + draws + losses). Players' and careers' new totals start at 0 | M10 |
 
 ## 1. Vision & goals
 

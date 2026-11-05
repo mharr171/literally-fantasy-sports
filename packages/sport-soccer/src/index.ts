@@ -13,6 +13,7 @@ export * from "./matchday";
 export * from "./overall";
 export * from "./play-by-play";
 export * from "./player";
+export * from "./player-stats";
 export * from "./positions";
 export * from "./roster";
 export * from "./season-end";

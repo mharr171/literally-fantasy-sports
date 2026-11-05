@@ -330,6 +330,20 @@
       "when": 1793852782089,
       "tag": "0046_secondary_variant_functions",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1793853790120,
+      "tag": "0047_player_stats",
+      "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1793853790989,
+      "tag": "0048_player_stats_functions",
+      "breakpoints": true
     }
   ]
 }

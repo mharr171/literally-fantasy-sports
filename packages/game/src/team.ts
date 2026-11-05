@@ -6,6 +6,7 @@ import {
   type MatchdaySquad,
   type PackFocus,
   type PlayerCondition,
+  type PlayerStats,
   type Position,
   packContents,
 } from "@lfs/sport-soccer";
@@ -188,13 +189,15 @@ export interface RosterPlayer {
   potentialRange: [number, number];
   worth: number;
   chemistryColor: number;
+  /** Career totals (D143); games are appearances. */
+  stats: PlayerStats;
 }
 
 export async function loadRoster(teamId: string): Promise<RosterPlayer[]> {
   const { data, error } = await createServiceClient()
     .from("players")
     .select(
-      "id, from_starter_pack, attributes, fitness, injured_weeks, suspended_weeks, yellow_cards, form, template_variant, secondary_template_variant, display_name, nationality, age, primary_position, secondary_position, overall, potential_low, potential_high, worth, chemistry_color",
+      "id, from_starter_pack, attributes, fitness, injured_weeks, suspended_weeks, yellow_cards, form, template_variant, secondary_template_variant, display_name, nationality, age, primary_position, secondary_position, overall, potential_low, potential_high, worth, chemistry_color, appearances, goals, wins, draws, losses, assists, tackles, saves",
     )
     .eq("team_id", teamId);
   if (error) throw new Error(error.message);
@@ -220,6 +223,16 @@ export async function loadRoster(teamId: string): Promise<RosterPlayer[]> {
     potentialRange: [p.potential_low, p.potential_high],
     worth: p.worth,
     chemistryColor: p.chemistry_color,
+    stats: {
+      games: p.appearances,
+      wins: p.wins,
+      draws: p.draws,
+      losses: p.losses,
+      goals: p.goals,
+      assists: p.assists,
+      tackles: p.tackles,
+      saves: p.saves,
+    },
   }));
 }
 

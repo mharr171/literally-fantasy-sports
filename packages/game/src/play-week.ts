@@ -5,6 +5,7 @@ import {
   formModifier,
   isAvailable,
   MANAGER_SLOT,
+  matchStats,
   nextCondition,
   nextForm,
   nextMorale,
@@ -174,9 +175,10 @@ export async function playOneWeek(
           outcome.managerReports[p.id],
           outcome.managerResult,
         ),
-        // Career totals for the retirement record (D120).
+        // Career totals for the retirement record (D120, D143). Only the
+        // club's own match counts, never its copies in other leagues.
         appeared: (outcome.managerReports[p.id]?.minutes ?? 0) > 0,
-        goals: outcome.managerReports[p.id]?.goals ?? 0,
+        ...matchStats(outcome.managerReports[p.id], outcome.managerResult),
       };
     }),
   });
