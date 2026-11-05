@@ -3,9 +3,9 @@
 import { refresh } from "next/cache";
 import { z } from "zod";
 import {
-  aiClubTurn,
   createAiClub,
   listAiClubs,
+  runAiTurns,
   saveAiSettings,
 } from "@/lib/ai-clubs";
 import { getCurrentProfile } from "@/lib/auth";
@@ -70,49 +70,55 @@ export async function addClubs(count: number): Promise<AiResult> {
   try {
     const adminId = await requireAdminId();
     const n = z.number().int().min(1).max(10).parse(count);
+    // A page request has a minute: stop starting new clubs after 40 seconds.
+    const started = Date.now();
     const ids: string[] = [];
-    for (let i = 0; i < n; i++) ids.push(await createAiClub());
+    for (let i = 0; i < n && Date.now() - started < 40_000; i++)
+      ids.push(await createAiClub());
     await log(adminId, "ai_add_clubs", { count: ids.length });
     refresh();
-    return { ok: true, message: `Added ${ids.length} AI clubs.` };
+    return {
+      ok: true,
+      message:
+        ids.length < n
+          ? `Added ${ids.length} AI clubs (out of time for the rest: click again).`
+          : `Added ${ids.length} AI clubs.`,
+    };
   } catch (e) {
     return failed(e);
   }
 }
 
 /**
- * Gives every AI club one turn of up to `weeks` weeks now, as a scheduled
- * run will (D114). For testing on small pools: a page request has a minute.
+ * Gives AI clubs one turn of up to `weeks` weeks now, as a scheduled run
+ * will (D114). A page request has a minute, so it stops starting turns
+ * after 40 seconds; clubs that waited longest go first, so clicking again
+ * carries on with the rest.
  */
 export async function runTurn(weeks: number): Promise<AiResult> {
   try {
     const adminId = await requireAdminId();
     const w = z.number().int().min(1).max(6).parse(weeks);
     const clubs = await listAiClubs();
-    if (clubs.length > 25)
-      throw new Error(
-        "Too many AI clubs to run from this page; scheduled runs will do it.",
-      );
-    let played = 0;
-    const errors: string[] = [];
-    for (const club of clubs) {
-      const turn = await aiClubTurn(club.id, w);
-      played += turn.weeksPlayed;
-      if (turn.error) errors.push(`${club.name}: ${turn.error}`);
-    }
+    const run = await runAiTurns(clubs, () => w, { budgetMs: 40_000 });
+    const errors = run.turns
+      .filter((t) => t.error)
+      .map((t) => {
+        const name = clubs.find((c) => c.id === t.teamId)?.name ?? t.teamId;
+        return `${name}: ${t.error}`;
+      });
     await log(adminId, "ai_run_turn", {
       clubs: clubs.length,
+      ran: run.ran,
       weeks: w,
-      played,
+      played: run.weeksPlayed,
       errors,
     });
     refresh();
+    const summary = `${run.ran} of ${clubs.length} clubs played ${run.weeksPlayed} weeks.${run.skipped > 0 ? ` ${run.skipped} left: click again to carry on.` : ""}`;
     return errors.length > 0
-      ? {
-          ok: false,
-          error: `Played ${played} weeks. Problems: ${errors.join("; ")}`,
-        }
-      : { ok: true, message: `${clubs.length} clubs played ${played} weeks.` };
+      ? { ok: false, error: `${summary} Problems: ${errors.join("; ")}` }
+      : { ok: true, message: summary };
   } catch (e) {
     return failed(e);
   }

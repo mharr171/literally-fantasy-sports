@@ -121,14 +121,15 @@ export function AiControls({
         </label>
         <button
           type="button"
-          disabled={pending || clubs === 0 || clubs > 25}
+          disabled={pending || clubs === 0}
           onClick={() => run(() => runTurn(weeks))}
           className={button}
         >
           {pending ? "Working…" : "Run every AI club"}
         </button>
         <p className="text-xs text-zinc-500">
-          Uses energy like a manager. For testing with up to 25 clubs.
+          Uses energy like a manager. A click runs for up to 40 seconds; with
+          many clubs, click again to carry on with the rest.
         </p>
       </div>
       {result && (

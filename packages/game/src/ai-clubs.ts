@@ -94,13 +94,17 @@ export interface AiClub {
   elo: number;
   funds: number;
   energy: number;
+  /** When its energy last changed: oldest first means longest since it played. */
+  energyUpdatedAt: string;
   createdAt: string;
 }
 
 export async function listAiClubs(): Promise<AiClub[]> {
   const { data, error } = await createServiceClient()
     .from("teams")
-    .select("id, name, manager_name, ai, elo, funds, energy, created_at")
+    .select(
+      "id, name, manager_name, ai, elo, funds, energy, energy_updated_at, created_at",
+    )
     .eq("sport", SOCCER)
     .eq("kind", "ai")
     .order("elo", { ascending: false });
@@ -113,6 +117,7 @@ export async function listAiClubs(): Promise<AiClub[]> {
     elo: t.elo as number,
     funds: t.funds as number,
     energy: t.energy as number,
+    energyUpdatedAt: t.energy_updated_at as string,
     createdAt: t.created_at as string,
   }));
 }
@@ -317,4 +322,55 @@ export async function aiClubTurn(
     turn.error = e instanceof Error ? e.message : String(e);
   }
   return turn;
+}
+
+/** What a batch of AI turns did. */
+export interface AiRun {
+  /** Clubs that had their turn, and clubs left for next time. */
+  ran: number;
+  skipped: number;
+  weeksPlayed: number;
+  turns: AiTurn[];
+}
+
+/**
+ * Gives AI clubs their turns (D114), a few at a time, and stops starting
+ * new ones once `budgetMs` has passed, so a run always finishes inside its
+ * time limit. Clubs that waited longest go first, so the rest go first
+ * next time. `weeksFor` says how many weeks each club tries.
+ */
+export async function runAiTurns(
+  clubs: readonly Pick<AiClub, "id" | "energyUpdatedAt">[],
+  weeksFor: (clubId: string) => number,
+  {
+    budgetMs,
+    concurrency = 4,
+    turn = aiClubTurn,
+  }: {
+    budgetMs: number;
+    concurrency?: number;
+    /** One club's turn (tests swap it out). */
+    turn?: (clubId: string, weeks: number) => Promise<AiTurn>;
+  },
+): Promise<AiRun> {
+  const started = Date.now();
+  const queue = [...clubs].sort((a, b) =>
+    a.energyUpdatedAt.localeCompare(b.energyUpdatedAt),
+  );
+  const turns: AiTurn[] = [];
+  const worker = async () => {
+    for (;;) {
+      if (Date.now() - started > budgetMs) return;
+      const club = queue.shift();
+      if (!club) return;
+      turns.push(await turn(club.id, weeksFor(club.id)));
+    }
+  };
+  await Promise.all(Array.from({ length: concurrency }, worker));
+  return {
+    ran: turns.length,
+    skipped: queue.length,
+    weeksPlayed: turns.reduce((n, t) => n + t.weeksPlayed, 0),
+    turns,
+  };
 }
