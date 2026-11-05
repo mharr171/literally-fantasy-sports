@@ -307,7 +307,8 @@ export function squadProblems(
     problems.push(
       `Pick at most ${benchMax} substitutes (${squad.bench.length} picked).`,
     );
-  const everyone = [...squad.lineup, ...squad.bench];
+  // An empty starter slot ("") is allowed: the club plays a man down (D183).
+  const everyone = [...squad.lineup, ...squad.bench].filter(Boolean);
   if (new Set(everyone).size !== everyone.length)
     problems.push("A player is picked twice.");
   const missing = everyone.filter((id) => !rosterIds.has(id)).length;
@@ -370,7 +371,7 @@ export interface PickablePlayer extends SoccerPlayer {
 
 /** What auto-pick should know about a player's state this week (M4). */
 export interface PickOptions {
-  /** False for injured or suspended players; they're only used to fill gaps. */
+  /** False for injured or suspended players; they're never picked (D183). */
   available?: (id: string) => boolean;
   /**
    * Multiplies a player's rating when choosing, e.g. lower for tired or
@@ -385,8 +386,8 @@ export interface PickOptions {
  * A sensible squad: fills the formation's slots, scarcest first (the
  * keeper), with the best available rating in each, then puts the next best
  * 11 on the bench, making sure a spare keeper is among them. Unavailable
- * players (injured, suspended) are never picked over available ones; they
- * only fill places nobody else can, so the squad can still be saved.
+ * players (injured, suspended) are never picked: a slot nobody fit can
+ * fill is left empty and the club plays a man down (D183).
  */
 export function autoPickSquad(
   players: readonly PickablePlayer[],
@@ -404,7 +405,11 @@ export function autoPickSquad(
   const slotScore = (p: PickablePlayer, position: Position) =>
     score(p, slotRating(p, position)) +
     (playsPosition(p, position) ? 1_000 : 0);
-  const free = new Map(players.map((p) => [p.id, p]));
+  // Injured and suspended players are never picked: a slot nobody fit can
+  // fill stays empty (""), as at kickoff (D183).
+  const free = new Map(
+    players.filter((p) => available(p.id)).map((p) => [p.id, p]),
+  );
   const order = shape.slots
     .map((s, i) => ({ s, i }))
     .sort(
@@ -437,7 +442,7 @@ export function autoPickSquad(
     bench[benchSize - 1] = spareKeeper;
   return {
     formation: shape.id,
-    lineup: lineup.filter(Boolean),
+    lineup: players.length === 0 ? [] : lineup,
     bench: bench.map((p) => p.id),
     subPlan: [],
   };

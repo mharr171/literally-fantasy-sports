@@ -8,6 +8,7 @@ import {
   LATEST_PLAN_MINUTE,
   lineupChemistry,
   type MatchdaySquad,
+  MIN_PLAYERS,
   type PlannedSub,
   type Position,
   positionFit,
@@ -96,7 +97,11 @@ export function SquadBuilder({
 
   const [formationId, setFormationId] = useState(initial.formation);
   const [lineup, setLineup] = useState<Slot[]>(() =>
-    pad(keep(initial.lineup), 11),
+    // Slot by slot: an empty slot (D183) or a player who left stays empty.
+    pad(
+      initial.lineup.map((id) => (byId.has(id) ? id : "")),
+      11,
+    ).map((id) => id || null),
   );
   const [bench, setBench] = useState<Slot[]>(() =>
     pad(keep(initial.bench).slice(0, benchMax), benchMax),
@@ -118,11 +123,13 @@ export function SquadBuilder({
 
   const squad: MatchdaySquad = {
     formation: formationId,
-    lineup: lineup.filter(Boolean) as string[],
+    // Empty starter slots are kept: the club plays a man down (D183).
+    lineup: lineup.map((id) => id ?? ""),
     bench: bench.filter(Boolean) as string[],
     subPlan: plan,
   };
   const problems = squadProblems(squad, rosterIds, undefined, benchMax);
+  const emptySlots = lineup.filter((id) => !id).length;
 
   const starters = lineup.map((id) => (id ? byId.get(id) : undefined));
   const present = starters.filter(Boolean) as RosterPlayer[];
@@ -252,7 +259,7 @@ export function SquadBuilder({
       ...pickOptions(roster, { rotate }),
       benchSize: benchMax,
     });
-    setLineup(pad(squad.lineup, 11));
+    setLineup(pad(squad.lineup, 11).map((id) => id || null));
     setBench(pad(squad.bench.slice(0, benchMax), benchMax));
     setPlan([]);
     setSelected(null);
@@ -363,6 +370,19 @@ export function SquadBuilder({
           {pending ? "Saving…" : "Save squad"}
         </button>
       </div>
+      {problems.length === 0 && emptySlots > 0 && (
+        <p className="text-sm text-amber-700 dark:text-amber-400">
+          {emptySlots === 1
+            ? "1 starting place is"
+            : `${emptySlots} starting places are`}{" "}
+          empty, so you&apos;ll play{" "}
+          {emptySlots === 1 ? "a man" : `${emptySlots} men`} down
+          {11 - emptySlots < MIN_PLAYERS
+            ? ", and with fewer than 7 the match is forfeited 3–0"
+            : ""}
+          . Fill them from the bench or your reserves if you can.
+        </p>
+      )}
       {(problems.length > 0 || error) && (
         <ul
           role="alert"

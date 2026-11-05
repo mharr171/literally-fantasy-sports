@@ -52,7 +52,10 @@ export function snapshotTeam(
 ): GhostSnapshot {
   const ids = new Set(players.map((p) => p.id));
   const usable =
-    squad && squadProblems(squad, ids).length === 0
+    // A ghost always takes the field with 11 (D183).
+    squad &&
+    !squad.lineup.some((id) => !id) &&
+    squadProblems(squad, ids).length === 0
       ? squad
       : autoPickSquad(players, squad?.formation);
   return {
