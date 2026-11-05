@@ -67,6 +67,7 @@ async function SquadContent() {
         initial={saved ?? autoPickSquad(roster, undefined, pickOptions(roster))}
         saved={saved !== null}
         outOfPosition={outOfPosition}
+        morale={team.morale}
       />
     </>
   );

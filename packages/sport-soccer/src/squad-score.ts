@@ -49,22 +49,32 @@ export interface SquadScore {
   today: number;
 }
 
-/** A starting 11's score (D110); empty slots count as nothing. */
+/**
+ * A starting 11's score (D110); empty slots count as nothing. Ratings use
+ * the season's out-of-position penalty (D135), and "today" also counts team
+ * morale, as matches do (D162).
+ */
 export function squadScore(
   starters: readonly ScoredStarter[],
   slots = 11,
   boosts: ChemistryBoosts = DEFAULT_CHEMISTRY_BOOSTS,
+  {
+    outOfPosition = 0,
+    morale = 0,
+  }: { outOfPosition?: number; morale?: number } = {},
 ): SquadScore {
   const chemistry = lineupChemistry(
     starters.map((s) => s.player),
     boosts,
   );
+  const moraleWeight = 1 + formModifier(0, morale);
   let base = 0;
   let today = 0;
   starters.forEach((s, i) => {
-    const rating = slotRating(s.player, s.slot) * (1 + (chemistry[i] ?? 0));
+    const rating =
+      slotRating(s.player, s.slot, outOfPosition) * (1 + (chemistry[i] ?? 0));
     base += rating;
-    today += rating * (s.weight ?? 1);
+    today += rating * (s.weight ?? 1) * moraleWeight;
   });
   return { base: base / slots, today: today / slots };
 }
