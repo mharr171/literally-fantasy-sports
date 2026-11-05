@@ -163,11 +163,14 @@ export const DEFAULT_MATCH_TUNING: MatchTuning = {
   playerMatchup: 0,
 };
 
-/** The strengths ADR 0003 proposes, for the harness and a new settings version. */
+/**
+ * The strengths Gary chose (D150) for the settings version that turns
+ * matchups on, used by the harness's --matchups switch.
+ */
 export const PROPOSED_MATCHUPS: Pick<
   MatchTuning,
   "teamMatchup" | "teamMatchupSecond" | "playerMatchup"
-> = { teamMatchup: 0.04, teamMatchupSecond: 0.02, playerMatchup: 0.06 };
+> = { teamMatchup: 0.07, teamMatchupSecond: 0.035, playerMatchup: 0.09 };
 
 /**
  * Soccer's color cycle (D138, ADR 0003): color indexes in rainbow order,
