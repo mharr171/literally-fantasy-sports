@@ -233,6 +233,7 @@ export async function saveSquadFor(
     lineup: squad.lineup,
     bench: squad.bench,
     sub_plan: squad.subPlan,
+    moved_from: null,
     updated_at: new Date().toISOString(),
   });
   if (error) throw new Error(error.message);

@@ -400,6 +400,13 @@
       "when": 1793866253029,
       "tag": "0056_formations_functions",
       "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "7",
+      "when": 1793867119989,
+      "tag": "0057_squad_moved_from",
+      "breakpoints": true
     }
   ]
 }

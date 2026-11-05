@@ -474,3 +474,87 @@ export function squadToTeam(
     subPlan: squad.subPlan.map((s) => ({ ...s })),
   };
 }
+
+/**
+ * The formation most like `fromId` among `candidates` (D140): the most
+ * positions in common, then the earliest in the list. For moving a club off
+ * a formation that's been turned off.
+ */
+export function closestFormation(
+  fromId: string,
+  candidates: readonly Formation[],
+): Formation | undefined {
+  const from = formation(fromId);
+  const count = (f: Formation) => {
+    const left = (from?.slots ?? []).map((s) => s.position);
+    let common = 0;
+    for (const s of f.slots) {
+      const i = left.indexOf(s.position);
+      if (i >= 0) {
+        common++;
+        left.splice(i, 1);
+      }
+    }
+    return common;
+  };
+  let best: Formation | undefined;
+  let bestCount = -1;
+  for (const f of candidates) {
+    const c = count(f);
+    if (c > bestCount) {
+      best = f;
+      bestCount = c;
+    }
+  }
+  return best;
+}
+
+/**
+ * The same squad in another formation (D140): the same 11 starters, bench
+ * and sub plan, each starter put in a slot of their old position where
+ * there is one, then where they can play, then where they rate best.
+ */
+export function moveSquad(
+  squad: MatchdaySquad,
+  to: Formation,
+  playersById: ReadonlyMap<string, SoccerPlayer>,
+): MatchdaySquad {
+  const fromSlots = formation(squad.formation)?.slots ?? [];
+  const left = squad.lineup.map((id, i) => ({
+    id,
+    was: fromSlots[i]?.position,
+  }));
+  const lineup: (string | undefined)[] = to.slots.map(() => undefined);
+  const place = (fits: (p: (typeof left)[number], at: Position) => boolean) => {
+    to.slots.forEach((slot, i) => {
+      if (lineup[i]) return;
+      const k = left.findIndex((p) => fits(p, slot.position));
+      if (k < 0) return;
+      lineup[i] = left[k]?.id;
+      left.splice(k, 1);
+    });
+  };
+  place((p, at) => p.was === at);
+  place((p, at) => {
+    const player = playersById.get(p.id);
+    return player !== undefined && playsPosition(player, at);
+  });
+  to.slots.forEach((slot, i) => {
+    if (lineup[i] || left.length === 0) return;
+    const rating = (id: string) => {
+      const player = playersById.get(id);
+      return player ? slotRating(player, slot.position) : -1;
+    };
+    let k = 0;
+    left.forEach((p, j) => {
+      if (rating(p.id) > rating((left[k] as { id: string }).id)) k = j;
+    });
+    lineup[i] = left[k]?.id;
+    left.splice(k, 1);
+  });
+  return {
+    ...squad,
+    formation: to.id,
+    lineup: lineup.filter((id): id is string => id !== undefined),
+  };
+}
