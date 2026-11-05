@@ -16,15 +16,20 @@ import {
   type MatchTuning,
   PACK_PRICE_LIMIT,
   PAYOUT_LIMITS,
+  SOCCER_COLOR_CYCLE,
   TUNING_LIMITS,
+  type TuningNumberKey,
 } from "@lfs/sport-soccer";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
+import { ColorRing } from "@/components/color-ring";
+import { ChemistryDot } from "@/components/player/player-card";
+import { CHEMISTRY_COLORS } from "@/lib/chemistry-colors";
 import type { TestResult } from "../templates/actions";
 import { TestTable } from "../templates/template-editor";
 import { publishBalance, saveBalance, testBalance } from "./actions";
 
-const TUNING_GROUPS: [string, (keyof MatchTuning)[]][] = [
+const TUNING_GROUPS: [string, TuningNumberKey[]][] = [
   [
     "Match flow",
     [
@@ -54,10 +59,7 @@ const TUNING_GROUPS: [string, (keyof MatchTuning)[]][] = [
   ],
   ["Cards and injuries", ["injuryRate", "yellowRate", "redRate"]],
   ["Positions", ["outOfPosition"]],
-  [
-    "Color matchups (Red → Yellow → Green → Blue → Purple; each beats the next two)",
-    ["teamMatchup", "teamMatchupSecond", "playerMatchup"],
-  ],
+  ["Color matchups", ["teamMatchup", "teamMatchupSecond", "playerMatchup"]],
 ];
 
 /** Every field as a path, e.g. "tuning.phases" or "packs.tiers.basic". */
@@ -65,7 +67,8 @@ type Fields = Record<string, string>;
 
 function toFields(s: BalanceSettings): Fields {
   const f: Fields = {};
-  for (const [k, v] of Object.entries(s.tuning)) f[`tuning.${k}`] = String(v);
+  for (const [k, v] of Object.entries(s.tuning))
+    if (typeof v === "number") f[`tuning.${k}`] = String(v);
   for (const [k, v] of Object.entries(s.payouts)) f[`payouts.${k}`] = String(v);
   for (const t of BOUGHT_TIERS)
     f[`packs.tiers.${t.id}`] = String(s.packs.tiers[t.id] ?? t.price);
@@ -76,13 +79,16 @@ function toFields(s: BalanceSettings): Fields {
   return f;
 }
 
-function fromFields(f: Fields): BalanceSettings {
+function fromFields(f: Fields, cycle: readonly number[]): BalanceSettings {
   const n = (path: string) =>
     f[path]?.trim() === "" ? Number.NaN : Number(f[path]);
   const pick = <T,>(prefix: string, keys: string[]) =>
     Object.fromEntries(keys.map((k) => [k, n(`${prefix}.${k}`)])) as T;
   return {
-    tuning: pick<MatchTuning>("tuning", Object.keys(TUNING_LIMITS)),
+    tuning: {
+      ...pick<MatchTuning>("tuning", Object.keys(TUNING_LIMITS)),
+      colorCycle: [...cycle],
+    },
     payouts: pick<PayoutSettings>("payouts", Object.keys(PAYOUT_LIMITS)),
     packs: {
       tiers: Object.fromEntries(
@@ -109,6 +115,10 @@ export function BalanceEditor(props: {
   const router = useRouter();
   const [fields, setFields] = useState(() => toFields(props.settings));
   const [note, setNote] = useState(props.note);
+  const [cycle, setCycle] = useState<readonly number[]>(
+    () => props.settings.tuning.colorCycle ?? SOCCER_COLOR_CYCLE,
+  );
+  const liveCycle = props.live.tuning.colorCycle ?? SOCCER_COLOR_CYCLE;
   const [dirty, setDirty] = useState(false);
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<{
@@ -122,7 +132,7 @@ export function BalanceEditor(props: {
     [props.defaults],
   );
 
-  const settings = fromFields(fields);
+  const settings = fromFields(fields, cycle);
   const errors = balanceErrors(settings);
   const input = () => ({ baseVersion: props.version, note, settings });
   const set = (path: string, value: string) => {
@@ -212,6 +222,16 @@ export function BalanceEditor(props: {
             {keys.map((k) => field(`tuning.${k}`, TUNING_LIMITS[k]))}
           </div>
           {keys.includes("fatiguePerPhase") && <FatigueSummary {...settings} />}
+          {keys.includes("teamMatchup") && (
+            <CycleEditor
+              cycle={cycle}
+              live={liveCycle}
+              onChange={(next) => {
+                setCycle(next);
+                setDirty(true);
+              }}
+            />
+          )}
         </fieldset>
       ))}
 
@@ -434,5 +454,98 @@ function FatigueSummary({ tuning, condition }: BalanceSettings) {
           </>
         ))}
     </p>
+  );
+}
+
+const colorName = (c: number) => CHEMISTRY_COLORS[c]?.name ?? "?";
+
+/**
+ * The color cycle (D149): the order of the five colors round the ring.
+ * Each beats the next two and loses to the two before it, so any order is
+ * balanced; moving a color changes who it beats.
+ */
+function CycleEditor({
+  cycle,
+  live,
+  onChange,
+}: {
+  cycle: readonly number[];
+  live: readonly number[];
+  onChange: (cycle: readonly number[]) => void;
+}) {
+  const n = cycle.length;
+  const move = (i: number, by: number) => {
+    const next = [...cycle];
+    const j = (i + by + n) % n;
+    [next[i], next[j]] = [next[j] as number, next[i] as number];
+    onChange(next);
+  };
+  const same = (a: readonly number[], b: readonly number[]) =>
+    a.length === b.length && a.every((c, i) => c === b[i]);
+  const text = (c: readonly number[]) =>
+    [...c, c[0] as number].map(colorName).join(" → ");
+  return (
+    <div className="flex flex-col gap-3 rounded-md border border-zinc-200 p-3 text-sm dark:border-zinc-800">
+      <p className="font-medium">Color cycle</p>
+      <p className="text-zinc-600 dark:text-zinc-400">
+        Each color beats the next two round the ring and loses to the two before
+        it, so every order is fair. Move a color to change who it beats.
+      </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <ColorRing ring={cycle} />
+        <ol className="flex flex-col gap-1.5">
+          {cycle.map((c, i) => (
+            <li key={c} className="flex items-center gap-2">
+              <span className="w-4 text-right tabular-nums text-zinc-500">
+                {i + 1}
+              </span>
+              <span className="inline-flex w-20 items-center gap-1.5 font-medium">
+                <ChemistryDot color={c} /> {colorName(c)}
+              </span>
+              <button
+                type="button"
+                aria-label={`Move ${colorName(c)} earlier`}
+                onClick={() => move(i, -1)}
+                className="rounded border border-zinc-300 px-1.5 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+              >
+                ↑
+              </button>
+              <button
+                type="button"
+                aria-label={`Move ${colorName(c)} later`}
+                onClick={() => move(i, 1)}
+                className="rounded border border-zinc-300 px-1.5 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+              >
+                ↓
+              </button>
+              <span className="text-zinc-500">
+                beats {colorName(cycle[(i + 1) % n] as number)} and{" "}
+                {colorName(cycle[(i + 2) % n] as number)}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </div>
+      <p
+        className={
+          same(cycle, live)
+            ? "text-zinc-500"
+            : "font-medium text-amber-700 dark:text-amber-400"
+        }
+      >
+        {same(cycle, live)
+          ? `Same as live: ${text(live)}.`
+          : `Live is ${text(live)}. Seasons already under way keep the cycle they started with.`}
+      </p>
+      {!same(cycle, SOCCER_COLOR_CYCLE) && (
+        <button
+          type="button"
+          onClick={() => onChange(SOCCER_COLOR_CYCLE)}
+          className="self-start text-xs underline"
+        >
+          Back to the rainbow ({text(SOCCER_COLOR_CYCLE)})
+        </button>
+      )}
+    </div>
   );
 }

@@ -141,6 +141,12 @@ export interface MatchTuning {
    * 0 makes each sub as soon as it's due.
    */
   groupedSubs: number;
+  /**
+   * The color cycle (D149): color indexes round the ring, each beating the
+   * next two. Missing means the built-in cycle (SOCCER_COLOR_CYCLE), so
+   * versions saved before the editor play as they did.
+   */
+  colorCycle?: readonly number[];
 }
 
 export const DEFAULT_MATCH_TUNING: MatchTuning = {
@@ -205,6 +211,23 @@ export const PROPOSED_MATCHUPS: Pick<
  * Red → Yellow → Green → Blue → Purple. Each beats the next two.
  */
 export const SOCCER_COLOR_CYCLE: readonly number[] = [0, 3, 2, 1, 4];
+
+/**
+ * What's wrong with a color cycle (D149), or null when it's fine: every
+ * color exactly once. Any order of an odd number of colors is balanced,
+ * each beating two and losing to two.
+ */
+export function colorCycleError(cycle: unknown): string | null {
+  const n = SOCCER_COLOR_CYCLE.length;
+  if (
+    !Array.isArray(cycle) ||
+    cycle.length !== n ||
+    new Set(cycle).size !== n ||
+    cycle.some((c) => !Number.isInteger(c) || c < 0 || c >= n)
+  )
+    return "The color cycle must hold each of the five colors once.";
+  return null;
+}
 
 export interface SoccerConfig {
   version: string;
@@ -540,7 +563,7 @@ function matchupBonuses(
 ): number[] | null {
   if (!hasMatchups(tuning)) return null;
   const { teamMatchup, teamMatchupSecond, playerMatchup } = tuning;
-  const cycle = SOCCER_COLOR_CYCLE;
+  const cycle = tuning.colorCycle ?? SOCCER_COLOR_CYCLE;
   const mine = rankedColors(team.onField.map((p) => p.player.chemistryColor));
   const theirs = rankedColors(
     opponent.onField.map((p) => p.player.chemistryColor),

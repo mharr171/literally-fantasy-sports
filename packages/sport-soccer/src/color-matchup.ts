@@ -9,11 +9,13 @@ import { SOCCER_COLOR_CYCLE } from "./match";
  * The colors `color` beats and loses to, in ring order: the next ones round
  * the rainbow, and the ones just before it.
  */
-export function colorMatchups(color: number): {
+export function colorMatchups(
+  color: number,
+  ring: readonly number[] = SOCCER_COLOR_CYCLE,
+): {
   beats: number[];
   losesTo: number[];
 } {
-  const ring = SOCCER_COLOR_CYCLE;
   const n = ring.length;
   const i = ring.indexOf(color);
   if (i < 0) return { beats: [], losesTo: [] };
@@ -37,12 +39,13 @@ export interface DominantMatchup {
 export function dominantMatchup(
   mine: readonly { chemistryColor: number }[],
   theirs: readonly { chemistryColor: number }[],
+  cycle: readonly number[] = SOCCER_COLOR_CYCLE,
 ): DominantMatchup {
   const a = rankedColors(mine.map((p) => p.chemistryColor)).first;
   const b = rankedColors(theirs.map((p) => p.chemistryColor)).first;
   return {
     mine: a,
     theirs: b,
-    edge: a !== null && b !== null ? colorEdge(a, b, SOCCER_COLOR_CYCLE) : 0,
+    edge: a !== null && b !== null ? colorEdge(a, b, cycle) : 0,
   };
 }

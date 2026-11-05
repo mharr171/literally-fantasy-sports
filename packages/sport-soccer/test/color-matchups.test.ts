@@ -1,10 +1,18 @@
 import { createRng } from "@lfs/core";
 import { describe, expect, it } from "vitest";
-import { balanceFromValues } from "../src/balance";
+import {
+  balanceErrors,
+  balanceFromValues,
+  balanceToRows,
+  DEFAULT_BALANCE,
+} from "../src/balance";
+import { colorMatchups, dominantMatchup } from "../src/color-matchup";
 import { generateTeam } from "../src/harness";
 import {
+  colorCycleError,
   defaultSoccerConfig,
   PROPOSED_MATCHUPS,
+  SOCCER_COLOR_CYCLE,
   type SoccerTeam,
   simulateMatch,
 } from "../src/match";
@@ -85,5 +93,71 @@ describe("color matchups in matches (D119, ADR 0003)", () => {
       if (winner === "away") lost++;
     }
     expect(won).toBeGreaterThan(lost);
+  });
+});
+
+describe("color cycle editor (D149)", () => {
+  it("accepts any order of the five colors, and nothing else", () => {
+    expect(colorCycleError([4, 3, 2, 1, 0])).toBeNull();
+    expect(colorCycleError(SOCCER_COLOR_CYCLE)).toBeNull();
+    for (const bad of [
+      [0, 1, 2, 3],
+      [0, 0, 1, 2, 3],
+      [0, 1, 2, 3, 5],
+      "x",
+      [0, 1, 2, 3, 4.5],
+    ])
+      expect(colorCycleError(bad)).toMatch(/each of the five colors once/);
+  });
+
+  it("matchups follow the cycle passed in", () => {
+    // The rainbow backwards: Purple → Blue → Green → Yellow → Red.
+    const ring = [4, 1, 2, 3, 0];
+    expect(colorMatchups(4, ring)).toEqual({ beats: [1, 2], losesTo: [3, 0] });
+    const reds = Array.from({ length: 6 }, () => ({ chemistryColor: 0 }));
+    const yellows = Array.from({ length: 6 }, () => ({ chemistryColor: 3 }));
+    // Red beats Yellow on the rainbow; reversed, Red loses to it.
+    expect(dominantMatchup(reds, yellows).edge).toBe(1);
+    expect(dominantMatchup(reds, yellows, ring).edge).toBe(-1);
+  });
+
+  it("keeps a valid stored cycle, drops a broken one, and refuses a bad one", () => {
+    const kept = balanceFromValues({ tuning: { colorCycle: [4, 3, 2, 1, 0] } });
+    expect(kept.tuning.colorCycle).toEqual([4, 3, 2, 1, 0]);
+    expect(
+      balanceFromValues({ tuning: { colorCycle: [0, 0, 0, 0, 0] } }).tuning
+        .colorCycle,
+    ).toBeUndefined();
+    expect(balanceFromValues({}).tuning.colorCycle).toBeUndefined();
+    expect(
+      balanceErrors({
+        ...DEFAULT_BALANCE,
+        tuning: { ...DEFAULT_BALANCE.tuning, colorCycle: [0, 1, 2] },
+      }),
+    ).toContain("The color cycle must hold each of the five colors once.");
+    const rows = balanceToRows(kept);
+    expect(rows.find((r) => r.key === "tuning")?.value).toMatchObject({
+      colorCycle: [4, 3, 2, 1, 0],
+    });
+  });
+
+  it("a reversed cycle flips which side's influence rises in a match", () => {
+    const red = paint(generateTeam(createRng("cc-h"), "h", 60), [0]);
+    const green = paint(generateTeam(createRng("cc-a"), "a", 60), [2]);
+    const reversed = {
+      ...on,
+      tuning: { ...on.tuning, colorCycle: [4, 1, 2, 3, 0] },
+    };
+    const total = (config: typeof base, side: "home" | "away") =>
+      [
+        ...simulateMatch(
+          { home: red, away: green, mode: "league", config },
+          "cc",
+        ).influence[side].values,
+      ].reduce((a, b) => a + b, 0);
+    // Rainbow: Red beats Green. Reversed: Green beats Red.
+    expect(total(on, "home")).toBeGreaterThan(total(base, "home"));
+    expect(total(reversed, "home")).toBeLessThan(total(base, "home"));
+    expect(total(reversed, "away")).toBeGreaterThan(total(base, "away"));
   });
 });

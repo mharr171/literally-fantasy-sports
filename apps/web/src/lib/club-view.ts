@@ -6,9 +6,10 @@ import {
   type MatchdaySquad,
   type Position,
   type SnapshotPlayer,
+  SOCCER_COLOR_CYCLE,
 } from "@lfs/sport-soccer";
 import { ensureFormations } from "./formations";
-import { loadClones, loadLatestSeason } from "./season";
+import { configFor, loadClones, loadLatestSeason } from "./season";
 import { createServiceClient } from "./supabase/service";
 import { loadMyTeam, loadRoster, loadSquad, SOCCER } from "./team";
 
@@ -330,6 +331,8 @@ export interface ScheduleRow {
 
 export interface Schedule {
   seasonNumber: number;
+  /** The color cycle the season plays by (D149). */
+  cycle: readonly number[];
   week: number;
   /** The club's starting 11 colors as its squad is saved now. */
   myStarters: { chemistryColor: number }[];
@@ -413,8 +416,10 @@ export async function loadSchedule(ownerId: string): Promise<Schedule | null> {
           : null,
       };
     });
+  const { config } = await configFor(season.configVersion);
   return {
     seasonNumber: season.number,
+    cycle: config.tuning.colorCycle ?? SOCCER_COLOR_CYCLE,
     week: season.week,
     myStarters: squad ? colorsOf(roster, squad.lineup) : [],
     rows,
