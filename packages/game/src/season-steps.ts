@@ -5,10 +5,9 @@
  */
 import { playerWorth } from "@lfs/core";
 import {
-  DEFAULT_GHOST_SETTINGS,
   endOfSeason,
   FRESH,
-  newLeague,
+  nearestLeague,
   type PlayerCondition,
   seasonReset,
   seasonStats,
@@ -21,12 +20,12 @@ import { playerRow } from "./scouting";
 import {
   liveGenerationSettings,
   liveSoccerConfig,
-  loadGhostCandidates,
   loadLatestSeason,
+  loadLeagueCandidates,
 } from "./season";
 import { loadAgingPlayers, loadRoster, loadSquad, type MyTeam } from "./team";
 
-/** Starts the club's next season: a league around its Elo (D16, D32). */
+/** Starts the club's next season: a league of the clubs nearest its Elo (D115). */
 export async function startSeasonFor(teamIn: MyTeam): Promise<void> {
   const { team } = await readyToPlay(teamIn);
   const latest = await loadLatestSeason(team.id);
@@ -36,15 +35,11 @@ export async function startSeasonFor(teamIn: MyTeam): Promise<void> {
     throw new Error("Wrap up last season first: season end and youth intake.");
   const seed = crypto.randomUUID();
   const { label } = await liveSoccerConfig();
-  const ghosts = await loadGhostCandidates(
-    team.elo,
-    DEFAULT_GHOST_SETTINGS.eloWindow,
-    team.id,
-  );
-  const league = newLeague(
+  // The 11 clubs nearest its Elo (D115).
+  const league = nearestLeague(
     seed,
     { name: team.name, elo: team.elo, teamId: team.id },
-    ghosts,
+    await loadLeagueCandidates(team.elo, team.id),
   );
   const { error } = await createServiceClient().rpc("start_season", {
     p_team: team.id,
@@ -55,7 +50,7 @@ export async function startSeasonFor(teamIn: MyTeam): Promise<void> {
       kind: s.kind,
       name: s.name,
       start_rating: s.startRating,
-      // Ghosts are copied from the club's ghost by start_season (D115).
+      // start_season copies these clubs as they are now (D115).
       source_team_id: s.ghostId ?? null,
     })),
     p_fixtures: league.fixtures.map((f) => ({

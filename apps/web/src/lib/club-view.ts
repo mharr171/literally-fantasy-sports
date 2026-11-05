@@ -93,9 +93,7 @@ export async function loadLeagueClub(
       return {
         name: info.name,
         kind: "ghost",
-        // The league may show a ghost under another name, so its real
-        // colors stay out of it.
-        colors: null,
+        colors: info.colors.length > 0 ? info.colors : null,
         elo: info.elo,
         players: clone.players.map(pick),
         squad: clone.squad,

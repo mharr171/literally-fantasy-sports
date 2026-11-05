@@ -18,6 +18,7 @@ import {
   type SoccerConfig,
   type SoccerTeam,
   type Stage,
+  snapshotTeam,
   soccerConfigFromValues,
 } from "@lfs/sport-soccer";
 import { createServiceClient } from "./db";
@@ -46,7 +47,7 @@ export interface LoadedSeason {
   closed: boolean;
   review: SeasonReview | null;
   intakeResolved: boolean;
-  slots: (LeagueSlot & { elo: number })[];
+  slots: (LeagueSlot & { elo: number; colors: string[] })[];
   fixtures: (SeasonFixture & { summary: MatchSummary | null })[];
 }
 
@@ -69,7 +70,7 @@ export async function loadLatestSeason(
   const [slots, fixtures] = await Promise.all([
     db
       .from("season_teams")
-      .select("slot, kind, name, start_rating, elo, source_team_id")
+      .select("slot, kind, name, start_rating, elo, source_team_id, colors")
       .eq("season_id", season.id)
       .order("slot"),
     db
@@ -100,6 +101,7 @@ export async function loadLatestSeason(
       startRating: s.start_rating,
       elo: s.elo,
       ghostId: s.source_team_id as string | null,
+      colors: (s.colors as string[] | null) ?? [],
     })),
     fixtures: (fixtures.data ?? []).map((f) => ({
       id: f.id,
@@ -165,29 +167,60 @@ export async function configFor(label: string): Promise<LoadedConfig> {
 }
 
 /**
- * Ghosts that could join a new league (D116): every other real club's
- * best season near this Elo. A club never meets its own ghost (D115).
+ * Clubs that could join a new league (D115): AI clubs as they are now and
+ * other real clubs' best ghosts (D116), the nearest few above and below
+ * this Elo of each. A club is never its own candidate.
  */
-export async function loadGhostCandidates(
+export async function loadLeagueCandidates(
   elo: number,
-  window: number,
   excludeTeamId: string,
+  each = 11,
 ): Promise<GhostCandidate[]> {
-  const { data, error } = await createServiceClient()
-    .from("ghosts")
-    .select("team_id, team_name, elo")
-    .eq("sport", SOCCER)
-    .neq("team_id", excludeTeamId)
-    .gte("elo", elo - window)
-    .lte("elo", elo + window)
-    .limit(300);
-  if (error) throw new Error(error.message);
-  return (data ?? []).map((g) => ({
-    id: g.team_id as string,
-    teamId: g.team_id as string,
-    name: g.team_name as string,
-    elo: g.elo as number,
+  const db = createServiceClient();
+  const ai = (above: boolean) => {
+    const q = db
+      .from("teams")
+      .select("id, name, elo")
+      .eq("sport", SOCCER)
+      .eq("kind", "ai")
+      .neq("id", excludeTeamId);
+    return (above ? q.gte("elo", elo) : q.lt("elo", elo))
+      .order("elo", { ascending: above })
+      .limit(each);
+  };
+  const ghost = (above: boolean) => {
+    const q = db
+      .from("ghosts")
+      .select("team_id, team_name, elo")
+      .eq("sport", SOCCER)
+      .neq("team_id", excludeTeamId);
+    return (above ? q.gte("elo", elo) : q.lt("elo", elo))
+      .order("elo", { ascending: above })
+      .limit(each);
+  };
+  const results = await Promise.all([
+    ai(true),
+    ai(false),
+    ghost(true),
+    ghost(false),
+  ]);
+  for (const r of results) if (r.error) throw new Error(r.error.message);
+  const [aiUp, aiDown, ghostUp, ghostDown] = results;
+  const clubs = [...(aiUp?.data ?? []), ...(aiDown?.data ?? [])].map((t) => ({
+    id: t.id as string,
+    teamId: t.id as string,
+    name: t.name as string,
+    elo: t.elo as number,
   }));
+  const ghosts = [...(ghostUp?.data ?? []), ...(ghostDown?.data ?? [])].map(
+    (g) => ({
+      id: g.team_id as string,
+      teamId: g.team_id as string,
+      name: g.team_name as string,
+      elo: g.elo as number,
+    }),
+  );
+  return [...clubs, ...ghosts];
 }
 
 /** The copy of a club a league plays against: players and matchday squad (D115). */
@@ -216,8 +249,13 @@ export async function loadGhostTeams(
   seasonId: string,
 ): Promise<Map<number, ReturnType<typeof ghostTeam>>> {
   const result = new Map<number, ReturnType<typeof ghostTeam>>();
+  // A copy's saved squad is checked again; if it no longer works, the best
+  // 22 play (as when a ghost is frozen).
   for (const [slot, clone] of await loadClones(seasonId))
-    result.set(slot, ghostTeam(`ghost-${slot}`, clone));
+    result.set(
+      slot,
+      ghostTeam(`ghost-${slot}`, snapshotTeam(clone.players, clone.squad)),
+    );
   return result;
 }
 

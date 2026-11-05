@@ -52,12 +52,17 @@ export function SeasonView({
 }) {
   const name = (slot: number) =>
     season.slots.find((s) => s.slot === slot)?.name ?? "?";
-  const badge = (slot: number) => (
-    <ClubBadge
-      name={name(slot)}
-      colors={slot === MANAGER_SLOT ? teamColors : null}
-    />
-  );
+  const badge = (slot: number) => {
+    const own = season.slots.find((s) => s.slot === slot)?.colors ?? [];
+    return (
+      <ClubBadge
+        name={name(slot)}
+        colors={
+          slot === MANAGER_SLOT ? teamColors : own.length > 0 ? own : null
+        }
+      />
+    );
+  };
   const standings = table(season.slots, season.fixtures);
   const played = season.fixtures.filter((f) => f.homeScore !== null);
   const mine = (f: { homeSlot: number; awaySlot: number }) =>
@@ -189,14 +194,6 @@ export function SeasonView({
                         {badge(slot)}
                         {info?.name}
                       </Link>
-                      {info?.kind === "ghost" && (
-                        <span
-                          className="ml-1.5 rounded bg-violet-100 px-1 text-xs font-normal text-violet-800 dark:bg-violet-950 dark:text-violet-300"
-                          title="A ghost: another manager's team from a finished season"
-                        >
-                          ghost
-                        </span>
-                      )}
                     </td>
                     {(
                       [

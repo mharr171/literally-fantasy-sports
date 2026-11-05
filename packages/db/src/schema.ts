@@ -535,7 +535,9 @@ export const seasonTeams = pgTable(
     name: text().notNull(),
     startRating: integer().notNull(),
     elo: integer().notNull(),
-    /** The club this place copies (a ghost's club, D115). */
+    /** The copied club's colors (D107), so the league shows them. */
+    colors: text().array().notNull().default(sql`'{}'::text[]`),
+    /** The club this place copies (D115): an AI club, or a real club's ghost. */
     sourceTeamId: uuid().references(() => teams.id, { onDelete: "set null" }),
     /**
      * The copy it plays as, frozen for the season (D115): players (no hidden
