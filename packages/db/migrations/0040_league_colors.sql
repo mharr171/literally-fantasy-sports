@@ -1,0 +1,1 @@
+ALTER TABLE "season_teams" ADD COLUMN "colors" text[] DEFAULT '{}'::text[] NOT NULL;

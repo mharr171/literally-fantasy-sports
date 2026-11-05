@@ -10,6 +10,7 @@ import {
   LEAGUE_SIZE,
   leagueWeeks,
   MANAGER_SLOT,
+  nearestLeague,
   newLeague,
   playWeek,
   replayFixture,
@@ -381,5 +382,60 @@ describe("12-club seasons (D115, D117)", () => {
     expect(strong.funds).toBeGreaterThanOrEqual(22 * 1_000 + 1_000);
     expect(STAGE_NAMES.quarter).toBe("Quarter-finals");
     expect(STAGE_MATCH_NAMES.play_in).toBe("play-in");
+  });
+});
+
+describe("leagues of the nearest clubs (D115)", () => {
+  const club = { name: "My Club", elo: 1500, teamId: "ME" };
+  const candidate = (teamId: string, elo: number) => ({
+    id: teamId,
+    teamId,
+    name: `${teamId} Town`,
+    elo,
+  });
+  const pool = [
+    candidate("ME", 1500),
+    ...Array.from({ length: 30 }, (_, i) => candidate(`C${i}`, 1200 + i * 20)),
+  ];
+
+  it("takes the 11 clubs nearest the club's Elo, never the club itself", () => {
+    const league = nearestLeague("near", club, pool);
+    const others = league.slots.filter((s) => s.slot !== MANAGER_SLOT);
+    expect(others).toHaveLength(11);
+    expect(others.every((s) => s.kind === "ghost")).toBe(true);
+    expect(others.some((s) => s.ghostId === "ME")).toBe(false);
+    const gaps = others.map((s) => Math.abs(s.startRating - 1500));
+    // C15 is 1500 exactly; the farthest of the 11 is 100 away.
+    expect(Math.max(...gaps)).toBeLessThanOrEqual(100);
+    expect(new Set(others.map((s) => s.ghostId)).size).toBe(11);
+    expect(Math.max(...league.fixtures.map((f) => f.week))).toBe(22);
+    expect(nearestLeague("near", club, pool)).toEqual(league);
+  });
+
+  it("breaks Elo ties at random, the same way for the same seed", () => {
+    const tied = Array.from({ length: 20 }, (_, i) => candidate(`T${i}`, 1550));
+    const a = nearestLeague("tie-a", club, tied).slots.map((s) => s.ghostId);
+    const b = nearestLeague("tie-b", club, tied).slots.map((s) => s.ghostId);
+    expect(
+      nearestLeague("tie-a", club, tied).slots.map((s) => s.ghostId),
+    ).toEqual(a);
+    expect(a).not.toEqual(b);
+  });
+
+  it("fills with generated clubs while there aren't enough real ones", () => {
+    const league = nearestLeague("few", club, [
+      candidate("A", 1490),
+      candidate("A", 1490),
+      candidate("B", 1700),
+    ]);
+    expect(league.slots).toHaveLength(LEAGUE_SIZE);
+    expect(league.slots.filter((s) => s.kind === "ghost")).toHaveLength(2);
+    expect(league.slots.filter((s) => s.kind === "ai")).toHaveLength(9);
+    expect(new Set(league.slots.map((s) => s.name.toLowerCase())).size).toBe(
+      12,
+    );
+    expect(
+      nearestLeague("none", club, []).slots.filter((s) => s.kind === "ai"),
+    ).toHaveLength(11);
   });
 });

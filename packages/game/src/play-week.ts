@@ -148,7 +148,8 @@ export async function playOneWeek(
       winner: p.winner,
       // Other clubs' matches keep only their score (D120).
       summary: isMine(p.id) ? p.summary : scoreOnly(p.summary),
-      manager_team: isMine(p.id) ? keptTeam : null,
+      // AI clubs never keep replay details (ADR 0002).
+      manager_team: isMine(p.id) && team.kind === "human" ? keptTeam : null,
     })),
     p_elo: Object.fromEntries(
       Object.entries(outcome.elo).map(([slot, rating]) => [slot, rating]),

@@ -14,7 +14,9 @@ import type { ClubPlayer, ClubView } from "@/lib/club-view";
 const KIND = {
   manager: "Your club",
   ai: "Club",
-  ghost: "A manager's finished season",
+  // Other clubs, as the league copied them (D115). AI clubs and real
+  // clubs' ghosts look the same (D113).
+  ghost: "Club",
 } as const;
 
 /**

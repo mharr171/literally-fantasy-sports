@@ -195,6 +195,83 @@ export function newLeague(
   return { slots, fixtures };
 }
 
+/**
+ * A new league of the clubs nearest the club's Elo (D115): the `size - 1`
+ * candidates (other clubs' copies: AI clubs as they are now, real players
+ * through their best ghost) closest to its Elo, ties broken at random
+ * (seeded). The club itself is never a candidate. While there aren't
+ * enough candidates, generated AI clubs around its Elo fill the rest.
+ */
+export function nearestLeague(
+  seed: string,
+  club: { name: string; elo: number; teamId: string },
+  candidates: readonly GhostCandidate[],
+  size: number = LEAGUE_SIZE,
+  settings: AiTeamSettings = DEFAULT_AI_TEAM_SETTINGS,
+): { slots: LeagueSlot[]; fixtures: NewFixture[] } {
+  const seen = new Set<string>([club.teamId]);
+  const unique = candidates.filter((c) => {
+    if (seen.has(c.teamId)) return false;
+    seen.add(c.teamId);
+    return true;
+  });
+  const nearest = createRng(seed)
+    .fork("nearest")
+    .shuffle(unique)
+    .sort((a, b) => Math.abs(a.elo - club.elo) - Math.abs(b.elo - club.elo))
+    .slice(0, size - 1)
+    .sort((a, b) => a.elo - b.elo || a.teamId.localeCompare(b.teamId));
+  const place = (name: string) =>
+    name.slice(0, Math.max(0, name.lastIndexOf(" "))).toLowerCase();
+  const used = new Set([club.name.toLowerCase()]);
+  const places = new Set([place(club.name)]);
+  const slots: LeagueSlot[] = [
+    {
+      slot: MANAGER_SLOT,
+      name: club.name,
+      kind: "manager",
+      startRating: club.elo,
+    },
+  ];
+  // Real clubs keep their names (names are unique across the game).
+  nearest.forEach((c, i) => {
+    used.add(c.name.toLowerCase());
+    places.add(place(c.name));
+    slots.push({
+      slot: i + 1,
+      name: c.name,
+      kind: "ghost",
+      startRating: c.elo,
+      ghostId: c.teamId,
+    });
+  });
+  // Generated clubs fill the places nobody real is near enough for.
+  const missing = size - 1 - nearest.length;
+  aiOpponentRatings(club.elo, missing).forEach((rating, i) => {
+    const slot = nearest.length + i + 1;
+    let name = aiTeam(seed, slot, rating, settings).name;
+    for (
+      let k = 0;
+      used.has(name.toLowerCase()) || places.has(place(name));
+      k++
+    )
+      name = aiTeamName(createRng(seed).fork(`name-${slot}-${k}`));
+    used.add(name.toLowerCase());
+    places.add(place(name));
+    slots.push({ slot, name, kind: "ai", startRating: rating });
+  });
+  const order = createRng(seed)
+    .fork("schedule")
+    .shuffle(slots.map((s) => String(s.slot)));
+  const fixtures = roundRobin(order).map((f: Fixture) => ({
+    week: f.week,
+    stage: "league" as const,
+    homeSlot: Number(f.home),
+    awaySlot: Number(f.away),
+  }));
+  return { slots, fixtures };
+}
+
 /** An AI team's squad, rebuilt from the season seed. */
 export function aiTeam(
   seed: string,
