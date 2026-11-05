@@ -1,6 +1,6 @@
 # LiterallyFantasySports — Project Roadmap
 
-Nov 2, 2026 · @Gary · Last updated: Nov 5, 2026 (D149)
+Nov 2, 2026 · @Gary · Last updated: Nov 5, 2026 (D150)
 
 ## Review progress
 
@@ -170,6 +170,7 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D147 | Nov 5, 2026 | Player stats on one start (Gary, after playing a week: one match showed "16 games, 100% win, 1-0-0"): every number on the player card counts from when player stats started (D143). New `stat_games` and `stat_goals` sit beside the totals since v1.3 (appearances and goals), which stay for the career record. Existing games were set to wins + draws + losses, and goals since the start were counted once from the club's own match summaries. Win % is wins / games. This replaces D146's win % rule. Soft resets (D142) clear all of these | M10 |
 | D148 | Nov 5, 2026 | Color cycle (D138, proposed in ADR 0003): each color beats the next two along the rainbow, Red → Yellow → Green → Blue → Purple → Red. Team matchups (dominant colors +4%, second colors +2%) and player matchups by area of the pitch (up to ±6% influence) are tuning values. They are off in stored versions without them, so seasons under way and replays don't change (Gary OK'd, Nov 5, 2026) | M11 |
 | D149 | Nov 5, 2026 | Color settings in admin (Gary): the three matchup strengths are match tuning values in Admin → Soccer balance, tested with the harness before publishing (M11). An admin editor for the color cycle itself (reorder the ring; it checks every color still beats two and loses to two) is added to M12 | M11, M12 |
+| D150 | Nov 5, 2026 | Matchup strengths (Gary, after the harness sweep in #90): team matchup 7%, second colors 3.5%, player matchups 9%, for the settings version that turns matchups on. Defaults stay 0 until that version is published | M11 |
 
 ## 1. Vision & goals
 
