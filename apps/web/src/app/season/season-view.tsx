@@ -1,8 +1,11 @@
 import {
+  type BracketMatch,
+  type BracketSide,
   hasBracket,
   leagueWeeks,
   MANAGER_SLOT,
   type MatchSummary,
+  playoffBracket,
   STAGE_MATCH_NAMES,
   STAGE_NAMES,
   table,
@@ -274,6 +277,15 @@ export function SeasonView({
         </p>
       </div>
 
+      {weeks.length > 0 && (
+        <PlayoffBracketView
+          bracket={playoffBracket(season.slots, season.fixtures)}
+          name={name}
+          badge={badge}
+          linkMatches={true}
+        />
+      )}
+
       {weeks.length === 0 && (
         <EmptyState title="No results yet.">
           Play week 1 and the results fill in here. Each one opens a match page
@@ -410,6 +422,112 @@ function MatchCard({
       >
         Heatmap, play-by-play and replay →
       </Link>
+    </div>
+  );
+}
+
+/** "After extra time" or "4–3 on penalties" for a knockout match that needed it. */
+function decided(f: BracketMatch["fixture"]): string | null {
+  const summary = (
+    f as { summary?: LoadedSeason["fixtures"][number]["summary"] } | null
+  )?.summary;
+  if (summary?.decidedBy === "penalties" && summary.penalties)
+    return `${summary.penalties.home}–${summary.penalties.away} on penalties`;
+  if (summary?.decidedBy === "extra_time") return "After extra time";
+  return null;
+}
+
+/** The playoff bracket (D184): each round as a column, filled in as it's played. */
+function PlayoffBracketView({
+  bracket,
+  name,
+  badge,
+  linkMatches,
+}: {
+  bracket: ReturnType<typeof playoffBracket>;
+  name: (slot: number) => string;
+  badge: (slot: number) => ReactNode;
+  linkMatches: boolean;
+}) {
+  const row = (side: BracketSide, m: BracketMatch, score: number | null) => {
+    const won = m.winner !== null && m.winner === side.slot;
+    const lost = m.winner !== null && side.slot !== null && !won;
+    return (
+      <div
+        className={`flex items-center justify-between gap-2 px-2 py-1 ${won ? "font-semibold" : ""} ${lost ? "text-zinc-500" : ""} ${side.slot === MANAGER_SLOT ? "bg-sky-50 dark:bg-sky-950" : ""}`}
+      >
+        <span className="flex min-w-0 items-center gap-1.5">
+          <span className="w-5 shrink-0 text-right text-xs tabular-nums text-zinc-500">
+            {side.seed ?? ""}
+          </span>
+          {side.slot === null ? (
+            <span className="truncate italic text-zinc-500">
+              {side.placeholder}
+            </span>
+          ) : (
+            <>
+              {badge(side.slot)}
+              <span className="truncate">{name(side.slot)}</span>
+            </>
+          )}
+        </span>
+        <span className="tabular-nums">{score ?? ""}</span>
+      </div>
+    );
+  };
+  return (
+    <div className="flex flex-col gap-2">
+      <h2 className="text-xl font-semibold">Playoffs</h2>
+      {!bracket.final && (
+        <p className="text-xs text-zinc-500">
+          If the league ended today. Places can still change.
+        </p>
+      )}
+      <div className="overflow-x-auto">
+        <div className="flex min-w-max gap-3">
+          {bracket.rounds.map((r) => (
+            <div key={r.stage} className="flex w-56 flex-col gap-2">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                {STAGE_NAMES[r.stage]}
+              </h3>
+              <div className="flex flex-1 flex-col justify-around gap-3">
+                {r.matches.map((m, i) => {
+                  const f = m.fixture;
+                  const card = (
+                    <div
+                      key={`${r.stage}-card`}
+                      className="overflow-hidden rounded-md border border-zinc-200 text-sm dark:border-zinc-800"
+                    >
+                      {row(m.home, m, f?.homeScore ?? null)}
+                      <div className="border-t border-zinc-200 dark:border-zinc-800" />
+                      {row(m.away, m, f?.awayScore ?? null)}
+                      {decided(f) && (
+                        <p className="border-t border-zinc-200 px-2 py-0.5 text-xs text-zinc-500 dark:border-zinc-800">
+                          {decided(f)}
+                        </p>
+                      )}
+                    </div>
+                  );
+                  return f && f.homeScore !== null && linkMatches ? (
+                    <Link
+                      // biome-ignore lint/suspicious/noArrayIndexKey: fixed bracket places
+                      key={i}
+                      href={`/season/match/${f.id}`}
+                      className="hover:opacity-80"
+                      title="Heatmap, play-by-play and replay"
+                    >
+                      {card}
+                    </Link>
+                  ) : (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: fixed bracket places
+                    <div key={i}>{card}</div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
