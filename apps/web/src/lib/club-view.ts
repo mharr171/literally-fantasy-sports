@@ -7,7 +7,7 @@ import {
   type Position,
   type SnapshotPlayer,
 } from "@lfs/sport-soccer";
-import { loadLatestSeason } from "./season";
+import { loadClones, loadLatestSeason } from "./season";
 import { createServiceClient } from "./supabase/service";
 import { loadMyTeam, loadRoster, loadSquad, SOCCER } from "./team";
 
@@ -61,8 +61,8 @@ const pick = (p: {
 
 /**
  * A club in the manager's latest season, by league slot, as it plays there:
- * the manager's own squad, an AI club rebuilt from the season, or a ghost's
- * frozen snapshot. Null when there's no such club.
+ * the manager's own squad, an AI club rebuilt from the season, or the
+ * league's frozen copy of a ghost. Null when there's no such club.
  */
 export async function loadLeagueClub(
   ownerId: string,
@@ -87,14 +87,9 @@ export async function loadLeagueClub(
       squad,
     };
   }
-  if (info.kind === "ghost" && info.ghostId) {
-    const { data, error } = await createServiceClient()
-      .from("team_snapshots")
-      .select("players, squad")
-      .eq("id", info.ghostId)
-      .maybeSingle();
-    if (error) throw new Error(error.message);
-    if (data)
+  if (info.kind === "ghost") {
+    const clone = (await loadClones(season.id)).get(slot);
+    if (clone)
       return {
         name: info.name,
         kind: "ghost",
@@ -102,11 +97,11 @@ export async function loadLeagueClub(
         // colors stay out of it.
         colors: null,
         elo: info.elo,
-        players: (data.players as SnapshotPlayer[]).map(pick),
-        squad: data.squad as MatchdaySquad,
+        players: clone.players.map(pick),
+        squad: clone.squad,
       };
   }
-  // An AI club, or a ghost whose snapshot is gone (it plays as AI).
+  // An AI club, or a ghost whose copy is gone (it plays as AI).
   const ai = aiTeam(season.seed, slot, info.startRating);
   return {
     name: info.name,
@@ -118,13 +113,13 @@ export async function loadLeagueClub(
   };
 }
 
-/** A finished season from the leaderboard, as it finished (D111). */
-export async function loadSnapshotClub(id: string): Promise<ClubView | null> {
+/** A club's ghost from the leaderboard: its best season, as it finished (D111, D116). */
+export async function loadGhostClub(teamId: string): Promise<ClubView | null> {
   const db = createServiceClient();
   const { data, error } = await db
-    .from("team_snapshots")
+    .from("ghosts")
     .select("team_id, team_name, season_number, elo, players, squad")
-    .eq("id", id)
+    .eq("team_id", teamId)
     .eq("sport", SOCCER)
     .maybeSingle();
   if (error) throw new Error(error.message);
@@ -141,6 +136,6 @@ export async function loadSnapshotClub(id: string): Promise<ClubView | null> {
     elo: data.elo as number,
     players: (data.players as SnapshotPlayer[]).map(pick),
     squad: data.squad as MatchdaySquad,
-    subtitle: `Season ${data.season_number as number}, as it finished`,
+    subtitle: `Season ${data.season_number as number}, its best, as it finished`,
   };
 }

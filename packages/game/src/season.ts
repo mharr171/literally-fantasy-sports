@@ -69,7 +69,7 @@ export async function loadLatestSeason(
   const [slots, fixtures] = await Promise.all([
     db
       .from("season_teams")
-      .select("slot, kind, name, start_rating, elo, snapshot_id")
+      .select("slot, kind, name, start_rating, elo, source_team_id")
       .eq("season_id", season.id)
       .order("slot"),
     db
@@ -99,7 +99,7 @@ export async function loadLatestSeason(
       name: s.name,
       startRating: s.start_rating,
       elo: s.elo,
-      ghostId: s.snapshot_id as string | null,
+      ghostId: s.source_team_id as string | null,
     })),
     fixtures: (fixtures.data ?? []).map((f) => ({
       id: f.id,
@@ -164,58 +164,60 @@ export async function configFor(label: string): Promise<LoadedConfig> {
   };
 }
 
-/** Ghosts that could join a new league: the latest snapshot of each team near this Elo. */
+/**
+ * Ghosts that could join a new league (D116): every other real club's
+ * best season near this Elo. A club never meets its own ghost (D115).
+ */
 export async function loadGhostCandidates(
   elo: number,
   window: number,
+  excludeTeamId: string,
 ): Promise<GhostCandidate[]> {
   const { data, error } = await createServiceClient()
-    .from("team_snapshots")
-    .select("id, team_id, team_name, elo")
+    .from("ghosts")
+    .select("team_id, team_name, elo")
     .eq("sport", SOCCER)
+    .neq("team_id", excludeTeamId)
     .gte("elo", elo - window)
     .lte("elo", elo + window)
-    .order("completed_at", { ascending: false })
     .limit(300);
   if (error) throw new Error(error.message);
-  const latest = new Map<string, GhostCandidate>();
-  for (const s of data ?? [])
-    if (!latest.has(s.team_id))
-      latest.set(s.team_id, {
-        id: s.id,
-        teamId: s.team_id,
-        name: s.team_name,
-        elo: s.elo,
-      });
-  return [...latest.values()];
+  return (data ?? []).map((g) => ({
+    id: g.team_id as string,
+    teamId: g.team_id as string,
+    name: g.team_name as string,
+    elo: g.elo as number,
+  }));
 }
 
-/** The rosters of the ghosts in a season, by slot. */
-export async function loadGhostTeams(
-  slots: readonly LeagueSlot[],
-): Promise<Map<number, ReturnType<typeof ghostTeam>>> {
-  const wanted = slots.filter((s) => s.kind === "ghost" && s.ghostId);
-  const result = new Map<number, ReturnType<typeof ghostTeam>>();
-  if (wanted.length === 0) return result;
+/** The copy of a club a league plays against: players and matchday squad (D115). */
+export interface ClubClone {
+  players: SnapshotPlayer[];
+  squad: MatchdaySquad;
+}
+
+/** A season's league copies of other clubs, by slot. */
+export async function loadClones(
+  seasonId: string,
+): Promise<Map<number, ClubClone>> {
   const { data, error } = await createServiceClient()
-    .from("team_snapshots")
-    .select("id, players, squad")
-    .in(
-      "id",
-      wanted.map((s) => s.ghostId as string),
-    );
+    .from("season_teams")
+    .select("slot, clone")
+    .eq("season_id", seasonId)
+    .not("clone", "is", null);
   if (error) throw new Error(error.message);
-  for (const slot of wanted) {
-    const snap = (data ?? []).find((d) => d.id === slot.ghostId);
-    if (snap)
-      result.set(
-        slot.slot,
-        ghostTeam(`ghost-${slot.slot}`, {
-          players: snap.players as SnapshotPlayer[],
-          squad: snap.squad as MatchdaySquad,
-        }),
-      );
-  }
+  return new Map(
+    (data ?? []).map((r) => [r.slot as number, r.clone as ClubClone]),
+  );
+}
+
+/** The ghosts in a season, by slot, as the engine plays them. */
+export async function loadGhostTeams(
+  seasonId: string,
+): Promise<Map<number, ReturnType<typeof ghostTeam>>> {
+  const result = new Map<number, ReturnType<typeof ghostTeam>>();
+  for (const [slot, clone] of await loadClones(seasonId))
+    result.set(slot, ghostTeam(`ghost-${slot}`, clone));
   return result;
 }
 
@@ -229,8 +231,8 @@ export interface LeaderboardEntry {
   completedAt: string;
   /** The club's colors that season (D107), else its current ones. */
   colors: string[];
-  /** The roster as it finished, while it's kept. */
-  snapshotId: string | null;
+  /** The club whose ghost is this season, for its roster link (D116). */
+  ghostTeamId: string | null;
 }
 
 /**
@@ -244,13 +246,25 @@ export async function loadLeaderboard(
   const { data, error } = await createServiceClient()
     .from("season_records")
     .select(
-      "id, team_id, team_name, season_number, elo_after, position, played, won, drawn, lost, scored, conceded, points, playoffs, colors, snapshot_id, completed_at",
+      "id, team_id, season_id, team_name, season_number, elo_after, position, played, won, drawn, lost, scored, conceded, points, playoffs, colors, completed_at",
     )
     .eq("sport", SOCCER)
     .order("elo_after", { ascending: false })
     .limit(limit * 3);
   if (error) throw new Error(error.message);
   const rows = data ?? [];
+  // Seasons that are their club's ghost link to its roster (D116).
+  const ghostSeasons = new Set<string>();
+  const teamIds = [...new Set(rows.map((r) => r.team_id as string))];
+  if (teamIds.length > 0) {
+    const { data: ghosts, error: ghostsError } = await createServiceClient()
+      .from("ghosts")
+      .select("season_id")
+      .in("team_id", teamIds);
+    if (ghostsError) throw new Error(ghostsError.message);
+    for (const g of ghosts ?? [])
+      if (g.season_id) ghostSeasons.add(g.season_id as string);
+  }
   const missing = [
     ...new Set(
       rows
@@ -291,7 +305,9 @@ export async function loadLeaderboard(
         completedAt: r.completed_at as string,
         colors:
           colors.length > 0 ? colors : (current.get(r.team_id as string) ?? []),
-        snapshotId: (r.snapshot_id as string | null) ?? null,
+        ghostTeamId: ghostSeasons.has(r.season_id as string)
+          ? (r.team_id as string)
+          : null,
       };
     })
     .sort(
@@ -368,11 +384,12 @@ export async function loadMatch(teamId: string, fixtureId: string) {
   if (!season || season.team_id !== teamId) return null;
   const { data: slots, error: slotsError } = await db
     .from("season_teams")
-    .select("slot, kind, name, start_rating, snapshot_id")
+    .select("slot, kind, name, start_rating, source_team_id")
     .eq("season_id", season.id)
     .order("slot");
   if (slotsError) throw new Error(slotsError.message);
   return {
+    seasonId: season.id as string,
     seasonNumber: season.number as number,
     /** Server only: never send it to the browser. */
     seed: season.seed as string,
@@ -382,7 +399,7 @@ export async function loadMatch(teamId: string, fixtureId: string) {
       kind: s.kind as LeagueSlot["kind"],
       name: s.name as string,
       startRating: s.start_rating as number,
-      ghostId: s.snapshot_id as string | null,
+      ghostId: s.source_team_id as string | null,
     })),
     fixture: {
       id: fixture.id as string,

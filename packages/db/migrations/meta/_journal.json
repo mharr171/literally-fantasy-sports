@@ -246,6 +246,27 @@
       "when": 1793839362351,
       "tag": "0034_season_bracket",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1793839753422,
+      "tag": "0035_ghosts",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1793839784623,
+      "tag": "0036_ghosts_functions",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1793839791683,
+      "tag": "0037_drop_team_snapshots",
+      "breakpoints": true
     }
   ]
 }
