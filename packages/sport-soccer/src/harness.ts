@@ -100,6 +100,8 @@ export interface HarnessReport {
   redsPerMatch: number;
   injuriesPerMatch: number;
   subsPerMatch: number;
+  /** Share of team-matches that used every substitution allowed (D159). */
+  allSubsRate: number;
   /** Win / draw / loss rate of the stronger team at each strength gap. */
   byGap: { gap: number; win: number; draw: number; loss: number }[];
   /**
@@ -120,6 +122,7 @@ export function runHarness(options: HarnessOptions): HarnessReport {
   let homeWins = 0;
   let highScoring = 0;
   const counts = { yellow: 0, red: 0, injury: 0, sub: 0 };
+  let allSubs = 0;
   const perGap = gaps.map((gap) => ({ gap, win: 0, draw: 0, loss: 0, n: 0 }));
   const color = { matches: 0, win: 0, draw: 0, loss: 0 };
   const dominant = (t: SoccerTeam) =>
@@ -140,9 +143,13 @@ export function runHarness(options: HarnessOptions): HarnessReport {
       },
       `${options.seed}:${i}`,
     );
+    const subsBySide = { home: 0, away: 0 };
     for (const e of events) {
       if (e.type in counts) counts[e.type as keyof typeof counts]++;
+      if (e.type === "sub") subsBySide[e.side]++;
     }
+    for (const n of Object.values(subsBySide))
+      if (n >= config.tuning.maxSubs) allSubs++;
     const total = result.score.home + result.score.away;
     goals += total;
     if (total >= 5) highScoring++;
@@ -181,6 +188,7 @@ export function runHarness(options: HarnessOptions): HarnessReport {
     redsPerMatch: counts.red / n,
     injuriesPerMatch: counts.injury / n,
     subsPerMatch: counts.sub / n,
+    allSubsRate: allSubs / (2 * n),
     byGap: perGap.map(({ gap, win, draw, loss, n: m }) => ({
       gap,
       win: m ? win / m : 0,
@@ -209,6 +217,7 @@ export function formatReport(r: HarnessReport): string {
     `Red cards:        ${r.redsPerMatch.toFixed(2)} per match`,
     `Injuries:         ${r.injuriesPerMatch.toFixed(2)} per match`,
     `Substitutions:    ${r.subsPerMatch.toFixed(2)} per match`,
+    `All subs used:    ${pct(r.allSubsRate)} of teams`,
     "",
     "Stronger team by rating gap:",
     "  gap   win     draw    loss",
