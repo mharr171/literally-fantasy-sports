@@ -2,9 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { ClubHallOfFamePanel } from "@/components/club-hall-of-fame";
 import { EmptyState } from "@/components/empty-state";
 import { getCurrentUser } from "@/lib/auth";
-import { loadClubHistory, type Playoffs } from "@/lib/history";
+import {
+  loadClubHallOfFame,
+  loadClubHistory,
+  type Playoffs,
+} from "@/lib/history";
 import { loadLatestSeason } from "@/lib/season";
 import { loadMyTeam } from "@/lib/team";
 
@@ -46,9 +51,10 @@ async function History() {
   if (!user) redirect("/sign-in");
   const team = await loadMyTeam(user.id);
   if (!team) redirect("/team");
-  const [lines, latest] = await Promise.all([
+  const [lines, latest, hall] = await Promise.all([
     loadClubHistory(team.id),
     loadLatestSeason(team.id),
+    loadClubHallOfFame(team.id),
   ]);
   const inProgress =
     latest && !lines.some((l) => l.seasonNumber === latest.number)
@@ -149,6 +155,7 @@ async function History() {
           </table>
         </div>
       )}
+      <ClubHallOfFamePanel hall={hall} />
     </div>
   );
 }

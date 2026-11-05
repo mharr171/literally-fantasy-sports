@@ -17,7 +17,7 @@ import { SeasonReviewPanel as Review } from "@/components/season-review";
 import { adminView } from "@/lib/admin-view";
 import { getCurrentUser } from "@/lib/auth";
 import { loadClubOrigins } from "@/lib/club-view";
-import { loadTributes } from "@/lib/history";
+import { loadClubHallOfFame, loadTributes } from "@/lib/history";
 import { scoutPlayer } from "@/lib/scouting";
 import {
   liveGenerationSettings,
@@ -101,14 +101,16 @@ async function SeasonContent() {
         </div>
       );
     } else if (!season.intakeResolved) {
-      const [roster, tributes] = await Promise.all([
+      const [roster, tributes, hall] = await Promise.all([
         loadRoster(team.id),
         loadTributes(team.id, season.number),
+        loadClubHallOfFame(team.id),
       ]);
+      const { greatIds } = hall;
       wrapUp = (
         <div className="mt-3 flex flex-col gap-4">
           {season.review && <Review review={season.review} />}
-          <RetirementTributes tributes={tributes} />
+          <RetirementTributes tributes={tributes} greatIds={greatIds} />
           <YouthIntake
             prospects={youthIntake(
               season.seed,

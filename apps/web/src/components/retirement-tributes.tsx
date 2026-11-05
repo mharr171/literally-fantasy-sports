@@ -9,9 +9,12 @@ const pct = (t: Tribute) => {
 export function RetirementTributes({
   tributes,
   title = "Retiring with thanks",
+  greatIds = [],
 }: {
   tributes: readonly Tribute[];
   title?: string;
+  /** Players on any of the club's all-time lists. */
+  greatIds?: readonly string[];
 }) {
   if (tributes.length === 0) return null;
   return (
@@ -43,6 +46,11 @@ export function RetirementTributes({
                   · {t.position} · retired at {t.age} after season{" "}
                   {t.retiredSeason}
                 </span>
+                {greatIds.includes(t.id) && (
+                  <span className="ml-2 inline-block whitespace-nowrap rounded bg-amber-200 px-1.5 py-0.5 text-xs font-semibold text-amber-900 dark:bg-amber-800 dark:text-amber-100">
+                    ★ One of the club&apos;s greats
+                  </span>
+                )}
               </p>
               <dl className="grid grid-cols-3 gap-x-3 gap-y-1 sm:grid-cols-4">
                 {lines.map(([label, value]) => (

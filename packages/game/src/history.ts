@@ -133,3 +133,188 @@ export async function loadTributes(
   if (error) throw new Error(error.message);
   return (data ?? []).map(tribute);
 }
+
+/** The lists in a club's hall of fame (ADR 0005). */
+export const GREAT_LISTS = [
+  { key: "games", label: "Games" },
+  { key: "goals", label: "Goals" },
+  { key: "assists", label: "Assists" },
+  { key: "tackles", label: "Tackles" },
+  { key: "saves", label: "Saves" },
+  { key: "bestOverall", label: "Best overall" },
+] as const;
+
+export type GreatKey = (typeof GREAT_LISTS)[number]["key"];
+
+/** A current or retired player as the hall of fame ranks them. */
+export interface Great {
+  id: string;
+  name: string;
+  position: string;
+  seasons: number;
+  retired: boolean;
+  games: number;
+  goals: number;
+  assists: number;
+  tackles: number;
+  saves: number;
+  bestOverall: number;
+}
+
+/**
+ * The top `size` in each list (ADR 0005), most first; ties go to fewer
+ * games, then by name. Nobody with 0 makes a list.
+ */
+export function rankGreats(
+  people: readonly Great[],
+  size = 10,
+): Record<GreatKey, Great[]> {
+  const out = {} as Record<GreatKey, Great[]>;
+  for (const { key } of GREAT_LISTS)
+    out[key] = people
+      .filter((p) => p[key] > 0)
+      .sort(
+        (a, b) =>
+          b[key] - a[key] || a.games - b.games || a.name.localeCompare(b.name),
+      )
+      .slice(0, size);
+  return out;
+}
+
+export interface Honours {
+  titles: number;
+  finals: number;
+  bestFinish: number | null;
+  highestElo: number | null;
+  /** League matches in a row without a defeat, across seasons. */
+  unbeatenRun: number;
+}
+
+/** Titles, finals, best finish and highest Elo from the season lines. */
+export function honoursFrom(
+  lines: readonly SeasonLine[],
+  unbeatenRun: number,
+): Honours {
+  return {
+    titles: lines.filter((l) => l.playoffs === "champion").length,
+    finals: lines.filter(
+      (l) => l.playoffs === "champion" || l.playoffs === "final",
+    ).length,
+    bestFinish: lines.length ? Math.min(...lines.map((l) => l.position)) : null,
+    highestElo: lines.length ? Math.max(...lines.map((l) => l.eloAfter)) : null,
+    unbeatenRun,
+  };
+}
+
+/** The longest run of results without a defeat, in the order given. */
+export function longestUnbeaten(results: readonly ("w" | "d" | "l")[]): number {
+  let best = 0;
+  let run = 0;
+  for (const r of results) {
+    run = r === "l" ? 0 : run + 1;
+    best = Math.max(best, run);
+  }
+  return best;
+}
+
+/** The club's league results in order, oldest first, for its unbeaten run. */
+async function leagueResults(teamId: string): Promise<("w" | "d" | "l")[]> {
+  const db = createServiceClient();
+  const { data: seasons, error } = await db
+    .from("seasons")
+    .select("id, number")
+    .eq("team_id", teamId);
+  if (error) throw new Error(error.message);
+  if (!seasons?.length) return [];
+  const order = new Map(
+    seasons.map((s) => [s.id as string, s.number as number]),
+  );
+  const { data: fixtures, error: fError } = await db
+    .from("fixtures")
+    .select("season_id, week, home_slot, away_slot, home_score, away_score")
+    .in("season_id", [...order.keys()])
+    .eq("stage", "league")
+    .or(`home_slot.eq.${MANAGER_SLOT},away_slot.eq.${MANAGER_SLOT}`)
+    .not("home_score", "is", null);
+  if (fError) throw new Error(fError.message);
+  return (fixtures ?? [])
+    .sort(
+      (a, b) =>
+        (order.get(a.season_id as string) ?? 0) -
+          (order.get(b.season_id as string) ?? 0) ||
+        (a.week as number) - (b.week as number),
+    )
+    .map((f) => {
+      const home = f.home_slot === MANAGER_SLOT;
+      const mine = (home ? f.home_score : f.away_score) as number;
+      const theirs = (home ? f.away_score : f.home_score) as number;
+      return mine > theirs ? "w" : mine === theirs ? "d" : "l";
+    });
+}
+
+export interface ClubHallOfFame {
+  greats: Record<GreatKey, Great[]>;
+  /** Ids of everyone on any list, to mark them on tributes. */
+  greatIds: string[];
+  honours: Honours;
+  retired: Tribute[];
+}
+
+/** A club's all-time greats, honours and retired players (ADR 0005). */
+export async function loadClubHallOfFame(
+  teamId: string,
+): Promise<ClubHallOfFame> {
+  const db = createServiceClient();
+  const [players, retired, lines, results] = await Promise.all([
+    db
+      .from("players")
+      .select(
+        "id, display_name, primary_position, seasons, stat_games, stat_goals, assists, tackles, saves, best_overall, overall",
+      )
+      .eq("team_id", teamId),
+    loadTributes(teamId),
+    loadClubHistory(teamId),
+    leagueResults(teamId),
+  ]);
+  if (players.error) throw new Error(players.error.message);
+  const people: Great[] = [
+    ...(players.data ?? []).map((p) => ({
+      id: p.id as string,
+      name: p.display_name as string,
+      position: p.primary_position as string,
+      seasons: p.seasons as number,
+      retired: false,
+      games: p.stat_games as number,
+      goals: p.stat_goals as number,
+      assists: p.assists as number,
+      tackles: p.tackles as number,
+      saves: p.saves as number,
+      bestOverall: Math.max(
+        (p.best_overall as number | null) ?? 0,
+        p.overall as number,
+      ),
+    })),
+    ...retired.map((t) => ({
+      id: t.id,
+      name: t.name,
+      position: t.position,
+      seasons: t.seasons,
+      retired: true,
+      games: t.games,
+      goals: t.goals,
+      assists: t.assists,
+      tackles: t.tackles,
+      saves: t.saves,
+      bestOverall: t.bestOverall,
+    })),
+  ];
+  const greats = rankGreats(people);
+  return {
+    greats,
+    greatIds: [
+      ...new Set(Object.values(greats).flatMap((l) => l.map((g) => g.id))),
+    ],
+    honours: honoursFrom(lines, longestUnbeaten(results)),
+    retired,
+  };
+}

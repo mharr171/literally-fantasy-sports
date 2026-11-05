@@ -6,7 +6,12 @@ import { SeasonView } from "@/app/season/season-view";
 import { RetirementTributes } from "@/components/retirement-tributes";
 import { SeasonReviewPanel } from "@/components/season-review";
 import { getCurrentUser } from "@/lib/auth";
-import { loadClubHistory, loadTributes, seasonScorers } from "@/lib/history";
+import {
+  loadClubHallOfFame,
+  loadClubHistory,
+  loadTributes,
+  seasonScorers,
+} from "@/lib/history";
 import { loadSeasonByNumber } from "@/lib/season";
 import { loadMyTeam } from "@/lib/team";
 
@@ -38,11 +43,13 @@ async function PastSeason({
   if (!user) redirect("/sign-in");
   const team = await loadMyTeam(user.id);
   if (!team) redirect("/team");
-  const [season, lines, tributes] = await Promise.all([
+  const [season, lines, tributes, hall] = await Promise.all([
     loadSeasonByNumber(team.id, number),
     loadClubHistory(team.id),
     loadTributes(team.id, number),
+    loadClubHallOfFame(team.id),
   ]);
+  const { greatIds } = hall;
   if (!season) notFound();
   const line = lines.find((l) => l.seasonNumber === number);
   // Still being played: that's the Season page.
@@ -88,7 +95,7 @@ async function PastSeason({
           </div>
         )}
       </div>
-      <RetirementTributes tributes={tributes} />
+      <RetirementTributes tributes={tributes} greatIds={greatIds} />
     </>
   );
 }
