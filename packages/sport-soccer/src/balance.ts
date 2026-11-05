@@ -4,11 +4,17 @@
  * (D59) like templates, so a season always pays and plays by the version
  * it started with, and replays stay exact.
  *
- * Stored keys: "tuning" (MatchTuning), "payouts" (PayoutSettings) and
- * "packs" (PackPrices). Each may hold only some fields; the rest use the
- * built-in defaults.
+ * Stored keys: "tuning" (MatchTuning), "payouts" (PayoutSettings), "packs"
+ * (PackPrices), "condition" (ConditionSettings) and "form" (FormSettings,
+ * D158). Each may hold only some fields; the rest use the built-in
+ * defaults, so versions saved before a group existed play as they did.
  */
 import { DEFAULT_PAYOUTS, type PayoutSettings } from "@lfs/core";
+import {
+  type ConditionSettings,
+  DEFAULT_CONDITION_SETTINGS,
+} from "./condition";
+import { DEFAULT_FORM_SETTINGS, type FormSettings } from "./form";
 import { DEFAULT_MATCH_TUNING, type MatchTuning } from "./match";
 import { BOUGHT_TIERS, DEFAULT_PACK_PRICES, type PackPrices } from "./roster";
 
@@ -16,13 +22,40 @@ export interface BalanceSettings {
   tuning: MatchTuning;
   payouts: PayoutSettings;
   packs: PackPrices;
+  /** Weekly recovery and bans between game weeks (D158). */
+  condition: ConditionSettings;
+  /** Form and morale (D158). */
+  form: FormSettings;
 }
 
 export const DEFAULT_BALANCE: BalanceSettings = {
   tuning: DEFAULT_MATCH_TUNING,
   payouts: DEFAULT_PAYOUTS,
   packs: DEFAULT_PACK_PRICES,
+  condition: DEFAULT_CONDITION_SETTINGS,
+  form: DEFAULT_FORM_SETTINGS,
 };
+
+/** The stamina of an average player, for the fatigue summary (D157). */
+export const AVERAGE_STAMINA = 60;
+
+/**
+ * Fitness an average player loses over a full 90 minutes, and a keeper's
+ * (D157), from the in-match tiredness values. The engine takes
+ * `fatiguePerPhase × (1.5 − stamina / 100)` each phase, a keeper only
+ * `keeperFatigueFactor` of that.
+ */
+export function fatiguePerMatch(
+  tuning: Pick<
+    MatchTuning,
+    "phases" | "fatiguePerPhase" | "keeperFatigueFactor"
+  >,
+  stamina = AVERAGE_STAMINA,
+): { outfield: number; keeper: number } {
+  const perPhase = tuning.fatiguePerPhase * (1.5 - stamina / 100);
+  const outfield = perPhase * tuning.phases;
+  return { outfield, keeper: outfield * tuning.keeperFatigueFactor };
+}
 
 /** What an admin may set a number to, with a label and a short help line. */
 export interface Limit {
@@ -204,6 +237,75 @@ export const PACK_PRICE_LIMIT: Limit = {
   integer: true,
 };
 
+export const CONDITION_LIMITS: Record<keyof ConditionSettings, Limit> = {
+  weeklyRecovery: {
+    label: "Weekly recovery",
+    help: "Fitness every player gets back each game week, up to 100.",
+    min: 0,
+    max: 100,
+  },
+  redCardBan: {
+    label: "Red card ban",
+    help: "Matches a player sits out after a red card.",
+    min: 0,
+    max: 5,
+    integer: true,
+  },
+  yellowsForBan: {
+    label: "Yellow cards for a ban",
+    help: "Every this many yellows in a season earns a ban.",
+    min: 1,
+    max: 20,
+    integer: true,
+  },
+  yellowBan: {
+    label: "Yellow card ban",
+    help: "Matches banned each time the yellow card count is reached.",
+    min: 0,
+    max: 5,
+    integer: true,
+  },
+};
+
+export const FORM_LIMITS: Record<keyof FormSettings, Limit> = {
+  formEffect: {
+    label: "Form effect",
+    help: "Skill change at full form, up or down (0.05 = ±5%).",
+    min: 0,
+    max: 0.3,
+  },
+  moraleEffect: {
+    label: "Morale effect",
+    help: "Skill change for every player at full morale, up or down.",
+    min: 0,
+    max: 0.3,
+  },
+  formMemory: {
+    label: "Form memory",
+    help: "Share of old form kept after a match; the rest is the new match rating.",
+    min: 0,
+    max: 1,
+  },
+  formIdleDecay: {
+    label: "Form kept when not playing",
+    help: "Share of form kept each week a player doesn't play (it drifts back to 0).",
+    min: 0,
+    max: 1,
+  },
+  moraleMemory: {
+    label: "Morale memory",
+    help: "Share of old morale kept after a match.",
+    min: 0,
+    max: 1,
+  },
+  moraleSwing: {
+    label: "Morale swing",
+    help: "Morale gained for a win, lost for a loss.",
+    min: 0,
+    max: 1,
+  },
+};
+
 export const FOCUS_SURCHARGE_LIMIT: Limit = {
   label: "Position-focus surcharge",
   help: "Focused packs cost this much more (0.2 = +20%).",
@@ -245,6 +347,14 @@ export function balanceErrors(settings: BalanceSettings): string[] {
     settings.packs.focusSurcharge,
     FOCUS_SURCHARGE_LIMIT,
   );
+  for (const [key, limit] of Object.entries(CONDITION_LIMITS))
+    check(
+      limit.label,
+      settings.condition[key as keyof ConditionSettings],
+      limit,
+    );
+  for (const [key, limit] of Object.entries(FORM_LIMITS))
+    check(limit.label, settings.form[key as keyof FormSettings], limit);
   const prices = BOUGHT_TIERS.map((t) => settings.packs.tiers[t.id] ?? 0);
   if (prices.some((p, i) => i > 0 && p <= (prices[i - 1] as number)))
     errors.push("Each pack tier must cost more than the one before it.");
@@ -291,13 +401,25 @@ export function balanceFromValues(
           ? packs.focusSurcharge
           : DEFAULT_PACK_PRICES.focusSurcharge,
     },
+    condition: {
+      ...DEFAULT_CONDITION_SETTINGS,
+      ...numbers<ConditionSettings>(
+        values.condition,
+        Object.keys(CONDITION_LIMITS),
+      ),
+    },
+    form: {
+      ...DEFAULT_FORM_SETTINGS,
+      ...numbers<FormSettings>(values.form, Object.keys(FORM_LIMITS)),
+    },
   };
 }
 
 /** The rows to store for a set of balance settings (checked first). */
-export function balanceToRows(
-  settings: BalanceSettings,
-): { key: "tuning" | "payouts" | "packs"; value: unknown }[] {
+export function balanceToRows(settings: BalanceSettings): {
+  key: "tuning" | "payouts" | "packs" | "condition" | "form";
+  value: unknown;
+}[] {
   const errors = balanceErrors(settings);
   if (errors.length > 0) throw new Error(errors.join(" "));
   return [
@@ -310,5 +432,7 @@ export function balanceToRows(
         focusSurcharge: settings.packs.focusSurcharge,
       },
     },
+    { key: "condition", value: { ...settings.condition } },
+    { key: "form", value: { ...settings.form } },
   ];
 }

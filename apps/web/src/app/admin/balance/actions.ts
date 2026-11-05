@@ -49,6 +49,9 @@ const inputSchema = z.object({
       tiers: z.record(z.string(), num),
       focusSurcharge: num,
     }),
+    // Recovery, bans, form and morale (D158).
+    condition: z.record(z.string(), num),
+    form: z.record(z.string(), num),
   }),
 });
 
@@ -72,7 +75,8 @@ function parse(input: BalanceInput) {
 }
 
 /**
- * Saves match tuning, payouts and pack prices to a draft (M5). Every other
+ * Saves match tuning, payouts, pack prices, recovery and bans, and form and
+ * morale to a draft (M5, D158). Every other
  * setting (templates, variants) comes along from the version it started from.
  */
 export async function saveBalance(

@@ -102,7 +102,10 @@ export async function playOneWeek(
     fitness: Object.fromEntries(roster.map((p) => [p.id, p.condition.fitness])),
     // Form and morale nudge skill a little (M4).
     modifiers: Object.fromEntries(
-      roster.map((p) => [p.id, formModifier(p.form, team.morale)]),
+      roster.map((p) => [
+        p.id,
+        formModifier(p.form, team.morale, balance.form),
+      ]),
     ),
   };
   const managerNames = new Map(roster.map((p) => [p.id, p.displayName]));
@@ -161,9 +164,13 @@ export async function playOneWeek(
     p_next_week: outcome.week,
     p_energy: energyAfter?.energy ?? null,
     p_energy_updated_at: energyAfter?.updatedAt.toISOString() ?? null,
-    p_morale: nextMorale(team.morale, outcome.managerResult),
+    p_morale: nextMorale(team.morale, outcome.managerResult, balance.form),
     p_players: roster.map((p) => {
-      const next = nextCondition(p.condition, outcome.managerReports[p.id]);
+      const next = nextCondition(
+        p.condition,
+        outcome.managerReports[p.id],
+        balance.condition,
+      );
       return {
         id: p.id,
         fitness: next.fitness,
@@ -174,6 +181,7 @@ export async function playOneWeek(
           p.form,
           outcome.managerReports[p.id],
           outcome.managerResult,
+          balance.form,
         ),
         // Career totals for the retirement record (D120, D143). Only the
         // club's own match counts, never its copies in other leagues.
