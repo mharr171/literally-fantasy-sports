@@ -15,6 +15,8 @@ import type { Position } from "./positions";
 export interface PositionFitBonuses {
   primary: number;
   secondary: number;
+  /** Anywhere else (D135): a match tuning value, 0 when not set. */
+  other?: number;
 }
 
 /** From the roadmap: +25% at the primary position, +10% at the secondary. */
@@ -61,7 +63,8 @@ export function effectiveSkill(
     config.overallWeights,
   );
   const fit = positionFit(input.player, input.slot);
-  const fitBonus = fit === "other" ? 0 : config.positionFit[fit];
+  const fitBonus =
+    fit === "other" ? (config.positionFit.other ?? 0) : config.positionFit[fit];
   let multiplier = 1 + fitBonus + input.chemistryBoost;
   for (const m of input.extraModifiers ?? []) multiplier += m;
   // A player never drops below zero skill, however bad the modifiers.

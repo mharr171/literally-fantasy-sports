@@ -7,6 +7,7 @@ import { GettingStarted } from "@/components/getting-started";
 import { WithTemplates } from "@/components/player/with-templates";
 import { getCurrentUser } from "@/lib/auth";
 import { pickOptions } from "@/lib/pick-options";
+import { currentOutOfPosition } from "@/lib/season";
 import {
   loadMyTeam,
   loadRoster,
@@ -37,10 +38,11 @@ async function SquadContent() {
   if (!user) redirect("/sign-in");
   const team = await loadMyTeam(user.id);
   if (!team) redirect("/team");
-  const [packs, roster, saved] = await Promise.all([
+  const [packs, roster, saved, outOfPosition] = await Promise.all([
     loadStarterPacks(team.id),
     loadRoster(team.id),
     loadSquad(team.id),
+    currentOutOfPosition(team.id),
   ]);
   if (packs.some((p) => !p.resolved)) redirect("/team");
 
@@ -64,6 +66,7 @@ async function SquadContent() {
         roster={roster}
         initial={saved ?? autoPickSquad(roster, undefined, pickOptions(roster))}
         saved={saved !== null}
+        outOfPosition={outOfPosition}
       />
     </>
   );

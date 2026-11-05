@@ -131,6 +131,9 @@ export interface MatchTuning {
   teamMatchupSecond: number;
   /** Most a player's skill moves for winning or losing every matchup they face. */
   playerMatchup: number;
+
+  /** Skill change for a player out of position (D135): −0.5 = −50%, 0 = off. */
+  outOfPosition: number;
 }
 
 export const DEFAULT_MATCH_TUNING: MatchTuning = {
@@ -161,7 +164,12 @@ export const DEFAULT_MATCH_TUNING: MatchTuning = {
   teamMatchup: 0,
   teamMatchupSecond: 0,
   playerMatchup: 0,
+  // Off unless a settings version sets it (D135), for the same reason.
+  outOfPosition: 0,
 };
+
+/** The out-of-position penalty D135 sets, for the harness and a new settings version. */
+export const PROPOSED_OUT_OF_POSITION = -0.5;
 
 /**
  * The strengths Gary chose (D150) for the settings version that turns
@@ -438,7 +446,10 @@ function enterField(
     state.config.skill.overallWeights,
   );
   const fitKind = positionFit(player, slot);
-  const fit = fitKind === "other" ? 0 : state.config.skill.positionFit[fitKind];
+  const fit =
+    fitKind === "other"
+      ? state.tuning.outOfPosition
+      : state.config.skill.positionFit[fitKind];
   // A player's own template variants apply at their primary position (D84)
   // and their secondary one (D136); anywhere else they use the slot's.
   const own = variantAt(player, slot);
@@ -558,6 +569,9 @@ function removeFromField(
   return { slot: gone.slot, side: gone.side };
 }
 
+/** Bigger than any rating, so it ranks in-position players first. */
+const IN_POSITION_FIRST = 10_000;
+
 /** The bench player who would rate highest in `slot`. */
 function bestForSlot(
   state: MatchState,
@@ -566,10 +580,16 @@ function bestForSlot(
 ): SoccerPlayer | undefined {
   let best: SoccerPlayer | undefined;
   let bestScore = -1;
+  // With the out-of-position penalty on (D135), anyone who plays this
+  // position comes before anyone who doesn't.
+  const prefer = state.tuning.outOfPosition !== 0;
   for (const p of team.bench) {
     const candidate = enterField(state, p, slot);
     const energy = report(state, p.id).energyNow;
-    const score = candidate.base * (1 + candidate.fit) * (energy / 100);
+    const inPosition =
+      prefer && positionFit(p, slot) !== "other" ? IN_POSITION_FIRST : 0;
+    const score =
+      candidate.base * (1 + candidate.fit) * (energy / 100) + inPosition;
     if (score > bestScore) {
       best = p;
       bestScore = score;
