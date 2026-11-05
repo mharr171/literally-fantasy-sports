@@ -17,6 +17,7 @@ import {
   pickStarterKeeps,
   rollAiIdentity,
   rosterWarning,
+  runsOwed,
   starterPackPlan,
   weeksThisRun,
   youthIntake,
@@ -481,7 +482,23 @@ export async function runAiWorld({
     }
   }
 
-  // Every club's turn, at its pace (D114).
+  // Every club's turn, at its pace (D114), for the time since the last
+  // finished run (D177).
+  const { data: last, error: lastError } = await db
+    .from("ai_runs")
+    .select("started_at")
+    .eq("sport", SOCCER)
+    .neq("id", runId)
+    .not("finished_at", "is", null)
+    .order("started_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (lastError) throw new Error(lastError.message);
+  const runs = runsOwed(
+    (last?.started_at as string | undefined) ?? null,
+    new Date(started),
+    settings.runsPerDay,
+  );
   const clubs = await listAiClubs();
   const pace = new Map(clubs.map((c) => [c.id, c.profile.pace]));
   const run = await runAiTurns(
@@ -491,6 +508,9 @@ export async function runAiWorld({
         createRng(`${runId}:${id}`),
         pace.get(id) ?? "normal",
         settings.runsPerDay,
+        undefined,
+        undefined,
+        runs,
       ),
     { budgetMs: Math.max(0, budgetMs - (Date.now() - started)), concurrency },
   );
