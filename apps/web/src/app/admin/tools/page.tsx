@@ -57,6 +57,7 @@ async function Content({
             className={`rounded px-2 py-0.5 ${t.id === team?.id ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900" : "border border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"}`}
           >
             {t.name}
+            {t.kind === "ai" ? " (AI)" : ""}
             {t.id === mine?.id ? " (you)" : ""}
           </Link>
         ))}
