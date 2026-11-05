@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 import { z } from "zod";
 import {
+  aiClubTurn,
   createAiClub,
   listAiClubs,
   runAiTurns,
@@ -90,36 +91,55 @@ export async function addClubs(count: number): Promise<AiResult> {
 }
 
 /**
- * Gives AI clubs one turn of up to `weeks` weeks now, as a scheduled run
- * will (D114). A page request has a minute, so it stops starting turns
- * after 40 seconds; clubs that waited longest go first, so clicking again
- * carries on with the rest.
+ * Gives AI clubs one turn of up to `weeks` weeks now, like a scheduled run
+ * (D114) but without using their energy (D160). A page request has a
+ * minute, so it stops starting turns after 40 seconds. `done` lists the
+ * clubs that already had a turn since the admin started clicking, so the
+ * next click carries on with the rest; once everyone has played it starts
+ * again.
  */
-export async function runTurn(weeks: number): Promise<AiResult> {
+export async function runTurn(
+  weeks: number,
+  done: readonly string[] = [],
+): Promise<AiResult & { ranIds: string[]; finished: boolean }> {
   try {
     const adminId = await requireAdminId();
     const w = z.number().int().min(1).max(6).parse(weeks);
-    const clubs = await listAiClubs();
-    const run = await runAiTurns(clubs, () => w, { budgetMs: 40_000 });
+    const skip = new Set(z.array(z.uuid()).max(5_000).parse(done));
+    const all = await listAiClubs();
+    const clubs = all.filter((c) => !skip.has(c.id));
+    const run = await runAiTurns(clubs, () => w, {
+      budgetMs: 40_000,
+      turn: (id, n) => aiClubTurn(id, n, { useEnergy: false }),
+    });
     const errors = run.turns
       .filter((t) => t.error)
       .map((t) => {
-        const name = clubs.find((c) => c.id === t.teamId)?.name ?? t.teamId;
+        const name = all.find((c) => c.id === t.teamId)?.name ?? t.teamId;
         return `${name}: ${t.error}`;
       });
     await log(adminId, "ai_run_turn", {
       clubs: clubs.length,
+      energy: false,
       ran: run.ran,
       weeks: w,
       played: run.weeksPlayed,
       errors,
     });
     refresh();
-    const summary = `${run.ran} of ${clubs.length} clubs played ${run.weeksPlayed} weeks.${run.skipped > 0 ? ` ${run.skipped} left: click again to carry on.` : ""}`;
+    const summary = `${run.ran} clubs played ${run.weeksPlayed} weeks.${run.skipped > 0 ? ` ${run.skipped} still to go: click again to carry on.` : ` Every AI club has had a turn.`}`;
+    const extra = {
+      ranIds: run.turns.map((t) => t.teamId),
+      finished: run.skipped === 0,
+    };
     return errors.length > 0
-      ? { ok: false, error: `${summary} Problems: ${errors.join("; ")}` }
-      : { ok: true, message: summary };
+      ? {
+          ok: false,
+          error: `${summary} Problems: ${errors.join("; ")}`,
+          ...extra,
+        }
+      : { ok: true, message: summary, ...extra };
   } catch (e) {
-    return failed(e);
+    return { ...failed(e), ranIds: [], finished: false };
   }
 }

@@ -258,11 +258,13 @@ export interface AiTurn {
  * One AI club's turn (D114): it sorts anything left open, wraps up and
  * starts seasons, and plays up to `weeks` weeks while it has energy. Every
  * step goes through the same code as a manager's; a step the rules refuse
- * (out of energy, for one) ends the turn.
+ * (out of energy, for one) ends the turn. Turns an admin runs by hand don't
+ * use energy (D160); scheduled runs do (D114).
  */
 export async function aiClubTurn(
   teamId: string,
   weeks: number,
+  { useEnergy = true }: { useEnergy?: boolean } = {},
 ): Promise<AiTurn> {
   const turn: AiTurn = { teamId, weeksPlayed: 0, notes: [] };
   try {
@@ -312,7 +314,7 @@ export async function aiClubTurn(
         await trim(team, profile, turn.notes);
       await saveSquad(team, profile);
       try {
-        await playOneWeek(team, { useEnergy: true });
+        await playOneWeek(team, { useEnergy });
       } catch (e) {
         if (e instanceof Error && e.message.startsWith("Out of energy")) break;
         throw e;

@@ -24,6 +24,8 @@ export function AiControls({
   const [add, setAdd] = useState(5);
   const [weeks, setWeeks] = useState(2);
   const [result, setResult] = useState<AiResult | null>(null);
+  // Clubs that already had a free turn since the admin started clicking (D160).
+  const [done, setDone] = useState<string[]>([]);
   const [pending, start] = useTransition();
   const run = (action: () => Promise<AiResult>) =>
     start(async () => {
@@ -123,14 +125,21 @@ export function AiControls({
         <button
           type="button"
           disabled={pending || clubs === 0}
-          onClick={() => run(() => runTurn(weeks))}
+          onClick={() =>
+            run(async () => {
+              const res = await runTurn(weeks, done);
+              setDone(res.finished ? [] : [...done, ...res.ranIds]);
+              return res;
+            })
+          }
           className={button}
         >
           {pending ? "Working…" : "Run every AI club"}
         </button>
         <p className="text-xs text-zinc-500">
-          Uses energy like a manager. A click runs for up to 40 seconds; with
-          many clubs, click again to carry on with the rest.
+          For testing: clubs play these weeks now without using their energy
+          (the scheduled runs every 2 hours do use it). A click runs for up to
+          40 seconds; with many clubs, click again to carry on with the rest.
         </p>
       </div>
       {result && (
