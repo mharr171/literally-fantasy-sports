@@ -68,10 +68,13 @@ export function SquadBuilder({
   roster,
   initial,
   saved,
+  outOfPosition = 0,
 }: {
   roster: RosterPlayer[];
   initial: MatchdaySquad;
   saved: boolean;
+  /** The season's penalty for playing out of position (D135), 0 when off. */
+  outOfPosition?: number;
 }) {
   const byId = useMemo(() => new Map(roster.map((p) => [p.id, p])), [roster]);
   const rosterIds = useMemo(() => new Set(byId.keys()), [byId]);
@@ -130,7 +133,7 @@ export function SquadBuilder({
       const p = starters[i];
       const g = p ? gridFor(p, slot.position, slot.side) : null;
       if (!p || !g) return;
-      const weight = slotRating(p, slot.position);
+      const weight = slotRating(p, slot.position, outOfPosition);
       for (let r = 0; r < g.length; r++) {
         const row = g[r] as number[];
         const out = sum[r] as number[];
@@ -403,7 +406,7 @@ export function SquadBuilder({
                       <span
                         className={FIT_STYLE[positionFit(player, s.position)]}
                       >
-                        {slotRating(player, s.position)}
+                        {slotRating(player, s.position, outOfPosition)}
                         {boost > 0 && (
                           <span className="text-sky-700">
                             {" "}

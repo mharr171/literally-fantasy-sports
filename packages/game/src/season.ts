@@ -453,3 +453,16 @@ export async function loadMatch(teamId: string, fixtureId: string) {
     managerTeam: fixture.manager_team as StoredManagerTeam | null,
   };
 }
+
+/**
+ * The out-of-position penalty the club plays by now (D135): its season's
+ * settings while one is under way, else the live settings.
+ */
+export async function currentOutOfPosition(teamId: string): Promise<number> {
+  const season = await loadLatestSeason(teamId);
+  const { config } =
+    season && season.status !== "finished"
+      ? await configFor(season.configVersion)
+      : await liveSoccerConfig();
+  return config.tuning.outOfPosition;
+}

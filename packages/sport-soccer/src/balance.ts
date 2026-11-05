@@ -159,6 +159,12 @@ export const TUNING_LIMITS: Record<keyof MatchTuning, Limit> = {
     min: 0,
     max: 0.2,
   },
+  outOfPosition: {
+    label: "Out-of-position skill",
+    help: "Skill change for a player outside their primary and secondary positions (−0.5 = −50%, 0 = off). D135.",
+    min: -0.9,
+    max: 0,
+  },
   playerMatchup: {
     label: "Player color matchups",
     help: "Most a player's skill moves for beating (or losing to) the colors of everyone they face (0.06 = ±6%, 0 = off).",

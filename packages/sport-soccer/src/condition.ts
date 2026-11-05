@@ -10,6 +10,7 @@ import {
   formation,
   type MatchdaySquad,
   type PickablePlayer,
+  playsPosition,
   slotRating,
 } from "./matchday";
 
@@ -117,7 +118,10 @@ export function availableSquad(
       const p = byId.get(candidate) as PickablePlayer;
       const b =
         best === -1 ? null : (byId.get(pool[best] as string) as PickablePlayer);
-      if (!b || slotRating(p, position) > slotRating(b, position)) best = k;
+      // Players in their own position first (D135), then by rating.
+      const rank = (x: PickablePlayer) =>
+        (playsPosition(x, position) ? 1_000 : 0) + slotRating(x, position);
+      if (!b || rank(p) > rank(b)) best = k;
     });
     if (best === -1)
       throw new Error(

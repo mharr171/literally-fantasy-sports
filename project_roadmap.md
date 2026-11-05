@@ -1,6 +1,6 @@
 # LiterallyFantasySports — Project Roadmap
 
-Nov 2, 2026 · @Gary · Last updated: Nov 5, 2026 (D150)
+Nov 2, 2026 · @Gary · Last updated: Nov 5, 2026 (D151)
 
 ## Review progress
 
@@ -171,6 +171,7 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D148 | Nov 5, 2026 | Color cycle (D138, proposed in ADR 0003): each color beats the next two along the rainbow, Red → Yellow → Green → Blue → Purple → Red. Team matchups (dominant colors +4%, second colors +2%) and player matchups by area of the pitch (up to ±6% influence) are tuning values. They are off in stored versions without them, so seasons under way and replays don't change (Gary OK'd, Nov 5, 2026) | M11 |
 | D149 | Nov 5, 2026 | Color settings in admin (Gary): the three matchup strengths are match tuning values in Admin → Soccer balance, tested with the harness before publishing (M11). An admin editor for the color cycle itself (reorder the ring; it checks every color still beats two and loses to two) is added to M12 | M11, M12 |
 | D150 | Nov 5, 2026 | Matchup strengths (Gary, after the harness sweep in #90): team matchup 7%, second colors 3.5%, player matchups 9%, for the settings version that turns matchups on. Defaults stay 0 until that version is published | M11 |
+| D151 | Nov 5, 2026 | How D135 ships: the out-of-position penalty is a match tuning value (Admin → Soccer balance → Positions), 0 until a settings version sets it to −50%, so seasons under way and replays don't change. Auto-pick, cover for injured or banned starters, the AI and ghosts (through auto-pick) always choose players in their own position when anyone can fill the slot. In-match subs do too once the penalty is on. The squad page shows ratings with the penalty of the season being played | M11 |
 
 ## 1. Vision & goals
 

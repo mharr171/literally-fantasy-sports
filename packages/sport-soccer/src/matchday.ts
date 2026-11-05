@@ -9,7 +9,10 @@ import {
   chemistryColorCount,
   DEFAULT_CHEMISTRY_BOOSTS,
 } from "@lfs/core";
-import { effectiveSkill } from "./effective-skill";
+import {
+  DEFAULT_EFFECTIVE_SKILL_CONFIG,
+  effectiveSkill,
+} from "./effective-skill";
 import {
   DEFAULT_MATCH_TUNING,
   type MatchTuning,
@@ -181,12 +184,33 @@ export interface MatchdaySquad {
   subPlan: PlannedSub[];
 }
 
-/** A player's rating in a slot: overall there plus the position-fit bonus, no chemistry. */
-export function slotRating(player: SoccerPlayer, position: Position): number {
+/**
+ * A player's rating in a slot: overall there plus the position-fit bonus, no
+ * chemistry. `outOfPosition` is the season's penalty for anywhere other than
+ * the player's two positions (D135), 0 when it isn't on.
+ */
+export function slotRating(
+  player: SoccerPlayer,
+  position: Position,
+  outOfPosition = 0,
+): number {
+  const config = outOfPosition
+    ? {
+        ...DEFAULT_EFFECTIVE_SKILL_CONFIG,
+        positionFit: {
+          ...DEFAULT_EFFECTIVE_SKILL_CONFIG.positionFit,
+          other: outOfPosition,
+        },
+      }
+    : DEFAULT_EFFECTIVE_SKILL_CONFIG;
   return Math.round(
-    effectiveSkill({ player, slot: position, chemistryBoost: 0 }),
+    effectiveSkill({ player, slot: position, chemistryBoost: 0 }, config),
   );
 }
+
+/** Whether a player plays this position: their primary or secondary one (D135). */
+export const playsPosition = (player: SoccerPlayer, position: Position) =>
+  player.primaryPosition === position || player.secondaryPosition === position;
 
 /**
  * Everything wrong with a squad, in plain English (empty when it's ready to
@@ -297,9 +321,13 @@ export function autoPickSquad(
     formation(formationId) ?? (formation(DEFAULT_FORMATION) as Formation);
   const available = options.available ?? (() => true);
   const weight = options.weight ?? (() => 1);
-  // Available players always outrank unavailable ones, then by weighted rating.
+  // Available players always outrank unavailable ones, then players in their
+  // own positions (D135), then by weighted rating.
   const score = (p: PickablePlayer, rating: number) =>
-    (available(p.id) ? 1_000 : 0) + rating * weight(p.id);
+    (available(p.id) ? 1_000_000 : 0) + rating * weight(p.id);
+  const slotScore = (p: PickablePlayer, position: Position) =>
+    score(p, slotRating(p, position)) +
+    (playsPosition(p, position) ? 1_000 : 0);
   const free = new Map(players.map((p) => [p.id, p]));
   const order = shape.slots
     .map((s, i) => ({ s, i }))
@@ -310,11 +338,7 @@ export function autoPickSquad(
   for (const { s, i } of order) {
     let best: PickablePlayer | undefined;
     for (const p of free.values())
-      if (
-        !best ||
-        score(p, slotRating(p, s.position)) >
-          score(best, slotRating(best, s.position))
-      )
+      if (!best || slotScore(p, s.position) > slotScore(best, s.position))
         best = p;
     if (!best) break;
     lineup[i] = best.id;
