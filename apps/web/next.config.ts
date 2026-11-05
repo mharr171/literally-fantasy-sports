@@ -17,7 +17,7 @@ const nextConfig: NextConfig = {
   env: { GAME_VERSION: gameVersion() },
   cacheComponents: true,
   // The engine packages are TypeScript source in the monorepo.
-  transpilePackages: ["@lfs/core", "@lfs/sport-soccer"],
+  transpilePackages: ["@lfs/core", "@lfs/game", "@lfs/sport-soccer"],
   partialPrefetching: true,
   turbopack: {
     rules: {

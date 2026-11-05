@@ -1,0 +1,4 @@
+{
+  "extends": "@lfs/config/tsconfig.base.json",
+  "include": ["src", "test", "scripts", "vitest.config.ts"]
+}

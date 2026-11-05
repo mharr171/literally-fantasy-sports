@@ -1,6 +1,6 @@
 import type { MatchSummary } from "@lfs/sport-soccer";
 import { describe, expect, it } from "vitest";
-import { scoreOnly } from "./match-kept";
+import { scoreOnly } from "../src/match-kept";
 
 const full: MatchSummary = {
   possession: { home: 0.55, away: 0.45 },
