@@ -236,3 +236,25 @@ export async function setSkipIdleWeeksFor(
     .eq("id", team.id);
   if (error) throw new Error(error.message);
 }
+
+/**
+ * Account reset (D141, ADR 0004): deletes the manager's club and everything
+ * that belongs to it, so they can start again from naming a club. The
+ * club's exact name confirms it; the database checks it again.
+ */
+export async function resetAccountFor(
+  ownerId: string,
+  confirmName: string,
+): Promise<void> {
+  const { error } = await createServiceClient().rpc("reset_account", {
+    p_owner: ownerId,
+    p_confirm: confirmName,
+  });
+  if (error) {
+    if (error.message.includes("does not match"))
+      throw new Error("That isn't your club's name: type it exactly.");
+    if (error.message.includes("no club"))
+      throw new Error("You don't have a club to reset.");
+    throw new Error(error.message);
+  }
+}
