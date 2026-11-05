@@ -53,17 +53,33 @@ export interface LoadedSeason {
 }
 
 /** The team's latest season (in progress or finished), or null. */
-export async function loadLatestSeason(
+export function loadLatestSeason(teamId: string): Promise<LoadedSeason | null> {
+  return loadSeasonNumbered(teamId, null);
+}
+
+/** One of the team's seasons by its number (D175), or null. */
+export function loadSeasonByNumber(
   teamId: string,
+  number: number,
+): Promise<LoadedSeason | null> {
+  return loadSeasonNumbered(teamId, number);
+}
+
+async function loadSeasonNumbered(
+  teamId: string,
+  number: number | null,
 ): Promise<LoadedSeason | null> {
   const db = createServiceClient();
-  const { data: season, error } = await db
+  const query = db
     .from("seasons")
     .select(
       "id, number, status, week, seed, config_version, closed_at, review, intake_resolved_at",
     )
-    .eq("team_id", teamId)
-    .order("number", { ascending: false })
+    .eq("team_id", teamId);
+  const { data: season, error } = await (number === null
+    ? query.order("number", { ascending: false })
+    : query.eq("number", number)
+  )
     .limit(1)
     .maybeSingle();
   if (error) throw new Error(error.message);

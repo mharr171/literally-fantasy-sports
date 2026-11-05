@@ -101,6 +101,9 @@ async function TeamContent() {
           {squadReady ? "ready" : squad ? "needs changes" : "not picked yet"}
         </span>
         <span className="flex-1" />
+        <Link href="/team/history" className="font-medium hover:underline">
+          History
+        </Link>
         {squadReady && (
           <Link href="/season" className="font-medium hover:underline">
             Go to season →
