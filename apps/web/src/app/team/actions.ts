@@ -112,16 +112,19 @@ export async function confirmStarterSquad(
 const buySchema = z.object({
   tier: z.enum(BOUGHT_TIERS.map((t) => t.id) as [string, ...string[]]),
   focus: z.enum(PACK_FOCUSES),
+  // Chemistry colors to leave out (D180), checked again in the game step.
+  excluded: z.array(z.number().int().min(0).max(4)).max(3).default([]),
 });
 
 /** Buys a pack (D47); it opens straight away for keep-or-sell choices. */
 export async function buyPack(input: {
   tier: string;
   focus: string;
+  excluded?: number[];
 }): Promise<ActionResult> {
   return run(async () => {
-    const { tier, focus } = buySchema.parse(input);
-    await buyPackFor(await requireTeam(), tier, focus);
+    const { tier, focus, excluded } = buySchema.parse(input);
+    await buyPackFor(await requireTeam(), tier, focus, excluded);
   }, "That pack isn't for sale.");
 }
 

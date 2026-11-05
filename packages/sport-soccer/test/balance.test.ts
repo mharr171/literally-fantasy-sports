@@ -80,8 +80,10 @@ describe("balance settings (M5)", () => {
       x.tuning = { ...x.tuning, goalRate: 0.5 };
       x.payouts = { ...x.payouts, champion: 9000 };
       x.packs = {
+        ...DEFAULT_PACK_PRICES,
         tiers: { basic: 6000, silver: 13000, gold: 31000 },
         focusSurcharge: 0.25,
+        eloPerOverall: 40,
       };
     });
     const values = Object.fromEntries(
@@ -98,8 +100,8 @@ describe("balance settings (M5)", () => {
       tuning: { ...DEFAULT_MATCH_TUNING, goalRate: 0.5 },
       payouts: DEFAULT_PAYOUTS,
       packs: {
+        ...DEFAULT_PACK_PRICES,
         tiers: { ...DEFAULT_PACK_PRICES.tiers, basic: 6000 },
-        focusSurcharge: DEFAULT_PACK_PRICES.focusSurcharge,
       },
       condition: DEFAULT_CONDITION_SETTINGS,
       form: DEFAULT_FORM_SETTINGS,

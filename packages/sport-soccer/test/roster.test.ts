@@ -2,13 +2,17 @@ import { describe, expect, it } from "vitest";
 import { PACK_SIZE, STARTER_TIER } from "../src/generation";
 import { POSITION_LINE } from "../src/positions";
 import {
+  allowedColors,
   BOUGHT_TIERS,
   boughtTier,
+  DEFAULT_PACK_PRICES,
   DEFAULT_ROSTER_LIMITS,
+  excludedColorsError,
   isPackFocus,
   PACK_FOCUSES,
   packChoiceError,
   packContents,
+  packEloShift,
   packPrice,
   packTier,
   ROSTER_MAX,
@@ -17,6 +21,7 @@ import {
   rosterLimitsError,
   rosterWarning,
   type StarterPackState,
+  shiftedTier,
   starterPackPlan,
   starterSelectionError,
 } from "../src/roster";
@@ -185,5 +190,63 @@ describe("leaving the roster", () => {
     expect(rosterLimitsError({ min: 11, max: 33, benchMax: 12 })).toMatch(
       /Bench size/,
     );
+  });
+});
+
+describe("Elo-scaled packs and color exclusion (D179, D180)", () => {
+  const scaled = { ...DEFAULT_PACK_PRICES, eloPerOverall: 40 };
+
+  it("moves a pack's odds with the club's Elo, within limits, only when on", () => {
+    expect(packEloShift(1900)).toBe(0);
+    expect(packEloShift(1700, scaled)).toBe(5);
+    expect(packEloShift(1300, scaled)).toBe(-5);
+    expect(packEloShift(3000, scaled)).toBe(15);
+    expect(packEloShift(500, scaled)).toBe(-10);
+    const gold = boughtTier("gold");
+    const up = shiftedTier(gold, 10);
+    expect(up.bands?.map((b) => [b.min, b.max])).toEqual([
+      [70, 79],
+      [80, 89],
+      [90, 99],
+      [99, 99],
+    ]);
+    expect(shiftedTier(gold, 0)).toBe(gold);
+  });
+
+  it("prices: focus and colors add up, then the Elo shift; old prices unchanged", () => {
+    expect(packPrice("gold", "any")).toBe(30_000);
+    expect(packPrice("gold", "any", scaled, { eloShift: 10 })).toBe(39_000);
+    expect(packPrice("basic", "defence", scaled, { excludedColors: [1] })).toBe(
+      7250,
+    );
+    expect(
+      packPrice("silver", "any", scaled, { excludedColors: [0, 1, 2] }),
+    ).toBe(26_400);
+    expect(packPrice("basic", "any", scaled, { eloShift: -10 })).toBe(3500);
+  });
+
+  it("leaves out colors and moves the odds in the pack's players", () => {
+    const plain = packContents("p1", "any", "silver");
+    // Old packs (no choice) open exactly as before.
+    expect(packContents("p1", "any", "silver", undefined, {})).toEqual(plain);
+    const choice = { excludedColors: [0, 2, 4] };
+    for (let i = 0; i < 40; i++)
+      for (const p of packContents(`c${i}`, "any", "silver", undefined, choice))
+        expect([1, 3]).toContain(p.chemistryColor);
+    const avg = (shift: number) => {
+      let total = 0;
+      for (let i = 0; i < 60; i++)
+        for (const p of packContents(`e${i}`, "any", "basic", undefined, {
+          eloShift: shift,
+        }))
+          total += p.overall;
+      return total / 300;
+    };
+    expect(avg(10)).toBeGreaterThan(avg(0) + 7);
+    expect(allowedColors()).toBeUndefined();
+    expect(excludedColorsError([0, 1, 2, 3])).toMatch(/at most 3/);
+    expect(excludedColorsError([1, 1])).toMatch(/twice/);
+    expect(excludedColorsError([5])).toMatch(/isn't/);
+    expect(excludedColorsError([0, 4])).toBeNull();
   });
 });

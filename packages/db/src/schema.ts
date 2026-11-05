@@ -341,6 +341,10 @@ export const packs = pgTable(
     focus: text().notNull(),
     tier: text().notNull(),
     seed: text().notNull(),
+    /** Overall points the odds moved with the club's Elo when bought (D179). */
+    eloShift: integer().notNull().default(0),
+    /** Chemistry colors left out of the pack (D180). */
+    excludedColors: integer().array().notNull().default(sql`'{}'::integer[]`),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     openedAt: timestamp({ withTimezone: true }),
     resolvedAt: timestamp({ withTimezone: true }),
@@ -350,6 +354,10 @@ export const packs = pgTable(
     index("packs_team").on(t.teamId),
     check("packs_sport", sql`${t.sport} ${SPORT_CHECK}`),
     check("packs_kind", sql`${t.kind} in ('starter', 'bought')`),
+    check(
+      "packs_choice",
+      sql`${t.eloShift} between -10 and 15 and cardinality(${t.excludedColors}) <= 3`,
+    ),
     check(
       "packs_focus",
       sql`${t.focus} in ('attack', 'midfield', 'defence', 'goal', 'any')`,

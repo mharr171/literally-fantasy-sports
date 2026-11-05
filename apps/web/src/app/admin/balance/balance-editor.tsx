@@ -8,12 +8,14 @@ import {
   balanceErrors,
   CONDITION_LIMITS,
   type ConditionSettings,
+  DEFAULT_PACK_PRICES,
   FOCUS_SURCHARGE_LIMIT,
   FORM_LIMITS,
   type FormSettings,
   fatiguePerMatch,
   type Limit,
   type MatchTuning,
+  PACK_EXTRA_LIMITS,
   PACK_PRICE_LIMIT,
   PAYOUT_LIMITS,
   SOCCER_COLOR_CYCLE,
@@ -62,6 +64,10 @@ const TUNING_GROUPS: [string, TuningNumberKey[]][] = [
   ["Color matchups", ["teamMatchup", "teamMatchupSecond", "playerMatchup"]],
 ];
 
+const PACK_EXTRA_KEYS = Object.keys(PACK_EXTRA_LIMITS) as Array<
+  keyof typeof PACK_EXTRA_LIMITS
+>;
+
 /** Every field as a path, e.g. "tuning.phases" or "packs.tiers.basic". */
 type Fields = Record<string, string>;
 
@@ -73,6 +79,9 @@ function toFields(s: BalanceSettings): Fields {
   for (const t of BOUGHT_TIERS)
     f[`packs.tiers.${t.id}`] = String(s.packs.tiers[t.id] ?? t.price);
   f["packs.focusSurcharge"] = String(s.packs.focusSurcharge);
+  // Elo-scaled packs and color exclusion (D179, D180).
+  for (const k of PACK_EXTRA_KEYS)
+    f[`packs.${k}`] = String(s.packs[k] ?? DEFAULT_PACK_PRICES[k] ?? 0);
   for (const [k, v] of Object.entries(s.condition))
     f[`condition.${k}`] = String(v);
   for (const [k, v] of Object.entries(s.form)) f[`form.${k}`] = String(v);
@@ -95,6 +104,7 @@ function fromFields(f: Fields, cycle: readonly number[]): BalanceSettings {
         BOUGHT_TIERS.map((t) => [t.id, n(`packs.tiers.${t.id}`)]),
       ),
       focusSurcharge: n("packs.focusSurcharge"),
+      ...Object.fromEntries(PACK_EXTRA_KEYS.map((k) => [k, n(`packs.${k}`)])),
     },
     condition: pick<ConditionSettings>(
       "condition",
@@ -283,9 +293,13 @@ export function BalanceEditor(props: {
             }),
           )}
           {field("packs.focusSurcharge", FOCUS_SURCHARGE_LIMIT)}
+          {PACK_EXTRA_KEYS.map((k) =>
+            field(`packs.${k}`, PACK_EXTRA_LIMITS[k]),
+          )}
         </div>
         <p className="text-xs text-zinc-500">
-          Odds of player skill stay as published in the shop.
+          The shop publishes the odds for each club&apos;s Elo. Color surcharges
+          add to the position-focus surcharge.
         </p>
       </fieldset>
 

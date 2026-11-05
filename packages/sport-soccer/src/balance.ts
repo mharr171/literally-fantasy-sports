@@ -385,6 +385,48 @@ export const FORM_LIMITS: Record<keyof FormSettings, Limit> = {
   },
 };
 
+/** Elo-scaled packs and color exclusion (D179, D180). */
+export const PACK_EXTRA_LIMITS: Record<
+  | "eloPerOverall"
+  | "pricePerOverall"
+  | "excludeOne"
+  | "excludeTwo"
+  | "excludeThree",
+  Limit
+> = {
+  eloPerOverall: {
+    label: "Elo per overall point",
+    help: "Bought packs' odds move 1 overall point per this many Elo away from 1500 (40: +5 at 1700, from −10 to +15). 0 = packs don't follow Elo. D179.",
+    min: 0,
+    max: 200,
+    integer: true,
+  },
+  pricePerOverall: {
+    label: "Price per overall point",
+    help: "A pack costs this much more for each point its odds move up, and less for each point down (0.03 = 3%). D179.",
+    min: 0,
+    max: 0.2,
+  },
+  excludeOne: {
+    label: "Leave out 1 color",
+    help: "Surcharge for a pack with one chemistry color left out (0.25 = +25%), added to any position focus. D180.",
+    min: 0,
+    max: 5,
+  },
+  excludeTwo: {
+    label: "Leave out 2 colors",
+    help: "Surcharge for leaving out two colors. D180.",
+    min: 0,
+    max: 5,
+  },
+  excludeThree: {
+    label: "Leave out 3 colors",
+    help: "Surcharge for leaving out three colors. D180.",
+    min: 0,
+    max: 5,
+  },
+};
+
 export const FOCUS_SURCHARGE_LIMIT: Limit = {
   label: "Position-focus surcharge",
   help: "Focused packs cost this much more (0.2 = +20%).",
@@ -430,6 +472,12 @@ export function balanceErrors(settings: BalanceSettings): string[] {
     settings.packs.focusSurcharge,
     FOCUS_SURCHARGE_LIMIT,
   );
+  for (const [key, limit] of Object.entries(PACK_EXTRA_LIMITS))
+    check(
+      limit.label,
+      settings.packs[key as keyof typeof PACK_EXTRA_LIMITS],
+      limit,
+    );
   for (const [key, limit] of Object.entries(CONDITION_LIMITS))
     check(
       limit.label,
@@ -492,6 +540,13 @@ export function balanceFromValues(
         Number.isFinite(packs.focusSurcharge)
           ? packs.focusSurcharge
           : DEFAULT_PACK_PRICES.focusSurcharge,
+      ...Object.fromEntries(
+        Object.keys(PACK_EXTRA_LIMITS).map((k) => [
+          k,
+          DEFAULT_PACK_PRICES[k as keyof typeof PACK_EXTRA_LIMITS],
+        ]),
+      ),
+      ...numbers<PackPrices>(values.packs, Object.keys(PACK_EXTRA_LIMITS)),
     },
     condition: {
       ...DEFAULT_CONDITION_SETTINGS,
@@ -530,6 +585,12 @@ export function balanceToRows(settings: BalanceSettings): {
       value: {
         tiers: { ...settings.packs.tiers },
         focusSurcharge: settings.packs.focusSurcharge,
+        ...Object.fromEntries(
+          Object.keys(PACK_EXTRA_LIMITS).map((k) => [
+            k,
+            settings.packs[k as keyof typeof PACK_EXTRA_LIMITS],
+          ]),
+        ),
       },
     },
     { key: "condition", value: { ...settings.condition } },

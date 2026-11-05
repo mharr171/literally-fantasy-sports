@@ -23,6 +23,7 @@ import type { GeneratedPlayer } from "../src/generation";
 import { FORMATIONS, squadProblems } from "../src/matchday";
 import { POSITION_LINE } from "../src/positions";
 import {
+  DEFAULT_PACK_PRICES,
   packContents,
   ROSTER_MAX,
   ROSTER_MIN,
@@ -161,6 +162,15 @@ describe("packs (D47)", () => {
       tier: "basic",
     });
     expect(choosePack(6_500, roster, "spender")?.focus).not.toBe("any");
+  });
+
+  it("pays the Elo-shifted price, as the shop does (D179)", () => {
+    const prices = { ...DEFAULT_PACK_PRICES, eloPerOverall: 40 };
+    expect(choosePack(40_000, roster, "spender", prices, 0)?.tier).toBe("gold");
+    // A Gold pack at +10 costs 30% more: out of reach at 40,000.
+    expect(choosePack(40_000, roster, "spender", prices, 10)?.tier).toBe(
+      "silver",
+    );
   });
 
   it("builders buy cheap all-position packs; steady clubs keep a cushion", () => {

@@ -1,6 +1,7 @@
 import {
   formation,
   type MatchdaySquad,
+  packEloShift,
   type RosterLimits,
   rosterWarning,
   slotLabel,
@@ -135,6 +136,7 @@ async function TeamContent() {
         funds={team.funds}
         hasOpenPack={openPack !== null}
         prices={live.balance.packs}
+        eloShift={packEloShift(team.elo, live.balance.packs)}
       />
     </>
   );
