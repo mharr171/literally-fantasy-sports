@@ -1,5 +1,44 @@
 # Changelog
 
+## [1.5.0](https://github.com/mharr171/literally-fantasy-sports/compare/v1.4.0...v1.5.0) (2026-11-05)
+
+
+### Features
+
+* a public hall of fame for the best clubs and players of all time ([#119](https://github.com/mharr171/literally-fantasy-sports/issues/119)) ([dc3a511](https://github.com/mharr171/literally-fantasy-sports/commit/dc3a5114426fddf126f9b2f53a1042873ffef622))
+* **admin:** fatigue shown per match, and weekly recovery, card bans and form settings in Soccer balance ([#102](https://github.com/mharr171/literally-fantasy-sports/issues/102)) ([f67808b](https://github.com/mharr171/literally-fantasy-sports/commit/f67808b372ec07dd8aa350075a08c9e6662cbd8d))
+* admins can change which color beats which ([#113](https://github.com/mharr171/literally-fantasy-sports/issues/113)) ([de07e08](https://github.com/mharr171/literally-fantasy-sports/commit/de07e08fc71c4a875db7afaa5acf6a360d819559))
+* admins can create formations and turn them on or off ([#111](https://github.com/mharr171/literally-fantasy-sports/issues/111)) ([461e37c](https://github.com/mharr171/literally-fantasy-sports/commit/461e37c661ecd7ecad5d302faca66aada0bc58fe))
+* admins can soft reset AI, real or all clubs ([#109](https://github.com/mharr171/literally-fantasy-sports/issues/109)) ([48408f3](https://github.com/mharr171/literally-fantasy-sports/commit/48408f3b1800b123b56c6733202486e2bc156be7))
+* admins see hidden club and player details on public pages ([#110](https://github.com/mharr171/literally-fantasy-sports/issues/110)) ([e4df1bb](https://github.com/mharr171/literally-fantasy-sports/commit/e4df1bb674d4cd32d5fedc1700861f59275aa3f0))
+* browse every past season from My team → History ([#116](https://github.com/mharr171/literally-fantasy-sports/issues/116)) ([d4e95f0](https://github.com/mharr171/literally-fantasy-sports/commit/d4e95f02c5828769fc9b10fcb3e26c877a052038))
+* clubs move off a turned-off formation at their next match ([#112](https://github.com/mharr171/literally-fantasy-sports/issues/112)) ([5de181a](https://github.com/mharr171/literally-fantasy-sports/commit/5de181ac0f7c551fba5c2498adf6ad7074c7450f))
+* form counts assists, tackles, saves and clean sheets, so defenders and keepers build form too ([#104](https://github.com/mharr171/literally-fantasy-sports/issues/104)) ([5b30c95](https://github.com/mharr171/literally-fantasy-sports/commit/5b30c9510274ba8870b63a72fe610c03e0877e5e))
+* logical substitutions: automatic subs come in groups so all 5 get used in 3 windows ([#103](https://github.com/mharr171/literally-fantasy-sports/issues/103)) ([2d05556](https://github.com/mharr171/literally-fantasy-sports/commit/2d05556a4156bd65bd04700d35b27b74b5695ab6))
+* retiring players get a career tribute card ([#117](https://github.com/mharr171/literally-fantasy-sports/issues/117)) ([c961ecb](https://github.com/mharr171/literally-fantasy-sports/commit/c961ecbc04db8c3c9450c34a630f2ea7de50852d))
+* start over: managers can delete their club from account settings and begin again ([#108](https://github.com/mharr171/literally-fantasy-sports/issues/108)) ([32a0f88](https://github.com/mharr171/literally-fantasy-sports/commit/32a0f88daf8b7efc9ef378129ad4feb753f442e7))
+* the squad page explains squad score and Today, and Today counts morale like matches do ([#101](https://github.com/mharr171/literally-fantasy-sports/issues/101)) ([ef2abce](https://github.com/mharr171/literally-fantasy-sports/commit/ef2abce8e72588888ea8b7b13b8c36c771c0dd86))
+* young players who play more grow more (growth from playing time) ([#105](https://github.com/mharr171/literally-fantasy-sports/issues/105)) ([c4092c7](https://github.com/mharr171/literally-fantasy-sports/commit/c4092c79ad1cf297699b05e2bab50f619373fe08))
+* your club's hall of fame on the History page ([#118](https://github.com/mharr171/literally-fantasy-sports/issues/118)) ([8285cf3](https://github.com/mharr171/literally-fantasy-sports/commit/8285cf39e16410528c6f33dd51335d51404376a3))
+
+
+### Bug Fixes
+
+* **admin:** "Run every AI club" no longer uses the clubs' energy ([#98](https://github.com/mharr171/literally-fantasy-sports/issues/98)) ([e131bd1](https://github.com/mharr171/literally-fantasy-sports/commit/e131bd11dd03e712c7eb88bf2bc50a8772fa2073))
+* player cards and other pop-ups open centered on the screen, so you never scroll to read them ([#99](https://github.com/mharr171/literally-fantasy-sports/issues/99)) ([be1620a](https://github.com/mharr171/literally-fantasy-sports/commit/be1620a725f804ad8faa1252acad626fc96da2dc))
+* the roster fits on a laptop screen without scrolling sideways, and becomes cards on phones ([#100](https://github.com/mharr171/literally-fantasy-sports/issues/100)) ([8b78605](https://github.com/mharr171/literally-fantasy-sports/commit/8b786055e15673f30da0fa8fad048edffd7e558b))
+
+
+### Documentation
+
+* Gary's third round of notes (D154–D164) and the new M12 Squad balance and polish ([#97](https://github.com/mharr171/literally-fantasy-sports/issues/97)) ([adbf839](https://github.com/mharr171/literally-fantasy-sports/commit/adbf839ed72088296547c87554417a18f742cd10))
+* how account and admin resets work (ADR 0004) ([#107](https://github.com/mharr171/literally-fantasy-sports/issues/107)) ([9d89624](https://github.com/mharr171/literally-fantasy-sports/commit/9d89624bb8920320e6f3e725006f25c1e4ecab79))
+* plan season history, hall of fame and retirement tributes (ADR 0005) ([#115](https://github.com/mharr171/literally-fantasy-sports/issues/115)) ([83e2e3a](https://github.com/mharr171/literally-fantasy-sports/commit/83e2e3a3bea6811208e5e4c48718cd7336cb0b56))
+* tick M11 in the roadmap ([#95](https://github.com/mharr171/literally-fantasy-sports/issues/95)) ([3049bd4](https://github.com/mharr171/literally-fantasy-sports/commit/3049bd49f6be0177bf2a4d851716a38087aeb09b))
+* tick M12 in the roadmap ([#106](https://github.com/mharr171/literally-fantasy-sports/issues/106)) ([5010e01](https://github.com/mharr171/literally-fantasy-sports/commit/5010e016fa01632ee5e6550d911ca486ce81163e))
+* tick M13 Admin tools in the roadmap ([#114](https://github.com/mharr171/literally-fantasy-sports/issues/114)) ([e6f7a47](https://github.com/mharr171/literally-fantasy-sports/commit/e6f7a472287e9e022daf3a8f7918003a89ccd8b3))
+* tick M14 History and hall of fame in the roadmap ([#120](https://github.com/mharr171/literally-fantasy-sports/issues/120)) ([68cf59d](https://github.com/mharr171/literally-fantasy-sports/commit/68cf59d0e6785985a1e9c49a4c19eb2ee0889228))
+
 ## [1.4.0](https://github.com/mharr171/literally-fantasy-sports/compare/v1.3.0...v1.4.0) (2026-11-05)
 
 
