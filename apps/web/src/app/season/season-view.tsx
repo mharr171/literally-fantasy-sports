@@ -105,12 +105,14 @@ export function SeasonView({
             {funds.toLocaleString("en-US")}
           </p>
         </div>
-        <Link
-          href="/team/squad"
-          className="text-sm font-medium hover:underline"
-        >
-          Matchday squad →
-        </Link>
+        <div className="flex flex-col items-start gap-1 text-sm font-medium sm:items-end">
+          <Link href="/season/schedule" className="hover:underline">
+            Schedule and opponents&apos; colors →
+          </Link>
+          <Link href="/team/squad" className="hover:underline">
+            Matchday squad →
+          </Link>
+        </div>
       </div>
 
       {season.status === "finished" ? (
