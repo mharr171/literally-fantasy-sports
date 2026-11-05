@@ -1,5 +1,36 @@
 # Changelog
 
+## [1.4.0](https://github.com/mharr171/literally-fantasy-sports/compare/v1.3.0...v1.4.0) (2026-11-05)
+
+
+### Features
+
+* a game guide for new managers, with the color cycle drawn as a ring ([#94](https://github.com/mharr171/literally-fantasy-sports/issues/94)) ([53650ed](https://github.com/mharr171/literally-fantasy-sports/commit/53650ed69c440f579b2c6ed4e45a0c64a34f1fb6))
+* a season schedule with every opponent's chemistry colors, and your squad's colors on the matchday page ([#93](https://github.com/mharr171/literally-fantasy-sports/issues/93)) ([cfbcec9](https://github.com/mharr171/literally-fantasy-sports/commit/cfbcec9fd164a851c61174cb848ac1fa8bd1478a))
+* **engine:** color matchups: each chemistry color beats two others (off until a settings version turns them on) ([#90](https://github.com/mharr171/literally-fantasy-sports/issues/90)) ([c8b91ea](https://github.com/mharr171/literally-fantasy-sports/commit/c8b91ea7cb0f8ebc241540d8ffb6307d5c39131c))
+* Light, Dark or System theme in account settings, readable dropdowns, and a searchable club picker ([#83](https://github.com/mharr171/literally-fantasy-sports/issues/83)) ([01079e9](https://github.com/mharr171/literally-fantasy-sports/commit/01079e90809d8057fc93404228baa04953173ca2))
+* player cards show career stats: games, win %, goals, assists, tackles and saves ([#86](https://github.com/mharr171/literally-fantasy-sports/issues/86)) ([3df3059](https://github.com/mharr171/literally-fantasy-sports/commit/3df305917908024a4373a8242cdbb9fc74ad6193))
+* players get their own heatmap at their second position too ([#85](https://github.com/mharr171/literally-fantasy-sports/issues/85)) ([7d56125](https://github.com/mharr171/literally-fantasy-sports/commit/7d56125ced3e7d8cdd0482eddf3a33bf0465f40a))
+* players out of position lose half their skill, and auto-pick keeps everyone in their own positions ([#92](https://github.com/mharr171/literally-fantasy-sports/issues/92)) ([9871a37](https://github.com/mharr171/literally-fantasy-sports/commit/9871a37e2daf2d96b7971f5cde8fb91fdd7176a2))
+
+
+### Bug Fixes
+
+* player cards count every stat from the same start, so games and win % match the results shown ([#87](https://github.com/mharr171/literally-fantasy-sports/issues/87)) ([547b187](https://github.com/mharr171/literally-fantasy-sports/commit/547b187113e118810b193ec67ea1e5f6d3a98720))
+* weeks without your match are never blocked at 0 energy, and can play by themselves ([#82](https://github.com/mharr171/literally-fantasy-sports/issues/82)) ([334f1cb](https://github.com/mharr171/literally-fantasy-sports/commit/334f1cbbded88b2ed3eae1500edd0188ae7aae59))
+
+
+### Documentation
+
+* color cycle and matchups (ADR 0003) ([#89](https://github.com/mharr171/literally-fantasy-sports/issues/89)) ([ec4de35](https://github.com/mharr171/literally-fantasy-sports/commit/ec4de35fcc0daedccd417b6159cf3202039fc892))
+* roadmap for M10 to M13 and decisions D131 to D143 ([#80](https://github.com/mharr171/literally-fantasy-sports/issues/80)) ([80c8bae](https://github.com/mharr171/literally-fantasy-sports/commit/80c8baeb737b2ced2ce332d209c0f2a083e98279))
+* tick M10 in the roadmap ([#88](https://github.com/mharr171/literally-fantasy-sports/issues/88)) ([f50a65a](https://github.com/mharr171/literally-fantasy-sports/commit/f50a65af05dd29ffae5f21a5ce72443cf2a024f7))
+
+
+### Build and CI
+
+* fail a pull request whose migrations would delete clubs, players or settings ([#84](https://github.com/mharr171/literally-fantasy-sports/issues/84)) ([2fbd024](https://github.com/mharr171/literally-fantasy-sports/commit/2fbd0245342cecd1159288e7a2da6a2c4b43436d))
+
 ## [1.3.0](https://github.com/mharr171/literally-fantasy-sports/compare/v1.2.0...v1.3.0) (2026-11-05)
 
 
