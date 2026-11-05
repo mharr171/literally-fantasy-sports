@@ -161,8 +161,15 @@ export const PAYOUT_LIMITS: Record<keyof PayoutSettings, Limit> = {
   perMatch: money("Every match"),
   win: money("Extra for a win"),
   draw: money("Extra for a draw"),
-  playoffs: money("Reaching the playoffs"),
-  final: money("Reaching the final", "On top of the playoff bonus."),
+  quarter: money(
+    "Reaching the quarter-finals",
+    "12-club seasons, play-in winners included (D117).",
+  ),
+  playoffs: money(
+    "Reaching the semi-finals",
+    "On top of the quarter-final bonus.",
+  ),
+  final: money("Reaching the final", "On top of the semi-final bonus."),
   champion: money("Winning the final", "On top of the final bonus."),
 };
 

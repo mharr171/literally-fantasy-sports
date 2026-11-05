@@ -1,17 +1,22 @@
 import { createRng } from "@lfs/core";
 import { describe, expect, it } from "vitest";
 import { generateAiTeam } from "../src/ai-team";
+import { seasonStats } from "../src/ghosts";
 import { defaultSoccerConfig } from "../src/match";
 import { squadToTeam } from "../src/matchday";
 import {
   aiTeam,
+  hasBracket,
   LEAGUE_SIZE,
+  leagueWeeks,
   MANAGER_SLOT,
   newLeague,
   playWeek,
   replayFixture,
   type SeasonFixture,
   type SeasonState,
+  STAGE_MATCH_NAMES,
+  STAGE_NAMES,
   table,
 } from "../src/season-play";
 
@@ -26,8 +31,20 @@ function managerSide(rating: number) {
   };
 }
 
-function startSeason(seed: string, elo = 1500): SeasonState {
-  const league = newLeague(seed, { name: "My Club", elo });
+/** 8-team leagues are what seasons from before D117 had. */
+const LEGACY = 8;
+const legacyLeague = (seed: string, manager: { name: string; elo: number }) =>
+  newLeague(seed, manager, [], undefined, undefined, LEGACY);
+
+function startSeason(seed: string, elo = 1500, size = LEGACY): SeasonState {
+  const league = newLeague(
+    seed,
+    { name: "My Club", elo },
+    [],
+    undefined,
+    undefined,
+    size,
+  );
   return {
     seed,
     status: "regular",
@@ -45,8 +62,13 @@ function startSeason(seed: string, elo = 1500): SeasonState {
 }
 
 /** Plays a whole season, applying each week's outcome like the web app does. */
-function playSeason(seed: string, elo = 1500, squadRating = elo) {
-  let state = startSeason(seed, elo);
+function playSeason(
+  seed: string,
+  elo = 1500,
+  squadRating = elo,
+  size = LEGACY,
+) {
+  let state = startSeason(seed, elo, size);
   const manager = managerSide(squadRating);
   let funds = 0;
   let weeks = 0;
@@ -87,8 +109,8 @@ function playSeason(seed: string, elo = 1500, squadRating = elo) {
 
 describe("newLeague (D8, D16, D32)", () => {
   it("builds 8 teams with unique names and a 14-week schedule", () => {
-    const league = newLeague("lg", { name: "My Club", elo: 1500 });
-    expect(league.slots).toHaveLength(LEAGUE_SIZE);
+    const league = legacyLeague("lg", { name: "My Club", elo: 1500 });
+    expect(league.slots).toHaveLength(LEGACY);
     expect(league.slots[0]).toEqual({
       slot: 0,
       name: "My Club",
@@ -100,7 +122,7 @@ describe("newLeague (D8, D16, D32)", () => {
     ]);
     expect(new Set(league.slots.map((s) => s.name.toLowerCase())).size).toBe(8);
     for (let i = 0; i < 30; i++) {
-      const places = newLeague(`places-${i}`, {
+      const places = legacyLeague(`places-${i}`, {
         name: "My Club",
         elo: 1500,
       }).slots.map((s) => s.name.slice(0, s.name.lastIndexOf(" ")));
@@ -108,13 +130,13 @@ describe("newLeague (D8, D16, D32)", () => {
     }
     expect(league.fixtures).toHaveLength(56);
     expect(Math.max(...league.fixtures.map((f) => f.week))).toBe(14);
-    expect(newLeague("lg", { name: "My Club", elo: 1500 })).toEqual(league);
+    expect(legacyLeague("lg", { name: "My Club", elo: 1500 })).toEqual(league);
   });
 
   it("renames an AI team whose name clashes", () => {
-    const first = newLeague("clash", { name: "x", elo: 1500 });
+    const first = legacyLeague("clash", { name: "x", elo: 1500 });
     const taken = first.slots[1]?.name as string;
-    const again = newLeague("clash", { name: taken, elo: 1500 });
+    const again = legacyLeague("clash", { name: taken, elo: 1500 });
     expect(again.slots[1]?.name).not.toBe(taken);
     expect(new Set(again.slots.map((s) => s.name.toLowerCase())).size).toBe(8);
   });
@@ -275,5 +297,89 @@ describe("replayFixture", () => {
     expect(() =>
       replayFixture(state.seed, state.slots, mine, {}, config),
     ).toThrow(/wasn't kept/);
+  });
+});
+
+describe("12-club seasons (D115, D117)", () => {
+  it("builds 12 clubs and a 22-week double round-robin", () => {
+    const league = newLeague("twelve", { name: "My Club", elo: 1500 });
+    expect(league.slots).toHaveLength(LEAGUE_SIZE);
+    expect(new Set(league.slots.map((s) => s.name.toLowerCase())).size).toBe(
+      12,
+    );
+    expect(Math.max(...league.fixtures.map((f) => f.week))).toBe(22);
+    expect(leagueWeeks(12)).toBe(22);
+    expect(leagueWeeks(8)).toBe(14);
+    for (let w = 1; w <= 22; w++)
+      expect(league.fixtures.filter((f) => f.week === w)).toHaveLength(6);
+    for (const s of league.slots)
+      expect(
+        league.fixtures.filter(
+          (f) => f.homeSlot === s.slot || f.awaySlot === s.slot,
+        ),
+      ).toHaveLength(22);
+    expect(hasBracket(league.slots)).toBe(true);
+    expect(
+      hasBracket(legacyLeague("eight", { name: "X", elo: 1500 }).slots),
+    ).toBe(false);
+  });
+
+  const { state, weeks } = playSeason("bracket", 1500, 1500, 12);
+  const standings = table(state.slots, state.fixtures);
+  const seed = (i: number) => Number(standings[i]?.team);
+  const round = (stage: string) =>
+    state.fixtures.filter((f) => f.stage === stage);
+  const winner = (f: SeasonFixture) =>
+    f.winner === "home" ? f.homeSlot : f.awaySlot;
+
+  it("plays 22 league weeks, a play-in, quarter-finals, semi-finals and a final", () => {
+    expect(weeks).toBe(26);
+    expect(round("play_in").map((f) => f.week)).toEqual([23]);
+    expect(round("quarter").map((f) => f.week)).toEqual([24, 24, 24, 24]);
+    expect(round("semi").map((f) => f.week)).toEqual([25, 25]);
+    expect(round("final").map((f) => f.week)).toEqual([26]);
+    expect(state.status).toBe("finished");
+  });
+
+  it("plays 8th v 9th, then 1 v play-in winner, 2 v 7, 3 v 6, 4 v 5", () => {
+    const [pi] = round("play_in") as [SeasonFixture];
+    expect([pi.homeSlot, pi.awaySlot]).toEqual([seed(7), seed(8)]);
+    const quarters = round("quarter").map((f) => [f.homeSlot, f.awaySlot]);
+    expect(quarters).toEqual([
+      [seed(0), winner(pi)],
+      [seed(1), seed(6)],
+      [seed(2), seed(5)],
+      [seed(3), seed(4)],
+    ]);
+    const qw = round("quarter").map(winner);
+    const semis = round("semi").map((f) => new Set([f.homeSlot, f.awaySlot]));
+    expect(semis).toEqual([new Set([qw[0], qw[3]]), new Set([qw[1], qw[2]])]);
+    const [final] = round("final") as [SeasonFixture];
+    expect(new Set([final.homeSlot, final.awaySlot])).toEqual(
+      new Set(round("semi").map(winner)),
+    );
+  });
+
+  it("records how far each club got, quarter-finals included", () => {
+    const quarterLoser = round("quarter").map((f) =>
+      f.winner === "home" ? f.awaySlot : f.homeSlot,
+    )[0] as number;
+    expect(
+      seasonStats(state.slots, state.fixtures, quarterLoser).playoffs,
+    ).toBe("quarter");
+    expect(seasonStats(state.slots, state.fixtures, seed(11)).playoffs).toBe(
+      "none",
+    );
+  });
+
+  it("pays the quarter-final bonus to a manager who finishes in the top 7", () => {
+    // A much stronger manager: top 7 nearly every time, and further.
+    const strong = playSeason("bracket-strong", 1500, 1900, 12);
+    const table12 = table(strong.state.slots, strong.state.fixtures);
+    const place = table12.findIndex((r) => Number(r.team) === MANAGER_SLOT);
+    expect(place).toBeLessThan(7);
+    expect(strong.funds).toBeGreaterThanOrEqual(22 * 1_000 + 1_000);
+    expect(STAGE_NAMES.quarter).toBe("Quarter-finals");
+    expect(STAGE_MATCH_NAMES.play_in).toBe("play-in");
   });
 });

@@ -56,7 +56,7 @@ export function onboardingSteps(s: OnboardingState): Step[] {
     {
       id: "season",
       title: "Start season 1",
-      help: "7 clubs around your rating, home and away over 14 weeks, then playoffs for the top 4.",
+      help: "11 clubs around your rating, home and away over 22 weeks, then a play-in and an 8-club bracket.",
       href: "/season",
       action: "Start your season",
       done: s.hasSeason,

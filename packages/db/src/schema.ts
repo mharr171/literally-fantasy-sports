@@ -551,7 +551,7 @@ export const seasonTeams = pgTable(
   ],
 ).enableRLS();
 
-/** A season's matches: league weeks, then playoff semi-finals and a final (D30). */
+/** A season's matches: league weeks, then the playoffs: a play-in and an 8-club bracket (D117), or semi-finals and a final in 8-team seasons from before (D30). */
 export const fixtures = pgTable(
   "fixtures",
   {
@@ -579,7 +579,10 @@ export const fixtures = pgTable(
   },
   (t) => [
     index("fixtures_season_week").on(t.seasonId, t.week),
-    check("fixtures_stage", sql`${t.stage} in ('league', 'semi', 'final')`),
+    check(
+      "fixtures_stage",
+      sql`${t.stage} in ('league', 'play_in', 'quarter', 'semi', 'final')`,
+    ),
     check(
       "fixtures_winner",
       sql`${t.winner} is null or ${t.winner} in ('home', 'away')`,

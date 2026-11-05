@@ -63,9 +63,10 @@ async function SeasonContent() {
       <div className="flex max-w-xl flex-col gap-4">
         <h1 className="text-3xl font-semibold tracking-tight">Season 1</h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          You&apos;ll play 7 AI clubs home and away over 14 weeks, from 300 Elo
-          below yours to 300 above. The top 4 go into the playoffs. Every match
-          pays {money(payouts.perMatch)}, plus {money(payouts.win)} for a win or{" "}
+          You&apos;ll play 11 clubs home and away over 22 weeks, from 300 Elo
+          below yours to 300 above. The top 7 go into the quarter-finals, and
+          8th and 9th play off for the last place. Every match pays{" "}
+          {money(payouts.perMatch)}, plus {money(payouts.win)} for a win or{" "}
           {money(payouts.draw)} for a draw.
         </p>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">

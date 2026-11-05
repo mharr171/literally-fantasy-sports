@@ -239,6 +239,13 @@
       "when": 1793835112277,
       "tag": "0033_season_records_functions",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1793839362351,
+      "tag": "0034_season_bracket",
+      "breakpoints": true
     }
   ]
 }

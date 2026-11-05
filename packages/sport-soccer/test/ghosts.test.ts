@@ -101,10 +101,14 @@ describe("leagues with ghosts", () => {
     candidate("g1", "T1", 1700, "Northside Lions"),
     candidate("g2", "ME", 1490, "My Club"),
   ];
+  // An 8-team league, as seasons had before D117.
   const league = newLeague(
     "ghost-league",
     { name: "My Club", elo: 1500, teamId: "ME" },
     ghosts,
+    undefined,
+    undefined,
+    8,
   );
 
   it("puts ghosts in the AI places nearest their Elo, disguising the manager's own", () => {

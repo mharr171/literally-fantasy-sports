@@ -157,12 +157,64 @@ export function playoffSemis(table: readonly Standing[]): Fixture[] {
   ];
 }
 
+/**
+ * The play-in for a 12-club league (D117): 8th v 9th, the higher seed at
+ * home. 1st to 7th wait for the quarter-finals; 10th to 12th are done.
+ */
+export function playIn(table: readonly Standing[]): Fixture {
+  if (table.length < 9) throw new Error("A play-in needs at least 9 teams.");
+  return {
+    week: 1,
+    home: (table[7] as Standing).team,
+    away: (table[8] as Standing).team,
+  };
+}
+
+/**
+ * Quarter-finals of the 8-club bracket (D117), fixed by league place:
+ * 1 v the play-in winner, 2 v 7, 3 v 6, 4 v 5, higher seed at home, in
+ * that order.
+ */
+export function quarterFinals(
+  table: readonly Standing[],
+  playInWinner: string,
+): Fixture[] {
+  if (table.length < 9)
+    throw new Error("Quarter-finals need at least 9 teams.");
+  const seed = (i: number) => (table[i] as Standing).team;
+  return [
+    { week: 1, home: seed(0), away: playInWinner },
+    { week: 1, home: seed(1), away: seed(6) },
+    { week: 1, home: seed(2), away: seed(5) },
+    { week: 1, home: seed(3), away: seed(4) },
+  ];
+}
+
+/**
+ * Semi-finals from the quarter-final winners, given in quarter-final order
+ * (1/play-in, 2/7, 3/6, 4/5): winner of 1/play-in v winner of 4/5, and
+ * winner of 2/7 v winner of 3/6. The better league place is at home.
+ */
+export function bracketSemis(
+  table: readonly Standing[],
+  winners: readonly [string, string, string, string],
+): Fixture[] {
+  const place = new Map(table.map((s, i) => [s.team, i]));
+  const tie = (a: string, b: string): Fixture =>
+    (place.get(a) ?? 99) <= (place.get(b) ?? 99)
+      ? { week: 1, home: a, away: b }
+      : { week: 1, home: b, away: a };
+  return [tie(winners[0], winners[3]), tie(winners[1], winners[2])];
+}
+
 /** Funds paid for results (D14, D39). Balance defaults: changed only with Gary's OK. */
 export interface PayoutSettings {
   perMatch: number;
   win: number;
   draw: number;
-  /** Bonus for reaching the playoffs. */
+  /** Bonus for reaching the quarter-finals of a 12-club season (D117), play-in winners included. */
+  quarter: number;
+  /** Bonus for reaching the semi-finals (the playoffs of an 8-team season). */
   playoffs: number;
   /** Extra bonus for reaching the final. */
   final: number;
@@ -174,6 +226,7 @@ export const DEFAULT_PAYOUTS: PayoutSettings = {
   perMatch: 1_000,
   win: 500,
   draw: 200,
+  quarter: 1_000,
   playoffs: 2_000,
   final: 3_000,
   champion: 5_000,
@@ -190,13 +243,18 @@ export function matchPayout(
   );
 }
 
-/** Bonus for how far a team got in the playoffs. */
+/**
+ * Bonus for how far a team got in the playoffs. In a 12-club season every
+ * semi-finalist also reached the quarter-finals (`bracket: true`).
+ */
 export function playoffBonus(
-  reached: "none" | "semi" | "final" | "champion",
+  reached: "none" | "quarter" | "semi" | "final" | "champion",
   settings: PayoutSettings = DEFAULT_PAYOUTS,
+  bracket = false,
 ): number {
   if (reached === "none") return 0;
-  let bonus = settings.playoffs;
+  if (reached === "quarter") return settings.quarter;
+  let bonus = settings.playoffs + (bracket ? settings.quarter : 0);
   if (reached === "final" || reached === "champion") bonus += settings.final;
   if (reached === "champion") bonus += settings.champion;
   return bonus;

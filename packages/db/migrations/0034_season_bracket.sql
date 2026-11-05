@@ -1,0 +1,2 @@
+ALTER TABLE "fixtures" DROP CONSTRAINT "fixtures_stage";--> statement-breakpoint
+ALTER TABLE "fixtures" ADD CONSTRAINT "fixtures_stage" CHECK ("fixtures"."stage" in ('league', 'play_in', 'quarter', 'semi', 'final'));

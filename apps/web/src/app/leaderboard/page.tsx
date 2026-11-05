@@ -15,6 +15,7 @@ const PLAYOFFS = {
   champion: "🏆 Champions",
   final: "Runners-up",
   semi: "Semi-finals",
+  quarter: "Quarter-finals",
   none: "",
 } as const;
 

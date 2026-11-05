@@ -1,7 +1,10 @@
 import {
-  LEAGUE_SIZE,
+  hasBracket,
+  leagueWeeks,
   MANAGER_SLOT,
   type MatchSummary,
+  STAGE_MATCH_NAMES,
+  STAGE_NAMES,
   table,
 } from "@lfs/sport-soccer";
 import Link from "next/link";
@@ -12,14 +15,12 @@ import { moraleLabel } from "@/components/form-label";
 import type { LoadedSeason } from "@/lib/season";
 import { type EnergyView, PlayWeekButton } from "./season-buttons";
 
-const LEAGUE_WEEKS = (LEAGUE_SIZE - 1) * 2;
-
 function stageLabel(season: LoadedSeason): string {
   if (season.status === "finished") return "Finished";
   const current = season.fixtures.find((f) => f.week === season.week);
-  if (current?.stage === "semi") return "Playoff semi-finals";
-  if (current?.stage === "final") return "Playoff final";
-  return `Week ${season.week} of ${LEAGUE_WEEKS}`;
+  if (current && current.stage !== "league")
+    return `Playoffs: ${STAGE_NAMES[current.stage].toLowerCase()}`;
+  return `Week ${season.week} of ${leagueWeeks(season.slots.length)}`;
 }
 
 /** A season in progress or finished: next match, last result, table and results. */
@@ -75,6 +76,9 @@ export function SeasonView({
       : final.awaySlot
     : null;
   const weeks = [...new Set(played.map((f) => f.week))].sort((a, b) => b - a);
+  // Lines under the places that go through (D117: 7th and 9th; else 4th).
+  const bracket = hasBracket(season.slots);
+  const lines = bracket ? [6, 8] : [3];
 
   return (
     <>
@@ -120,7 +124,8 @@ export function SeasonView({
               </>
             ) : (
               <>
-                You&apos;re not in this round. Play it to see who goes through.
+                You&apos;re not in this round, so it costs no energy. Play it to
+                see who goes through.
               </>
             )}
           </div>
@@ -139,7 +144,7 @@ export function SeasonView({
       {lastMine?.summary && (
         <MatchCard
           id={lastMine.id}
-          title={`Last match · ${lastMine.stage === "league" ? `week ${lastMine.week}` : lastMine.stage === "semi" ? "semi-final" : "final"}`}
+          title={`Last match · ${lastMine.stage === "league" ? `week ${lastMine.week}` : STAGE_MATCH_NAMES[lastMine.stage]}`}
           home={name(lastMine.homeSlot)}
           away={name(lastMine.awaySlot)}
           homeScore={lastMine.homeScore as number}
@@ -172,7 +177,7 @@ export function SeasonView({
                 return (
                   <tr
                     key={r.team}
-                    className={`border-t border-zinc-200 dark:border-zinc-800 ${slot === MANAGER_SLOT ? "bg-sky-50 font-semibold dark:bg-sky-950" : ""} ${i === 3 ? "border-b-2 border-b-zinc-400" : ""}`}
+                    className={`border-t border-zinc-200 dark:border-zinc-800 ${slot === MANAGER_SLOT ? "bg-sky-50 font-semibold dark:bg-sky-950" : ""} ${lines.includes(i) ? "border-b-2 border-b-zinc-400" : ""}`}
                   >
                     <td className="px-3 py-1.5">{i + 1}</td>
                     <td className="px-3 py-1.5">
@@ -222,7 +227,9 @@ export function SeasonView({
           </table>
         </div>
         <p className="text-xs text-zinc-500">
-          The top 4 (above the line) reach the playoffs.
+          {bracket
+            ? "The top 7 go straight to the quarter-finals; 8th and 9th meet in a play-in for the last place."
+            : "The top 4 (above the line) reach the playoffs."}
         </p>
       </div>
 
@@ -246,11 +253,9 @@ export function SeasonView({
                 className="rounded-md border border-zinc-200 p-2 text-sm dark:border-zinc-800"
               >
                 <summary className="cursor-pointer font-medium">
-                  {stage === "semi"
-                    ? "Semi-finals"
-                    : stage === "final"
-                      ? "Final"
-                      : `Week ${w}`}
+                  {stage && stage !== "league"
+                    ? STAGE_NAMES[stage]
+                    : `Week ${w}`}
                 </summary>
                 <ul className="mt-1 flex flex-col">
                   {games.map((f) => (

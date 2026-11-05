@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   aiOpponentRatings,
+  bracketSemis,
   DEFAULT_PAYOUTS,
   leagueTable,
   matchPayout,
+  playIn,
   playoffBonus,
   playoffSemis,
+  quarterFinals,
   roundRobin,
 } from "../src/season";
 
@@ -128,6 +131,37 @@ describe("playoffs (D30)", () => {
   });
 });
 
+describe("12-club bracket (D117)", () => {
+  const twelve = "abcdefghijkl".split("");
+  const table = leagueTable(twelve, []);
+
+  it("plays 8th v 9th in the play-in", () => {
+    expect(playIn(table)).toEqual({ week: 1, home: "h", away: "i" });
+    expect(() => playIn(table.slice(0, 8))).toThrow(/at least 9/);
+  });
+
+  it("seeds the quarter-finals 1 v play-in winner, 2 v 7, 3 v 6, 4 v 5", () => {
+    expect(quarterFinals(table, "i")).toEqual([
+      { week: 1, home: "a", away: "i" },
+      { week: 1, home: "b", away: "g" },
+      { week: 1, home: "c", away: "f" },
+      { week: 1, home: "d", away: "e" },
+    ]);
+    expect(() => quarterFinals(table.slice(0, 8), "h")).toThrow(/at least 9/);
+  });
+
+  it("pairs the quarter-final winners, better place at home", () => {
+    expect(bracketSemis(table, ["i", "b", "f", "d"])).toEqual([
+      { week: 1, home: "d", away: "i" },
+      { week: 1, home: "b", away: "f" },
+    ]);
+    expect(bracketSemis(table, ["a", "g", "c", "e"])).toEqual([
+      { week: 1, home: "a", away: "e" },
+      { week: 1, home: "c", away: "g" },
+    ]);
+  });
+});
+
 describe("payouts (D39)", () => {
   it("pays per match plus win or draw money", () => {
     expect(matchPayout("win")).toBe(1_500);
@@ -143,6 +177,10 @@ describe("payouts (D39)", () => {
     expect(playoffBonus("champion", { ...DEFAULT_PAYOUTS, champion: 0 })).toBe(
       5_000,
     );
+    // 12-club seasons (D117): the quarter-finals pay too.
+    expect(playoffBonus("quarter")).toBe(1_000);
+    expect(playoffBonus("semi", DEFAULT_PAYOUTS, true)).toBe(3_000);
+    expect(playoffBonus("champion", DEFAULT_PAYOUTS, true)).toBe(11_000);
   });
 });
 

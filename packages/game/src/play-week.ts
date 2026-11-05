@@ -62,6 +62,14 @@ export async function playOneWeek(
   if (!season || season.status === "finished")
     throw new Error("Start a season first.");
   // 1 energy = 1 game week (D17, D93), unless an admin has switched it off.
+  // A week without the club's own match is free: the play-in for clubs
+  // already in the quarter-finals, and the rounds after it's knocked out (D117).
+  const hasMatch = season.fixtures.some(
+    (f) =>
+      f.week === season.week &&
+      f.homeScore === null &&
+      (f.homeSlot === MANAGER_SLOT || f.awaySlot === MANAGER_SLOT),
+  );
   const energySettings = await loadEnergySettings("soccer");
   const now = new Date();
   const stored = {
@@ -69,7 +77,7 @@ export async function playOneWeek(
     updatedAt: new Date(team.energyUpdatedAt),
   };
   let energyAfter: { energy: number; updatedAt: Date } | null = null;
-  if (useEnergy && energySettings.enabled) {
+  if (useEnergy && energySettings.enabled && hasMatch) {
     const current = currentEnergy(stored, now, energySettings);
     if (current.energy < 1) {
       const minutes = Math.max(
