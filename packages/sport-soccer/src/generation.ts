@@ -51,6 +51,8 @@ export interface GeneratedPlayer {
   chemistryColor: number;
   /** Which of the position's influence templates this player uses (D84). */
   templateVariant: string;
+  /** Template at the secondary position (D136); default when there is none. */
+  secondaryTemplateVariant: string;
 }
 
 /** Positions a player could also be comfortable in. */
@@ -220,11 +222,11 @@ export function generatePlayer(
     secondaryChoices.length > 0 && roles.chance(s.secondaryChance)
       ? roles.pick(secondaryChoices)
       : null;
-  const variants = s.templateVariants?.[position];
-  const templateVariant =
-    variants && variants.length > 0
-      ? roles.pick(variants)
-      : DEFAULT_TEMPLATE_VARIANT;
+  const templateVariant = pickVariant(roles, s, position);
+  // Its own stream, so players rolled before D136 keep every other part.
+  const secondaryTemplateVariant = secondaryPosition
+    ? pickVariant(rng.fork("secondary-variant"), s, secondaryPosition)
+    : DEFAULT_TEMPLATE_VARIANT;
 
   return {
     ...name,
@@ -246,7 +248,20 @@ export function generatePlayer(
       chemistryColorCount(PLAYERS_ON_FIELD),
     ),
     templateVariant,
+    secondaryTemplateVariant,
   };
+}
+
+/** A random enabled template for a position (D84), or the default when none are enabled. */
+function pickVariant(
+  rng: Rng,
+  s: GenerationSettings,
+  position: Position,
+): string {
+  const variants = s.templateVariants?.[position];
+  return variants && variants.length > 0
+    ? rng.pick(variants)
+    : DEFAULT_TEMPLATE_VARIANT;
 }
 
 // ---------------------------------------------------------------------------

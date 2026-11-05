@@ -1,9 +1,10 @@
 "use client";
 
-import type {
-  Position,
-  StoredTemplates,
-  StoredVariants,
+import {
+  type Position,
+  type StoredTemplates,
+  type StoredVariants,
+  variantAt,
 } from "@lfs/sport-soccer";
 import { createContext, type ReactNode, useContext } from "react";
 
@@ -30,19 +31,18 @@ export function TemplatesProvider({
 }
 
 /**
- * The grid a player uses in a slot: their own variant at their primary
- * position (D84, D98), the slot's default otherwise. Null without a provider.
+ * The grid a player uses in a slot: their own variant at their primary or
+ * secondary position (D84, D98, D136), the slot's default otherwise. Null
+ * without a provider.
  */
 export function useTemplate(
   slot: Position,
-  player?: { primaryPosition: Position; templateVariant?: string },
+  player?: Parameters<typeof variantAt>[0],
 ): number[][] | null {
   const value = useContext(TemplatesContext);
   if (!value) return null;
-  const variant =
-    player?.templateVariant && player.primaryPosition === slot
-      ? value.variants[slot]?.[player.templateVariant]
-      : undefined;
+  const own = player ? variantAt(player, slot) : undefined;
+  const variant = own ? value.variants[slot]?.[own] : undefined;
   return variant ?? value.templates[slot];
 }
 

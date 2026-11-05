@@ -97,6 +97,7 @@ export async function endSeasonFor(team: MyTeam): Promise<void> {
       chemistryColor: p.chemistryColor,
       overall: p.overall,
       templateVariant: p.templateVariant,
+      secondaryTemplateVariant: p.secondaryTemplateVariant,
     })),
     squad,
   );

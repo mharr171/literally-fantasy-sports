@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { requireAdmin } from "@/lib/auth";
+import { loadVariantCoverage } from "@/lib/variant-coverage";
 
 export default function AdminHome() {
   return (
@@ -12,6 +13,9 @@ export default function AdminHome() {
 
 async function Overview() {
   const admin = await requireAdmin();
+  const coverage = await loadVariantCoverage();
+  const share = (n: number, of: number) =>
+    of === 0 ? "" : ` (${Math.round((n / of) * 100)}%)`;
   return (
     <section className="flex flex-col gap-6">
       <div>
@@ -58,6 +62,28 @@ async function Overview() {
           </p>
         </li>
       </ul>
+      <div className="rounded-lg border border-zinc-200 p-4 text-sm dark:border-zinc-800">
+        <h2 className="font-medium">Heatmaps in use</h2>
+        <p className="mt-1 text-zinc-600 dark:text-zinc-400">
+          Players on the default template, at real and AI clubs (D132). New
+          players get one of the live version&apos;s ticked templates for each
+          of their positions.
+        </p>
+        <dl className="mt-3 grid max-w-md grid-cols-[1fr_auto] gap-x-4 gap-y-1">
+          <dt>Primary position</dt>
+          <dd className="text-right tabular-nums">
+            {coverage.defaultPrimary.toLocaleString()} of{" "}
+            {coverage.players.toLocaleString()}
+            {share(coverage.defaultPrimary, coverage.players)}
+          </dd>
+          <dt>Secondary position</dt>
+          <dd className="text-right tabular-nums">
+            {coverage.defaultSecondary.toLocaleString()} of{" "}
+            {coverage.withSecondary.toLocaleString()}
+            {share(coverage.defaultSecondary, coverage.withSecondary)}
+          </dd>
+        </dl>
+      </div>
     </section>
   );
 }

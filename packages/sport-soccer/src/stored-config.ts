@@ -257,3 +257,21 @@ export function soccerConfigFromValues(
   const { tuning } = balanceFromValues(values);
   return { ...base, version, templates, variants, tuning };
 }
+
+/**
+ * Positions whose ticked templates differ between a version being edited and
+ * the live one (D132). New players only get what the live version has
+ * ticked; a position with nothing ticked gives the default.
+ */
+export function unpublishedVariantPositions(
+  editing: EnabledVariants,
+  live: EnabledVariants,
+): Position[] {
+  const list = (e: EnabledVariants, p: Position) => {
+    const names = e[p] ?? [];
+    return [...new Set(names.length > 0 ? names : [DEFAULT_TEMPLATE_VARIANT])]
+      .sort()
+      .join(",");
+  };
+  return POSITIONS.filter((p) => list(editing, p) !== list(live, p));
+}

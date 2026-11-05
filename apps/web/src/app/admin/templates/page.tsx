@@ -82,6 +82,7 @@ async function Editor({
         templates={state.templates}
         variants={state.variants}
         enabled={state.enabled}
+        liveEnabled={state.liveEnabled}
         defaults={defaultStoredTemplates()}
       />
     </div>

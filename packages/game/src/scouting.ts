@@ -22,9 +22,10 @@ export interface ScoutedPlayer {
   potentialRange: [number, number];
   worth: number;
   chemistryColor: number;
-  /** Attributes and template variant, for the player card. */
+  /** Attributes and template variants, for the player card. */
   attributes: Attributes;
   templateVariant: string;
+  secondaryTemplateVariant: string;
 }
 
 export function scoutPlayer(p: GeneratedPlayer): ScoutedPlayer {
@@ -40,6 +41,7 @@ export function scoutPlayer(p: GeneratedPlayer): ScoutedPlayer {
     chemistryColor: p.chemistryColor,
     attributes: p.attributes,
     templateVariant: p.templateVariant,
+    secondaryTemplateVariant: p.secondaryTemplateVariant,
   };
 }
 
@@ -61,6 +63,7 @@ export function playerRow(p: GeneratedPlayer) {
     worth: playerWorth(p),
     chemistry_color: p.chemistryColor,
     template_variant: p.templateVariant,
+    secondary_template_variant: p.secondaryTemplateVariant,
   };
 }
 

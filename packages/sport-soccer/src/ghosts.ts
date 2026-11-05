@@ -33,6 +33,8 @@ export interface SnapshotPlayer {
   overall: number;
   /** Template variant at the primary position (D84). */
   templateVariant?: string;
+  /** Template variant at the secondary position (D136). */
+  secondaryTemplateVariant?: string;
 }
 
 export interface GhostSnapshot {

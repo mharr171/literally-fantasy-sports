@@ -37,7 +37,7 @@ import {
   positionFit,
 } from "./effective-skill";
 import { overallAt } from "./overall";
-import type { SoccerPlayer } from "./player";
+import { type SoccerPlayer, variantAt } from "./player";
 import type { Position } from "./positions";
 import {
   flipMap,
@@ -394,11 +394,10 @@ function enterField(
   );
   const fitKind = positionFit(player, slot);
   const fit = fitKind === "other" ? 0 : state.config.skill.positionFit[fitKind];
-  // A player's own template variant applies at their primary position (D84).
-  const variant =
-    player.templateVariant && player.primaryPosition === slot
-      ? state.config.variants?.[slot]?.[player.templateVariant]
-      : undefined;
+  // A player's own template variants apply at their primary position (D84)
+  // and their secondary one (D136); anywhere else they use the slot's.
+  const own = variantAt(player, slot);
+  const variant = own ? state.config.variants?.[slot]?.[own] : undefined;
   // The left or right version only moves the heatmap sideways (D112); the
   // thirds, and so the match, are worked out from the template as painted.
   const painted = variant ?? state.config.templates[slot];
