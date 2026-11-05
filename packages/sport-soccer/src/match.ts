@@ -19,6 +19,7 @@ import {
   type ChemistryBoosts,
   chemistryBoostsByPlayer,
   chemistryColorCount,
+  colorEdge,
   createInfluenceMap,
   createRng,
   DEFAULT_CHEMISTRY_BOOSTS,
@@ -27,6 +28,7 @@ import {
   type MatchOutput,
   type MatchResult,
   type Rng,
+  rankedColors,
   type Seed,
   type Side,
   sumRows,
@@ -121,6 +123,14 @@ export interface MatchTuning {
   yellowRate: number;
   /** Chance per phase that the defending team gets a straight red. */
   redRate: number;
+
+  /** Color matchups (D119, ADR 0003); 0 switches each one off. Skill boost
+   * for the team whose dominant color beats the other's. */
+  teamMatchup: number;
+  /** The same for the second colors. */
+  teamMatchupSecond: number;
+  /** Most a player's skill moves for winning or losing every matchup they face. */
+  playerMatchup: number;
 }
 
 export const DEFAULT_MATCH_TUNING: MatchTuning = {
@@ -145,7 +155,25 @@ export const DEFAULT_MATCH_TUNING: MatchTuning = {
   injuryRate: 0.0004,
   yellowRate: 0.12,
   redRate: 0.0015,
+
+  // Off unless a settings version turns them on, so seasons and replays
+  // from before ADR 0003 play exactly as they did.
+  teamMatchup: 0,
+  teamMatchupSecond: 0,
+  playerMatchup: 0,
 };
+
+/** The strengths ADR 0003 proposes, for the harness and a new settings version. */
+export const PROPOSED_MATCHUPS: Pick<
+  MatchTuning,
+  "teamMatchup" | "teamMatchupSecond" | "playerMatchup"
+> = { teamMatchup: 0.04, teamMatchupSecond: 0.02, playerMatchup: 0.06 };
+
+/**
+ * Soccer's color cycle (D138, ADR 0003): color indexes in rainbow order,
+ * Red → Yellow → Green → Blue → Purple. Each beats the next two.
+ */
+export const SOCCER_COLOR_CYCLE: readonly number[] = [0, 3, 2, 1, 4];
 
 export interface SoccerConfig {
   version: string;
@@ -445,14 +473,16 @@ function refreshTeam(state: MatchState, team: TeamState): void {
     state.config.chemistry,
   );
   const zones: Zones = { defence: 0, midfield: 0, attack: 0 };
+  const opponent = state.teams?.[other(team.side)];
+  const matchups = opponent ? matchupBonuses(tuning, team, opponent) : null;
   team.onField.forEach((p, i) => {
     const energy = report(state, p.player.id).energyNow;
     const tiredness = tuning.fatiguePenalty * ((100 - energy) / 100);
     const extra = team.team.modifiers?.[p.player.id] ?? 0;
-    p.skill = Math.max(
-      0,
-      p.base * (1 + p.fit + (chemistry[i] as number) + extra - tiredness),
-    );
+    // Same order of terms as before matchups, so replays stay exact.
+    let factor = 1 + p.fit + (chemistry[i] as number) + extra - tiredness;
+    if (matchups) factor += matchups[i] as number;
+    p.skill = Math.max(0, p.base * factor);
     const z = p.zones;
     zones.defence += z.defence * p.skill;
     zones.midfield += z.midfield * p.skill;
@@ -460,6 +490,52 @@ function refreshTeam(state: MatchState, team: TeamState): void {
   });
   team.zones = zones;
 }
+
+/**
+ * Each on-field player's color matchup boost (D119, ADR 0003), or null when
+ * matchups are off. The team matchup goes to every player of the team
+ * whose dominant (or second) color beats the other's. Each player's own
+ * matchup averages their color edge over the opponents they face, weighted
+ * by how much influence both have where they meet: attack against
+ * defence, midfield against midfield, defence against attack.
+ */
+function matchupBonuses(
+  tuning: MatchTuning,
+  team: TeamState,
+  opponent: TeamState,
+): number[] | null {
+  if (!hasMatchups(tuning)) return null;
+  const { teamMatchup, teamMatchupSecond, playerMatchup } = tuning;
+  const cycle = SOCCER_COLOR_CYCLE;
+  const mine = rankedColors(team.onField.map((p) => p.player.chemistryColor));
+  const theirs = rankedColors(
+    opponent.onField.map((p) => p.player.chemistryColor),
+  );
+  const won = (a: number | null, b: number | null) =>
+    a !== null && b !== null && colorEdge(a, b, cycle) > 0;
+  const teamBonus =
+    (won(mine.first, theirs.first) ? teamMatchup : 0) +
+    (won(mine.second, theirs.second) ? teamMatchupSecond : 0);
+  return team.onField.map((p) => {
+    if (!playerMatchup) return teamBonus;
+    let weight = 0;
+    let edge = 0;
+    for (const o of opponent.onField) {
+      const meet =
+        p.zones.attack * o.zones.defence +
+        p.zones.midfield * o.zones.midfield +
+        p.zones.defence * o.zones.attack;
+      weight += meet;
+      edge +=
+        meet *
+        colorEdge(p.player.chemistryColor, o.player.chemistryColor, cycle);
+    }
+    return teamBonus + (weight > 0 ? playerMatchup * (edge / weight) : 0);
+  });
+}
+
+const hasMatchups = (t: MatchTuning) =>
+  Boolean(t.teamMatchup || t.teamMatchupSecond || t.playerMatchup);
 
 function keeperOf(team: TeamState): OnField | undefined {
   return team.onField.find((p) => p.slot === "GK");
@@ -711,6 +787,11 @@ function betweenPhases(
 
     handleSubs(state, team, minute, forced);
     refreshTeam(state, team);
+  }
+  // A change on one side moves the other side's color matchups (D119).
+  if (hasMatchups(tuning)) {
+    refreshTeam(state, state.teams.home);
+    refreshTeam(state, state.teams.away);
   }
 }
 
@@ -1003,6 +1084,11 @@ export function simulateMatch(
     home: prepareTeam(state, input.home, "home"),
     away: prepareTeam(state, input.away, "away"),
   };
+  // Home was prepared before away existed: work out matchups for both now.
+  if (hasMatchups(config.tuning)) {
+    refreshTeam(state, state.teams.home);
+    refreshTeam(state, state.teams.away);
+  }
   const { score, tally, events, tuning } = state;
 
   playPhases(state, tuning.phases, 0, 90);

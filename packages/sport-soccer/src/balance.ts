@@ -147,6 +147,24 @@ export const TUNING_LIMITS: Record<keyof MatchTuning, Limit> = {
     min: 0,
     max: 0.02,
   },
+  teamMatchup: {
+    label: "Team color matchup",
+    help: "Skill boost when your dominant color beats theirs (0.04 = +4%, 0 = off). ADR 0003.",
+    min: 0,
+    max: 0.2,
+  },
+  teamMatchupSecond: {
+    label: "Second color matchup",
+    help: "The same for the second-largest color groups (0 = off).",
+    min: 0,
+    max: 0.2,
+  },
+  playerMatchup: {
+    label: "Player color matchups",
+    help: "Most a player's skill moves for beating (or losing to) the colors of everyone they face (0.06 = ±6%, 0 = off).",
+    min: 0,
+    max: 0.2,
+  },
 };
 
 const money = (label: string, help?: string): Limit => ({
