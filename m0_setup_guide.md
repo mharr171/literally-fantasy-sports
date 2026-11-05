@@ -178,6 +178,10 @@ update public.profiles set is_admin = true where id = (select id from auth.users
 - [ ] **M3 (friends alpha):** invite a few friends and share the link.
 - [ ] ~~**M5:** turn on two-factor (authenticator app) on your game account.~~ On the back burner (D103): the admin panel doesn't require it.
 - [ ] ~~**M6:** sign up at sentry.io (free Developer plan) and connect it to Vercel; turn on **Web Analytics** in the Vercel project.~~ Skipped for now (D104).
+- [ ] **M9, AI world** (D114): the scheduled AI runs (`.github/workflows/ai-world.yml`) need two repository secrets in `literally-fantasy-sports`, under **Settings → Secrets and variables → Actions → New repository secret**:
+  - `PROD_SUPABASE_URL`: in Supabase, **`lfs-prod` → Project Settings → API → Project URL** (it looks like `https://xxxx.supabase.co`).
+  - `PROD_SUPABASE_SECRET_KEY`: in the same place, the **secret** key (`sb_secret_…`), the same value Vercel has as `SUPABASE_SECRET_KEY`. Paste it straight into GitHub, never into a chat.
+  - Then **Actions → AI world → Run workflow** once: it should say the AI world is switched off. Switch it on in **Admin → AI clubs** when you're ready.
 - [ ] **Every year:** renew the domain at Squarespace, the backup access token (`BACKUP_REPO_TOKEN`) and the release token (`RELEASE_PLEASE_TOKEN`).
 
 ## Accounts summary

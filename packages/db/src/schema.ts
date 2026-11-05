@@ -661,6 +661,33 @@ export const aiSettings = pgTable(
 ).enableRLS();
 
 /**
+ * Each scheduled AI run (D114): what it did, for the admin page and for
+ * spotting failures. Only the server reads it; kept for two weeks.
+ */
+export const aiRuns = pgTable(
+  "ai_runs",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    sport: text().notNull(),
+    startedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    finishedAt: timestamp({ withTimezone: true }),
+    /** AI clubs at the start, and how many were added to reach the pool size. */
+    clubs: integer().notNull().default(0),
+    created: integer().notNull().default(0),
+    /** Clubs that had their turn, and those left for the next run. */
+    ran: integer().notNull().default(0),
+    skipped: integer().notNull().default(0),
+    weeksPlayed: integer().notNull().default(0),
+    /** Problems by club, at most a few dozen. */
+    errors: jsonb().notNull().default([]),
+  },
+  (t) => [
+    index("ai_runs_started").on(t.startedAt),
+    check("ai_runs_sport", sql`${t.sport} ${SPORT_CHECK}`),
+  ],
+).enableRLS();
+
+/**
  * Every admin testing action (refill energy, add funds, play ahead, ...),
  * so test boosts stay visible. Written by the server; admins can read it.
  */
