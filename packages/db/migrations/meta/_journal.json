@@ -407,6 +407,20 @@
       "when": 1793867119989,
       "tag": "0057_squad_moved_from",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1793869143861,
+      "tag": "0058_hall_of_fame_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1793869157052,
+      "tag": "0059_hall_of_fame_clubs",
+      "breakpoints": true
     }
   ]
 }
