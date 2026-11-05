@@ -1,6 +1,7 @@
 "use client";
 
 import { resalePrice } from "@lfs/core";
+import { ROSTER_MAX } from "@lfs/sport-soccer";
 import { useState } from "react";
 import { ScoutTable } from "@/components/scout-table";
 import type { ScoutedPlayer } from "@/lib/scouting";
@@ -15,11 +16,14 @@ export function OpenPack({
   title,
   players,
   rosterSize,
+  rosterMax = ROSTER_MAX,
 }: {
   packId: string;
   title: string;
   players: ScoutedPlayer[];
   rosterSize: number;
+  /** The sport's maximum roster (D182). */
+  rosterMax?: number;
 }) {
   const [kept, setKept] = useState<number[]>([]);
   const { error, pending, run } = useAction();
@@ -43,10 +47,10 @@ export function OpenPack({
         }))}
         onToggle={(key) => toggle(Number(key))}
       />
-      {rosterSize + kept.length > 30 && (
+      {rosterSize + kept.length > rosterMax && (
         <p className="text-sm text-amber-700 dark:text-amber-400">
           That takes you to {rosterSize + kept.length} players: you&apos;ll need
-          to get back to 30 before your next match.
+          to get back to {rosterMax} before your next match.
         </p>
       )}
       {error && (

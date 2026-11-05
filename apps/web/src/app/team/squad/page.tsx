@@ -10,6 +10,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { loadFormations } from "@/lib/formations";
 import { pickOptions } from "@/lib/pick-options";
 import { currentOutOfPosition } from "@/lib/season";
+import { loadRosterLimits } from "@/lib/sport-settings";
 import {
   loadMovedFrom,
   loadMyTeam,
@@ -41,7 +42,7 @@ async function SquadContent() {
   if (!user) redirect("/sign-in");
   const team = await loadMyTeam(user.id);
   if (!team) redirect("/team");
-  const [packs, roster, saved, outOfPosition, all, movedFrom] =
+  const [packs, roster, saved, outOfPosition, all, movedFrom, limits] =
     await Promise.all([
       loadStarterPacks(team.id),
       loadRoster(team.id),
@@ -49,6 +50,7 @@ async function SquadContent() {
       currentOutOfPosition(team.id),
       loadFormations(),
       loadMovedFrom(team.id),
+      loadRosterLimits(),
     ]);
   // The ones that are on, and the saved one even if it's off (D140).
   const formations = all
@@ -78,13 +80,13 @@ async function SquadContent() {
       <SquadBuilder
         roster={roster}
         formations={formations}
+        benchMax={limits.benchMax}
         initial={
           saved ??
-          autoPickSquad(
-            roster,
-            formations.find((f) => f.enabled)?.id,
-            pickOptions(roster),
-          )
+          autoPickSquad(roster, formations.find((f) => f.enabled)?.id, {
+            ...pickOptions(roster),
+            benchSize: limits.benchMax,
+          })
         }
         saved={saved !== null}
         outOfPosition={outOfPosition}

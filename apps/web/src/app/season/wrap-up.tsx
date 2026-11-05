@@ -35,9 +35,12 @@ export function EndSeasonButton() {
 export function YouthIntake({
   prospects,
   rosterSize,
+  rosterMax = ROSTER_MAX,
 }: {
   prospects: ScoutedPlayer[];
   rosterSize: number;
+  /** The sport's maximum roster (D182). */
+  rosterMax?: number;
 }) {
   const [taken, setTaken] = useState<number[]>([]);
   const { error, pending, run } = useAction();
@@ -88,10 +91,10 @@ export function YouthIntake({
           );
         })}
       </ul>
-      {after > ROSTER_MAX && (
+      {after > rosterMax && (
         <p className="text-sm text-amber-700 dark:text-amber-400">
-          That takes you to {after} players: release or sell down to{" "}
-          {ROSTER_MAX} before your next match.
+          That takes you to {after} players: release or sell down to {rosterMax}{" "}
+          before your next match.
         </p>
       )}
       {error && (

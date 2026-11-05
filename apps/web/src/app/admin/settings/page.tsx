@@ -5,8 +5,13 @@ import {
   type ConfigVersionSummary,
   listConfigVersions,
 } from "@/lib/game-config";
-import { loadEnergySettings, SPORTS } from "@/lib/sport-settings";
+import {
+  loadEnergySettings,
+  loadRosterLimits,
+  SPORTS,
+} from "@/lib/sport-settings";
 import { EnergyForm } from "./energy-form";
+import { RosterForm } from "./roster-form";
 
 export const metadata: Metadata = { title: "Game settings" };
 
@@ -117,12 +122,16 @@ async function EnergySettingsList() {
     SPORTS.map(async (sport) => ({
       sport,
       value: await loadEnergySettings(sport),
+      limits: await loadRosterLimits(sport),
     })),
   );
   return (
     <div className="flex flex-col gap-3">
-      {settings.map(({ sport, value }) => (
-        <EnergyForm key={sport} sport={sport} initial={value} />
+      {settings.map(({ sport, value, limits }) => (
+        <div key={sport} className="flex flex-col gap-3">
+          <EnergyForm sport={sport} initial={value} />
+          <RosterForm sport={sport} initial={limits} />
+        </div>
       ))}
     </div>
   );

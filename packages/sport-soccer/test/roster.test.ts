@@ -4,6 +4,7 @@ import { POSITION_LINE } from "../src/positions";
 import {
   BOUGHT_TIERS,
   boughtTier,
+  DEFAULT_ROSTER_LIMITS,
   isPackFocus,
   PACK_FOCUSES,
   packChoiceError,
@@ -13,6 +14,7 @@ import {
   ROSTER_MAX,
   ROSTER_MIN,
   removalError,
+  rosterLimitsError,
   rosterWarning,
   type StarterPackState,
   starterPackPlan,
@@ -60,14 +62,19 @@ describe("starterSelectionError", () => {
     return selection;
   };
 
-  it("accepts 22 to 30 players from opened packs", () => {
+  it("accepts 11 to 33 players from opened packs (D182)", () => {
     expect(starterSelectionError(packs(), keep(ROSTER_MIN))).toBeNull();
     expect(starterSelectionError(packs(), keep(ROSTER_MAX))).toBeNull();
   });
 
-  it("rejects too few or too many players", () => {
-    expect(starterSelectionError(packs(), keep(21))).toMatch(/at least 22/);
-    expect(starterSelectionError(packs(), keep(31))).toMatch(/at most 30/);
+  it("rejects too few or too many players, by the sport's limits", () => {
+    expect(starterSelectionError(packs(), keep(10))).toMatch(/at least 11/);
+    expect(starterSelectionError(packs(), keep(34))).toMatch(/at most 33/);
+    const old = { min: 22, max: 30, benchMax: 11 };
+    expect(starterSelectionError(packs(), keep(21), old)).toMatch(
+      /at least 22/,
+    );
+    expect(starterSelectionError(packs(), keep(31), old)).toMatch(/at most 30/);
   });
 
   it("needs every pack opened and none already resolved", () => {
@@ -144,18 +151,39 @@ describe("bought packs (D47)", () => {
 });
 
 describe("leaving the roster", () => {
-  it("keeps at least 22 and never sells free starter players", () => {
+  it("keeps the sport's minimum and never sells free starter players", () => {
     const bought = { fromStarterPack: false };
     const starter = { fromStarterPack: true };
-    expect(removalError(22, bought, "release")).toMatch(/at least 22/);
+    expect(removalError(11, bought, "release")).toMatch(/at least 11/);
+    expect(removalError(12, bought, "release")).toBeNull();
+    expect(
+      removalError(22, bought, "release", { min: 22, max: 30, benchMax: 11 }),
+    ).toMatch(/at least 22/);
     expect(removalError(23, starter, "release")).toBeNull();
     expect(removalError(23, starter, "sell")).toMatch(/can't|not sold/);
     expect(removalError(23, bought, "sell")).toBeNull();
   });
 
   it("warns when the roster can't play", () => {
-    expect(rosterWarning(21)).toMatch(/at least 22/);
-    expect(rosterWarning(30)).toBeNull();
-    expect(rosterWarning(33)).toMatch(/down to 30/);
+    expect(rosterWarning(10)).toMatch(/at least 11/);
+    expect(rosterWarning(11)).toBeNull();
+    expect(rosterWarning(33)).toBeNull();
+    expect(rosterWarning(34)).toMatch(/down to 33/);
+    expect(rosterWarning(31, { min: 22, max: 30, benchMax: 11 })).toMatch(
+      /down to 30/,
+    );
+  });
+
+  it("checks the limits admins set", () => {
+    expect(rosterLimitsError(DEFAULT_ROSTER_LIMITS)).toBeNull();
+    expect(rosterLimitsError({ min: 10, max: 33, benchMax: 11 })).toMatch(
+      /Minimum roster/,
+    );
+    expect(rosterLimitsError({ min: 25, max: 22, benchMax: 11 })).toMatch(
+      /can't be above/,
+    );
+    expect(rosterLimitsError({ min: 11, max: 33, benchMax: 12 })).toMatch(
+      /Bench size/,
+    );
   });
 });

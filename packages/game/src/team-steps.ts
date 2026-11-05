@@ -10,7 +10,6 @@ import {
   type PackFocus,
   packChoiceError,
   packPrice,
-  ROSTER_MIN,
   removalError,
   squadProblems,
   starterPackPlan,
@@ -20,6 +19,7 @@ import { createServiceClient } from "./db";
 import { loadFormations } from "./formations";
 import { playerRow } from "./scouting";
 import { liveGenerationSettings, liveSoccerConfig } from "./season";
+import { loadRosterLimits } from "./sport-settings";
 import {
   loadOpenBoughtPack,
   loadRoster,
@@ -39,7 +39,7 @@ function friendly(message: string): string {
   if (message.includes("pack is not open"))
     return "That pack has already been sorted.";
   if (message.includes("roster would drop below"))
-    return `Keep at least ${ROSTER_MIN} players.`;
+    return "You can't go below the minimum roster.";
   if (message.includes("player is not on this team"))
     return "That player has already left.";
   return message;
@@ -113,8 +113,11 @@ export async function confirmStarterSquadFor(
   team: MyTeam,
   chosen: Record<string, number[]>,
 ): Promise<void> {
-  const packs = await loadStarterPacks(team.id);
-  const problem = starterSelectionError(packs, chosen);
+  const [packs, limits] = await Promise.all([
+    loadStarterPacks(team.id),
+    loadRosterLimits(),
+  ]);
+  const problem = starterSelectionError(packs, chosen, limits);
   if (problem) throw new Error(problem);
   const generation = await liveGenerationSettings();
   const rows = packs.flatMap((pack) => {
@@ -194,16 +197,19 @@ export async function removePlayerFor(
   playerId: string,
   mode: "release" | "sell",
 ): Promise<void> {
-  const roster = await loadRoster(team.id);
+  const [roster, limits] = await Promise.all([
+    loadRoster(team.id),
+    loadRosterLimits(),
+  ]);
   const player = roster.find((p) => p.id === playerId);
   if (!player) throw new Error("That player has already left.");
-  const problem = removalError(roster.length, player, mode);
+  const problem = removalError(roster.length, player, mode, limits);
   if (problem) throw new Error(problem);
   const { error } = await createServiceClient().rpc("remove_player", {
     p_team: team.id,
     p_player: player.id,
     p_refund: mode === "sell" ? resalePrice(player.worth) : 0,
-    p_min_roster: ROSTER_MIN,
+    p_min_roster: limits.min,
   });
   if (error) throw new Error(friendly(error.message));
 }
@@ -225,7 +231,13 @@ export async function saveSquadFor(
     throw new Error(
       `${squad.formation} is turned off. Pick another formation.`,
     );
-  const problems = squadProblems(squad, new Set(roster.map((p) => p.id)));
+  const { benchMax } = await loadRosterLimits();
+  const problems = squadProblems(
+    squad,
+    new Set(roster.map((p) => p.id)),
+    undefined,
+    benchMax,
+  );
   if (problems.length > 0) throw new Error(problems.join(" "));
   const { error } = await createServiceClient().from("matchday_squads").upsert({
     team_id: team.id,

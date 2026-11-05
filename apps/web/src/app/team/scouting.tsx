@@ -1,6 +1,10 @@
 "use client";
 
-import { type PackFocus, ROSTER_MAX, ROSTER_MIN } from "@lfs/sport-soccer";
+import {
+  DEFAULT_ROSTER_LIMITS,
+  type PackFocus,
+  type RosterLimits,
+} from "@lfs/sport-soccer";
 import { useMemo, useState, useTransition } from "react";
 import { type ScoutRow, ScoutTable } from "@/components/scout-table";
 import { countByLine, FOCUS_LABELS, type ScoutedPlayer } from "@/lib/scouting";
@@ -26,7 +30,16 @@ const LINE_LABELS = {
  * Initial scouting (D83): open all 22 starter packs, tick the players to
  * keep and confirm. Only the ticks are sent to the server.
  */
-export function Scouting({ packs }: { packs: ScoutingPack[] }) {
+export function Scouting({
+  packs,
+  limits = DEFAULT_ROSTER_LIMITS,
+}: {
+  packs: ScoutingPack[];
+  /** The sport's roster limits (D182). */
+  limits?: RosterLimits;
+}) {
+  const ROSTER_MIN = limits.min;
+  const ROSTER_MAX = limits.max;
   const [selection, setSelection] = useState<Selection>({});
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();

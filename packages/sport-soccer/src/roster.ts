@@ -15,10 +15,45 @@ import {
   STARTER_TIER,
 } from "./generation";
 
-/** A team needs at least a full matchday 22 (11 + 11 bench) to play. */
-export const ROSTER_MIN = 22;
-/** Most players a team can hold. */
-export const ROSTER_MAX = 30;
+/**
+ * A sport's roster limits (D182): the fewest and most players a club can
+ * hold, and the most substitutes on its matchday bench. Set per sport in
+ * Admin → Game settings; these are soccer's defaults.
+ */
+export interface RosterLimits {
+  min: number;
+  max: number;
+  benchMax: number;
+}
+
+export const DEFAULT_ROSTER_LIMITS: RosterLimits = {
+  min: 11,
+  max: 33,
+  benchMax: 11,
+};
+
+/** What admins may set (the database checks the same). */
+export const ROSTER_LIMIT_BOUNDS = {
+  min: [11, 30],
+  max: [22, 50],
+  benchMax: [0, 11],
+} as const;
+
+/** What's wrong with a set of roster limits, or null. */
+export function rosterLimitsError(l: RosterLimits): string | null {
+  for (const [k, [lo, hi]] of Object.entries(ROSTER_LIMIT_BOUNDS)) {
+    const v = l[k as keyof RosterLimits];
+    if (!Number.isInteger(v) || v < lo || v > hi)
+      return `${k === "benchMax" ? "Bench size" : k === "min" ? "Minimum roster" : "Maximum roster"} must be ${lo}–${hi}.`;
+  }
+  if (l.min > l.max) return "The minimum roster can't be above the maximum.";
+  return null;
+}
+
+/** Soccer's default minimum roster (D182); use the sport's limits where you can. */
+export const ROSTER_MIN = DEFAULT_ROSTER_LIMITS.min;
+/** Soccer's default maximum roster (D182). */
+export const ROSTER_MAX = DEFAULT_ROSTER_LIMITS.max;
 
 export const PACK_FOCUSES: readonly PackFocus[] = [
   "attack",
@@ -158,11 +193,12 @@ export type StarterSelection = Record<string, readonly number[]>;
 /**
  * Why a starter selection can't be confirmed, or null when it can. Every
  * starter pack must be opened and still unresolved, every chosen index must
- * exist and the roster must end up with 22–30 players.
+ * exist and the roster must end up within the sport's limits (D182).
  */
 export function starterSelectionError(
   packs: readonly StarterPackState[],
   selection: StarterSelection,
+  limits: RosterLimits = DEFAULT_ROSTER_LIMITS,
 ): string | null {
   if (packs.length === 0) return "This team has no starter packs to scout.";
   if (packs.some((p) => p.resolved))
@@ -181,10 +217,10 @@ export function starterSelectionError(
         return "That player isn't in the pack.";
     kept += indexes.length;
   }
-  if (kept < ROSTER_MIN)
-    return `Keep at least ${ROSTER_MIN} players (${kept} picked).`;
-  if (kept > ROSTER_MAX)
-    return `Keep at most ${ROSTER_MAX} players (${kept} picked).`;
+  if (kept < limits.min)
+    return `Keep at least ${limits.min} players (${kept} picked).`;
+  if (kept > limits.max)
+    return `Keep at most ${limits.max} players (${kept} picked).`;
   return null;
 }
 
@@ -199,26 +235,30 @@ export function packChoiceError(kept: readonly number[]): string | null {
 
 /**
  * Why a player can't leave the roster, or null when they can. Teams keep at
- * least ROSTER_MIN players, and free starter-pack players can be released
- * but never sold (D83).
+ * least the sport's minimum (D182), and free starter-pack players can be
+ * released but never sold (D83).
  */
 export function removalError(
   rosterSize: number,
   player: { fromStarterPack: boolean },
   mode: "release" | "sell",
+  limits: RosterLimits = DEFAULT_ROSTER_LIMITS,
 ): string | null {
-  if (rosterSize <= ROSTER_MIN)
-    return `Keep at least ${ROSTER_MIN} players: buy a pack before letting anyone go.`;
+  if (rosterSize <= limits.min)
+    return `Keep at least ${limits.min} players: buy a pack before letting anyone go.`;
   if (mode === "sell" && player.fromStarterPack)
     return "Starter-pack players were free, so they can be released but not sold.";
   return null;
 }
 
-/** Over ROSTER_MAX the next match is blocked until the roster is trimmed (D54). */
-export function rosterWarning(rosterSize: number): string | null {
-  if (rosterSize < ROSTER_MIN)
-    return `You need at least ${ROSTER_MIN} players to play.`;
-  if (rosterSize > ROSTER_MAX)
-    return `You have ${rosterSize} players: release or sell down to ${ROSTER_MAX} before your next match.`;
+/** Over the maximum the next match is blocked until the roster is trimmed (D54, D182). */
+export function rosterWarning(
+  rosterSize: number,
+  limits: RosterLimits = DEFAULT_ROSTER_LIMITS,
+): string | null {
+  if (rosterSize < limits.min)
+    return `You need at least ${limits.min} players to play.`;
+  if (rosterSize > limits.max)
+    return `You have ${rosterSize} players: release or sell down to ${limits.max} before your next match.`;
   return null;
 }

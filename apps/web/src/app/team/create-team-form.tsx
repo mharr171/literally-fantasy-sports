@@ -22,7 +22,7 @@ export function CreateTeamForm() {
         </h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
           Name your soccer team and pick its colors. You&apos;ll get 22 free
-          starter packs of 5 players each: open them all, then keep the 22 to 30
+          starter packs of 5 players each: open them all, then keep the 11 to 33
           players you want. Everyone else is released.
         </p>
       </div>
