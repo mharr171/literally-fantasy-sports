@@ -192,6 +192,13 @@ export const TUNING_LIMITS: Record<keyof MatchTuning, Limit> = {
     min: 0,
     max: 0.2,
   },
+  groupedSubs: {
+    label: "Logical substitutions",
+    help: "1 = save tired-player subs up so they come in groups and all subs get used when there are fewer windows than subs; 0 = off. D159.",
+    min: 0,
+    max: 1,
+    integer: true,
+  },
   outOfPosition: {
     label: "Out-of-position skill",
     help: "Skill change for a player outside their primary and secondary positions (−0.5 = −50%, 0 = off). D135.",

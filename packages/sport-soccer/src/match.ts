@@ -134,6 +134,13 @@ export interface MatchTuning {
 
   /** Skill change for a player out of position (D135): −0.5 = −50%, 0 = off. */
   outOfPosition: number;
+
+  /**
+   * Logical substitutions (D159): 1 saves tired-player subs up so they come
+   * in groups and every sub can be used when windows are scarcer than subs;
+   * 0 makes each sub as soon as it's due.
+   */
+  groupedSubs: number;
 }
 
 export const DEFAULT_MATCH_TUNING: MatchTuning = {
@@ -166,7 +173,20 @@ export const DEFAULT_MATCH_TUNING: MatchTuning = {
   playerMatchup: 0,
   // Off unless a settings version sets it (D135), for the same reason.
   outOfPosition: 0,
+  // Off unless a settings version turns it on (D159).
+  groupedSubs: 0,
 };
+
+/**
+ * With grouped subs (D159), players count as due a little sooner as the
+ * substitution period goes on: the energy limit rises by this much from the
+ * first auto-sub minute to `LAST_CALL_MINUTE`.
+ */
+export const LATE_SUB_LIFT = 15;
+/** From here, grouped subs use any window left for whoever is due. */
+export const LAST_CALL_MINUTE = 85;
+/** In a window that's already open, players this close to the limit come off too. */
+export const NEARLY_DUE = 10;
 
 /** The out-of-position penalty D135 sets, for the harness and a new settings version. */
 export const PROPOSED_OUT_OF_POSITION = -0.5;
@@ -664,6 +684,39 @@ function ensureKeeper(
   });
 }
 
+/**
+ * The energy below which a tired player comes off, with grouped subs (D159),
+ * or -1 when this phase should wait. It rises toward the end of the
+ * substitution period. A window already open this phase (a planned sub, an
+ * injury or a red card) also takes anyone nearly due. Otherwise, while
+ * windows are scarcer than subs, a new window opens only once enough
+ * players are due to share it fairly, until the last call.
+ */
+function groupedSubLimit(
+  state: MatchState,
+  team: TeamState,
+  minute: number,
+  windowAlreadyOpen: boolean,
+): number {
+  const { tuning } = state;
+  const span = Math.max(1, LAST_CALL_MINUTE - tuning.autoSubFromMinute);
+  const progress = Math.min(
+    1,
+    Math.max(0, (minute - tuning.autoSubFromMinute) / span),
+  );
+  const limit = tuning.autoSubEnergy + LATE_SUB_LIFT * progress;
+  if (windowAlreadyOpen) return limit + NEARLY_DUE;
+  const subsLeft = tuning.maxSubs - team.subsUsed;
+  const windowsLeft = tuning.maxSubWindows - team.windowsUsed;
+  if (subsLeft <= 0 || windowsLeft <= 0) return limit;
+  if (windowsLeft >= subsLeft || minute >= LAST_CALL_MINUTE) return limit;
+  const due = team.onField.filter(
+    (p) => report(state, p.player.id).energyNow < limit,
+  ).length;
+  const needed = Math.ceil(subsLeft / windowsLeft);
+  return due >= needed ? limit : -1;
+}
+
 /** Sub plan first, then forced and tiredness subs (D45). */
 function handleSubs(
   state: MatchState,
@@ -712,10 +765,11 @@ function handleSubs(
 
   // 3. Tired players, most tired first.
   if (minute >= tuning.autoSubFromMinute) {
+    const limit = tuning.groupedSubs
+      ? groupedSubLimit(state, team, minute, windowOpen.value)
+      : tuning.autoSubEnergy;
     const tired = team.onField
-      .filter(
-        (p) => report(state, p.player.id).energyNow < tuning.autoSubEnergy,
-      )
+      .filter((p) => report(state, p.player.id).energyNow < limit)
       .sort(
         (a, b) =>
           report(state, a.player.id).energyNow -

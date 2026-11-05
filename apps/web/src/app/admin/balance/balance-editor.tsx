@@ -49,6 +49,7 @@ const TUNING_GROUPS: [string, (keyof MatchTuning)[]][] = [
       "autoSubFromMinute",
       "maxSubs",
       "maxSubWindows",
+      "groupedSubs",
     ],
   ],
   ["Cards and injuries", ["injuryRate", "yellowRate", "redRate"]],
