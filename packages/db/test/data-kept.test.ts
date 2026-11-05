@@ -214,6 +214,7 @@ describe.runIf(sql)("data kept (D120)", () => {
       clones_cleared: 1,
       ai_fixtures_deleted: 0,
       ai_clones_cleared: 0,
+      ai_runs_deleted: 0,
     });
     expect(result.clones).toEqual([{ number: 2 }, { number: 3 }]);
     expect(result.fixtures).toEqual([
@@ -263,6 +264,7 @@ describe.runIf(sql)("data kept (D120)", () => {
       clones_cleared: 0,
       ai_fixtures_deleted: 0,
       ai_clones_cleared: 0,
+      ai_runs_deleted: 0,
     });
   });
 

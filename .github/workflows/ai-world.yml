@@ -1,0 +1,42 @@
+name: AI world
+
+# Every 2 hours, every AI club gets a turn against lfs-prod (D114, ADR 0002):
+# new clubs up to the pool size, then each club plays its pace's share of
+# weeks, within the same energy rules as managers. Switched on and off in
+# Admin → AI clubs; while it's off, runs do nothing. Each run is logged in
+# ai_runs and shown on that page.
+#
+# Needs repository secrets PROD_SUPABASE_URL and PROD_SUPABASE_SECRET_KEY
+# (m0_setup_guide.md, "AI world").
+
+on:
+  schedule:
+    - cron: "23 */2 * * *" # every 2 hours, at :23
+  workflow_dispatch:
+
+concurrency:
+  group: ai-world
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    name: Run the AI world
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Give every AI club its turn
+        env:
+          SUPABASE_URL: ${{ secrets.PROD_SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.PROD_SUPABASE_SECRET_KEY }}
+          AI_RUN_MINUTES: "20"
+        run: pnpm --filter @lfs/game ai-run

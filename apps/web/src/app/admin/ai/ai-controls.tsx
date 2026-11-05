@@ -76,8 +76,9 @@ export function AiControls({
           Save
         </button>
         <p className="text-xs text-zinc-500">
-          Scheduled runs come in a later step; until then nothing plays on its
-          own.
+          When on, a run every 2 hours (GitHub Actions) adds clubs up to the
+          pool size, a few dozen at a time, and gives every club its turn at its
+          pace. Off: nothing plays on its own.
         </p>
       </div>
       <div className={card}>

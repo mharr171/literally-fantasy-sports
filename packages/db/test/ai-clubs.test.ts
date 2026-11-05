@@ -103,6 +103,9 @@ describe.runIf(sql)("AI clubs (D113)", () => {
       await expect(run((tx) => tx`select * from ai_settings`)).rejects.toThrow(
         /permission denied/,
       );
+      await expect(run((tx) => tx`select * from ai_runs`)).rejects.toThrow(
+        /permission denied/,
+      );
       await expect(
         run(
           (tx) =>

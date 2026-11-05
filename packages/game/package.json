@@ -9,10 +9,12 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "ai-run": "tsx scripts/ai-run.ts"
   },
   "devDependencies": {
     "@lfs/config": "workspace:*",
+    "tsx": "4.23.15",
     "typescript": "5.9.3",
     "vitest": "5.1.0"
   },

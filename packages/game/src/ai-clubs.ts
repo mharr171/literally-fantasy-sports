@@ -18,6 +18,7 @@ import {
   rollAiIdentity,
   rosterWarning,
   starterPackPlan,
+  weeksThisRun,
   youthIntake,
 } from "@lfs/sport-soccer";
 import { createServiceClient } from "./db";
@@ -372,5 +373,137 @@ export async function runAiTurns(
     skipped: queue.length,
     weeksPlayed: turns.reduce((n, t) => n + t.weeksPlayed, 0),
     turns,
+  };
+}
+
+/** One scheduled run, as the admin page shows it. */
+export interface AiRunRecord {
+  id: string;
+  startedAt: string;
+  finishedAt: string | null;
+  clubs: number;
+  created: number;
+  ran: number;
+  skipped: number;
+  weeksPlayed: number;
+  errors: string[];
+}
+
+export async function listAiRuns(limit = 20): Promise<AiRunRecord[]> {
+  const { data, error } = await createServiceClient()
+    .from("ai_runs")
+    .select(
+      "id, started_at, finished_at, clubs, created, ran, skipped, weeks_played, errors",
+    )
+    .eq("sport", SOCCER)
+    .order("started_at", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r) => ({
+    id: r.id as string,
+    startedAt: r.started_at as string,
+    finishedAt: (r.finished_at as string | null) ?? null,
+    clubs: r.clubs as number,
+    created: r.created as number,
+    ran: r.ran as number,
+    skipped: r.skipped as number,
+    weeksPlayed: r.weeks_played as number,
+    errors: (r.errors as string[]) ?? [],
+  }));
+}
+
+/** What a scheduled run did, or why it did nothing. */
+export type AiWorldRun =
+  | { status: "disabled" }
+  | (AiRunRecord & { status: "done" });
+
+/**
+ * One scheduled run of the AI world (D113, D114): adds clubs up to the
+ * pool size (a few per run), then gives every AI club a turn of its pace's
+ * share of weeks, longest-waiting first, within `budgetMs`. Logged in
+ * ai_runs. Does nothing while the AI world is switched off.
+ */
+export async function runAiWorld({
+  budgetMs,
+  maxNewClubs = 40,
+  concurrency = 6,
+}: {
+  budgetMs: number;
+  maxNewClubs?: number;
+  concurrency?: number;
+}): Promise<AiWorldRun> {
+  const started = Date.now();
+  const settings = await loadAiSettings();
+  if (!settings.enabled) return { status: "disabled" };
+  const db = createServiceClient();
+  const { data: row, error } = await db
+    .from("ai_runs")
+    .insert({ sport: SOCCER })
+    .select("id")
+    .single();
+  if (error) throw new Error(error.message);
+  const runId = row.id as string;
+  const errors: string[] = [];
+
+  // Top up the pool, using at most a third of the time.
+  const before = await listAiClubs();
+  const wanted = Math.min(
+    maxNewClubs,
+    Math.max(0, settings.poolSize - before.length),
+  );
+  let created = 0;
+  for (let i = 0; i < wanted && Date.now() - started < budgetMs / 3; i++) {
+    try {
+      await createAiClub();
+      created++;
+    } catch (e) {
+      errors.push(`new club: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+
+  // Every club's turn, at its pace (D114).
+  const clubs = await listAiClubs();
+  const pace = new Map(clubs.map((c) => [c.id, c.profile.pace]));
+  const run = await runAiTurns(
+    clubs,
+    (id) =>
+      weeksThisRun(
+        createRng(`${runId}:${id}`),
+        pace.get(id) ?? "normal",
+        settings.runsPerDay,
+      ),
+    { budgetMs: Math.max(0, budgetMs - (Date.now() - started)), concurrency },
+  );
+  for (const t of run.turns)
+    if (t.error) {
+      const name = clubs.find((c) => c.id === t.teamId)?.name ?? t.teamId;
+      errors.push(`${name}: ${t.error}`);
+    }
+
+  const record = {
+    finished_at: new Date().toISOString(),
+    clubs: clubs.length,
+    created,
+    ran: run.ran,
+    skipped: run.skipped,
+    weeks_played: run.weeksPlayed,
+    errors: errors.slice(0, 40),
+  };
+  const { error: saveError } = await db
+    .from("ai_runs")
+    .update(record)
+    .eq("id", runId);
+  if (saveError) throw new Error(saveError.message);
+  return {
+    status: "done",
+    id: runId,
+    startedAt: new Date(started).toISOString(),
+    finishedAt: record.finished_at,
+    clubs: record.clubs,
+    created,
+    ran: run.ran,
+    skipped: run.skipped,
+    weeksPlayed: run.weeksPlayed,
+    errors: record.errors,
   };
 }
