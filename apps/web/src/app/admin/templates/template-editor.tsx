@@ -663,6 +663,7 @@ export function TestTable({ result }: { result: TestResult }) {
     ],
     ["Yellow cards per match", (r) => r.yellowsPerMatch.toFixed(2)],
     ["Substitutions per match", (r) => r.subsPerMatch.toFixed(2)],
+    ["Teams using every sub", (r) => pct(r.allSubsRate)],
   ];
   return (
     <section className="flex flex-col gap-2">
