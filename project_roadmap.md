@@ -1,6 +1,6 @@
 # LiterallyFantasySports — Project Roadmap
 
-Nov 2, 2026 · @Gary · Last updated: Nov 5, 2026 (D174)
+Nov 2, 2026 · @Gary · Last updated: Nov 5, 2026 (D175)
 
 ## Review progress
 
@@ -195,6 +195,7 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D172 | Nov 5, 2026 | How D140 ships: a `formations` table holds the six built-in presets (defined in code) and admin-made formations (11 slots, one keeper, each with a position and a place on the pitch; left and right are worked out as in D112). A formation can't be changed or deleted once it exists (a database trigger refuses), so every match that used it replays the same; to change one, create a new one and turn the old one off. Admin → Formations turns any formation on or off (one always stays on) and logs it. Managers can only newly pick formations that are on. Second PR: clubs whose saved formation is off move to the closest one that is on at their next match and are asked to check their squad, and the AI only picks formations that are on | M13 |
 | D173 | Nov 5, 2026 | Moving off a formation that's off (D140, second part): at a club's next match, a saved squad in a formation that's off moves to the one that's on with the most positions in common (ties: the first in the list). The same 11 start, each put in a slot of their old position, then one they can play, then where they rate best; bench and sub plan are kept. The squad page and the season page say "X has been turned off for every club, so your squad now plays Y" until the manager saves the squad. An AI club whose formation is off switches to the closest one that's on at its next turn, and new AI clubs only roll formations that are on. League copies already in a season keep their frozen formation (D115) | M13 |
 | D174 | Nov 5, 2026 | How D149 ships: the color cycle is a match tuning value (`colorCycle`, the five color indexes in ring order) in each settings version, edited in Admin → Soccer balance → Color matchups by moving colors up or down round a live ring. Any order of five is balanced (each beats the next two), so the only check is that each color appears once. A version without it plays the built-in rainbow cycle, so seasons under way and replays are unchanged. The game guide shows the live cycle, and the season schedule the cycle its season plays by | M13 |
+| D175 | Nov 5, 2026 | M14 plan (ADR 0005, Gary OK'd): a History tab on My team lists every season and opens each one (final table, bracket, results, top scorers, retirements); the club's hall of fame shows its all-time greats and honours; a public `/hall-of-fame` ranks clubs and players across the game by club name only (no manager names); each retiring player gets a tribute card. Season pages are for your own club only. Built on existing records; only indexes are added | M14 |
 
 ## 1. Vision & goals
 
