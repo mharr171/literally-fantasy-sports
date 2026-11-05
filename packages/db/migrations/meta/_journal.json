@@ -309,6 +309,13 @@
       "when": 1793846001434,
       "tag": "0043_ai_runs_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1793851677080,
+      "tag": "0044_skip_idle_weeks",
+      "breakpoints": true
     }
   ]
 }

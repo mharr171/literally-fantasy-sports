@@ -181,6 +181,8 @@ export const teams = pgTable(
     ownerId: uuid().references(() => authUsers.id, { onDelete: "cascade" }),
     sport: text().notNull(),
     name: text().notNull(),
+    /** Weeks without the club's own match play by themselves (D134). */
+    skipIdleWeeks: boolean().notNull().default(false),
     /** "human" or "ai" (D113). Only admins can tell them apart. */
     kind: text().notNull().default("human"),
     /** An AI club's invented manager. */

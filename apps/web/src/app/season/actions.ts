@@ -3,9 +3,10 @@
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
-import { playOneWeek } from "@/lib/play-week";
+import { playWeekFor } from "@/lib/play-week";
 import { endSeasonFor, startSeasonFor, takeYouthFor } from "@/lib/season-steps";
 import { loadMyTeam } from "@/lib/team";
+import { setSkipIdleWeeksFor } from "@/lib/team-steps";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -40,7 +41,7 @@ export async function startSeason(): Promise<ActionResult> {
  */
 export async function playNextWeek(): Promise<ActionResult> {
   try {
-    await playOneWeek(await requireTeam(), { useEnergy: true });
+    await playWeekFor(await requireTeam(), { useEnergy: true });
     refresh();
     return { ok: true };
   } catch (e) {
@@ -71,6 +72,17 @@ export async function takeYouth(taken: number[]): Promise<ActionResult> {
   } catch (e) {
     if (e instanceof z.ZodError)
       return fail(new Error("That pick isn't valid."));
+    return fail(e);
+  }
+}
+
+/** Weeks without your own match play by themselves, or wait for a click (D134). */
+export async function setSkipIdleWeeks(on: boolean): Promise<ActionResult> {
+  try {
+    await setSkipIdleWeeksFor(await requireTeam(), z.boolean().parse(on));
+    refresh();
+    return { ok: true };
+  } catch (e) {
     return fail(e);
   }
 }

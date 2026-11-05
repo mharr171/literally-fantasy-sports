@@ -27,6 +27,8 @@ export interface MyTeam {
   colors: string[];
   /** "ai" for an AI club (D113); only the server and admins see this. */
   kind: "human" | "ai";
+  /** Weeks without the club's own match play by themselves (D134). */
+  skipIdleWeeks: boolean;
 }
 
 /**
@@ -43,6 +45,7 @@ const toTeam = (data: {
   morale: number;
   colors: string[] | null;
   kind: string;
+  skip_idle_weeks: boolean;
 }): MyTeam => ({
   id: data.id,
   name: data.name,
@@ -53,6 +56,7 @@ const toTeam = (data: {
   morale: data.morale,
   colors: data.colors ?? [],
   kind: data.kind === "ai" ? "ai" : "human",
+  skipIdleWeeks: data.skip_idle_weeks,
 });
 
 /** Any team, by id (admin tools). */
@@ -60,7 +64,7 @@ export async function loadTeamById(teamId: string): Promise<MyTeam | null> {
   const { data, error } = await createServiceClient()
     .from("teams")
     .select(
-      "id, name, elo, funds, energy, energy_updated_at, morale, colors, kind",
+      "id, name, elo, funds, energy, energy_updated_at, morale, colors, kind, skip_idle_weeks",
     )
     .eq("id", teamId)
     .eq("sport", SOCCER)
@@ -86,7 +90,7 @@ export async function loadMyTeam(ownerId: string): Promise<MyTeam | null> {
   const { data, error } = await createServiceClient()
     .from("teams")
     .select(
-      "id, name, elo, funds, energy, energy_updated_at, morale, colors, kind",
+      "id, name, elo, funds, energy, energy_updated_at, morale, colors, kind, skip_idle_weeks",
     )
     .eq("owner_id", ownerId)
     .eq("sport", SOCCER)

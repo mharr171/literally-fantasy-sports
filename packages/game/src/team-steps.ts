@@ -224,3 +224,15 @@ export async function saveSquadFor(
   });
   if (error) throw new Error(error.message);
 }
+
+/** Whether weeks without the club's own match play by themselves (D134). */
+export async function setSkipIdleWeeksFor(
+  team: MyTeam,
+  on: boolean,
+): Promise<void> {
+  const { error } = await createServiceClient()
+    .from("teams")
+    .update({ skip_idle_weeks: on })
+    .eq("id", team.id);
+  if (error) throw new Error(error.message);
+}

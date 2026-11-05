@@ -1,0 +1,1 @@
+ALTER TABLE "teams" ADD COLUMN "skip_idle_weeks" boolean DEFAULT false NOT NULL;
