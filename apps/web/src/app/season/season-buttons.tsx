@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAction } from "../team/use-action";
-import { playNextWeek, startSeason } from "./actions";
+import { playNextWeek, setSkipIdleWeeks, startSeason } from "./actions";
 
 const primary =
   "rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300";
@@ -62,10 +62,13 @@ const clock = (ms: number) => {
 export function PlayWeekButton({
   label,
   energy,
+  free = false,
 }: {
   label: string;
   /** Null when energy is switched off for this sport. */
   energy: EnergyView | null;
+  /** A week without the club's own match: costs no energy (D134). */
+  free?: boolean;
 }) {
   const { error, pending, run } = useAction();
   const router = useRouter();
@@ -74,7 +77,7 @@ export function PlayWeekButton({
   useEffect(() => {
     if (left === 0) router.refresh();
   }, [left, router]);
-  const empty = energy !== null && energy.energy < 1;
+  const empty = !free && energy !== null && energy.energy < 1;
   return (
     <div className="flex flex-col items-start gap-2 sm:items-end">
       <button
@@ -99,6 +102,33 @@ export function PlayWeekButton({
       )}
       {error && (
         <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** The setting to play weeks without your own match by themselves (D134). */
+export function SkipIdleToggle({ on }: { on: boolean }) {
+  const { error, pending, run } = useAction();
+  return (
+    <div className="flex flex-col gap-1 text-sm">
+      <label className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          checked={on}
+          disabled={pending}
+          onChange={(e) => {
+            const next = e.target.checked;
+            run(() => setSkipIdleWeeks(next));
+          }}
+        />
+        Skip weeks without my match (they play by themselves, and the squad
+        rests)
+      </label>
+      {error && (
+        <p role="alert" className="text-red-600 dark:text-red-400">
           {error}
         </p>
       )}

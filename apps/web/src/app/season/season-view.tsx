@@ -13,7 +13,11 @@ import { ClubBadge } from "@/components/club-badge";
 import { EmptyState } from "@/components/empty-state";
 import { moraleLabel } from "@/components/form-label";
 import type { LoadedSeason } from "@/lib/season";
-import { type EnergyView, PlayWeekButton } from "./season-buttons";
+import {
+  type EnergyView,
+  PlayWeekButton,
+  SkipIdleToggle,
+} from "./season-buttons";
 
 function stageLabel(season: LoadedSeason): string {
   if (season.status === "finished") return "Finished";
@@ -34,7 +38,10 @@ export function SeasonView({
   energy,
   notice,
   morale,
+  skipIdleWeeks = false,
 }: {
+  /** Weeks without the manager's match play by themselves (D134). */
+  skipIdleWeeks?: boolean;
   /** Team morale, −1 to 1 (M4). */
   morale?: number;
   /** Shown under the next match, e.g. who sits out injured or suspended. */
@@ -129,8 +136,8 @@ export function SeasonView({
               </>
             ) : (
               <>
-                You&apos;re not in this round, so it costs no energy. Play it to
-                see who goes through.
+                You&apos;re not in this round, so it costs no energy (your squad
+                rests). Play it to see who goes through.
               </>
             )}
           </div>
@@ -141,7 +148,11 @@ export function SeasonView({
                 : "Play the round"
             }
             energy={energy ?? null}
+            free={!nextMine}
           />
+          <div className="basis-full">
+            <SkipIdleToggle on={skipIdleWeeks} />
+          </div>
         </div>
       )}
 

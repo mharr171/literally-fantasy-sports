@@ -64,12 +64,7 @@ export async function playOneWeek(
   // 1 energy = 1 game week (D17, D93), unless an admin has switched it off.
   // A week without the club's own match is free: the play-in for clubs
   // already in the quarter-finals, and the rounds after it's knocked out (D117).
-  const hasMatch = season.fixtures.some(
-    (f) =>
-      f.week === season.week &&
-      f.homeScore === null &&
-      (f.homeSlot === MANAGER_SLOT || f.awaySlot === MANAGER_SLOT),
-  );
+  const hasMatch = hasOwnMatch(season);
   const energySettings = await loadEnergySettings("soccer");
   const now = new Date();
   const stored = {
@@ -191,4 +186,41 @@ export async function playOneWeek(
     throw new Error(error.message);
   }
   return outcome.status;
+}
+
+/** Whether the club has its own match in the season's current week. */
+export function hasOwnMatch(season: {
+  week: number;
+  fixtures: readonly {
+    week: number;
+    homeScore: number | null;
+    homeSlot: number;
+    awaySlot: number;
+  }[];
+}): boolean {
+  return season.fixtures.some(
+    (f) =>
+      f.week === season.week &&
+      f.homeScore === null &&
+      (f.homeSlot === MANAGER_SLOT || f.awaySlot === MANAGER_SLOT),
+  );
+}
+
+/**
+ * Plays the club's current week, then, if it skips idle weeks (D134), every
+ * following week without its own match (free, the club rests), stopping
+ * at its next match or the end of the season.
+ */
+export async function playWeekFor(
+  team: MyTeam,
+  { useEnergy }: { useEnergy: boolean },
+): Promise<"regular" | "playoffs" | "finished"> {
+  let status = await playOneWeek(team, { useEnergy });
+  if (!team.skipIdleWeeks) return status;
+  for (let i = 0; i < 8 && status !== "finished"; i++) {
+    const season = await loadLatestSeason(team.id);
+    if (!season || season.status === "finished" || hasOwnMatch(season)) break;
+    status = await playOneWeek(team, { useEnergy });
+  }
+  return status;
 }
