@@ -39,6 +39,130 @@ export interface ClubView {
   squad: MatchdaySquad | null;
   /** E.g. "Season 3" for a leaderboard entry. */
   subtitle?: string;
+  /** Only loaded for an admin with the admin view on (D163). */
+  admin?: ClubAdmin;
+}
+
+/** Where a club comes from, for admins (D163). */
+export interface ClubOrigin {
+  /** "Real club" or "AI club", or how a league club was made. */
+  label: string;
+  real: boolean;
+  detail: string | null;
+}
+
+/** A player's hidden values, for admins (D163). */
+export interface AdminPlayer {
+  age: number;
+  potential: number;
+  range: [number, number];
+  worth: number | null;
+  fitness: number | null;
+}
+
+export interface ClubAdmin {
+  origin: ClubOrigin;
+  startRating: number | null;
+  /** True when the player values are today's, not as the copy was made. */
+  live: boolean;
+  players: Record<string, AdminPlayer>;
+}
+
+const titleCase = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/** Real or AI, the manager, and the live Elo of each club (D163). */
+export async function loadClubOrigins(
+  teamIds: readonly string[],
+): Promise<Map<string, ClubOrigin>> {
+  const out = new Map<string, ClubOrigin>();
+  const ids = [...new Set(teamIds)];
+  if (ids.length === 0) return out;
+  const db = createServiceClient();
+  const { data: teams, error } = await db
+    .from("teams")
+    .select("id, kind, owner_id, manager_name, ai, elo")
+    .in("id", ids);
+  if (error) throw new Error(error.message);
+  const owners = (teams ?? []).flatMap((t) =>
+    t.owner_id ? [t.owner_id as string] : [],
+  );
+  const names = new Map<string, string>();
+  if (owners.length > 0) {
+    const { data: profiles, error: pError } = await db
+      .from("profiles")
+      .select("id, display_name")
+      .in("id", owners);
+    if (pError) throw new Error(pError.message);
+    for (const p of profiles ?? [])
+      names.set(p.id as string, (p.display_name as string | null) ?? "?");
+  }
+  for (const t of teams ?? []) {
+    if (t.kind === "ai") {
+      const ai = (t.ai ?? {}) as Partial<{
+        personality: string;
+        pace: string;
+        formation: string;
+      }>;
+      out.set(t.id as string, {
+        label: "AI club",
+        real: false,
+        detail: `Manager ${t.manager_name as string} · ${titleCase(ai.personality ?? "?")}, ${ai.pace ?? "?"} pace, ${ai.formation ?? "?"} · Elo now ${t.elo as number}`,
+      });
+    } else {
+      out.set(t.id as string, {
+        label: "Real club",
+        real: true,
+        detail: `Manager ${names.get(t.owner_id as string) ?? "?"} · Elo now ${t.elo as number}`,
+      });
+    }
+  }
+  return out;
+}
+
+/** Players' hidden values as they are now (D163). */
+async function loadAdminPlayers(
+  ids: readonly string[],
+): Promise<Record<string, AdminPlayer>> {
+  const out: Record<string, AdminPlayer> = {};
+  if (ids.length === 0) return out;
+  const { data, error } = await createServiceClient()
+    .from("players")
+    .select("id, age, potential, potential_low, potential_high, worth, fitness")
+    .in("id", [...ids]);
+  if (error) throw new Error(error.message);
+  for (const p of data ?? [])
+    out[p.id as string] = {
+      age: p.age as number,
+      potential: p.potential as number,
+      range: [p.potential_low as number, p.potential_high as number],
+      worth: p.worth as number,
+      fitness: p.fitness as number,
+    };
+  return out;
+}
+
+const GONE: ClubOrigin = {
+  label: "Club deleted",
+  real: false,
+  detail: "The club this copy came from no longer exists.",
+};
+
+/** A copied club's origin and its players' values today (D163). */
+async function adminFor(
+  sourceTeamId: string | null,
+  playerIds: readonly string[],
+  startRating: number | null,
+): Promise<ClubAdmin> {
+  const [origins, players] = await Promise.all([
+    loadClubOrigins(sourceTeamId ? [sourceTeamId] : []),
+    loadAdminPlayers(playerIds),
+  ]);
+  return {
+    origin: (sourceTeamId && origins.get(sourceTeamId)) || GONE,
+    startRating,
+    live: true,
+    players,
+  };
 }
 
 const pick = (p: {
@@ -67,6 +191,7 @@ const pick = (p: {
 export async function loadLeagueClub(
   ownerId: string,
   slot: number,
+  { admin = false }: { admin?: boolean } = {},
 ): Promise<ClubView | null> {
   const team = await loadMyTeam(ownerId);
   if (!team) return null;
@@ -85,6 +210,13 @@ export async function loadLeagueClub(
       elo: team.elo,
       players: roster.map(pick),
       squad,
+      admin: admin
+        ? await adminFor(
+            team.id,
+            roster.map((p) => p.id),
+            info.startRating,
+          )
+        : undefined,
     };
   }
   if (info.kind === "ghost") {
@@ -97,6 +229,13 @@ export async function loadLeagueClub(
         elo: info.elo,
         players: clone.players.map(pick),
         squad: clone.squad,
+        admin: admin
+          ? await adminFor(
+              info.ghostId ?? null,
+              clone.players.map((p) => p.id),
+              info.startRating,
+            )
+          : undefined,
       };
   }
   // An AI club, or a ghost whose copy is gone (it plays as AI).
@@ -108,11 +247,40 @@ export async function loadLeagueClub(
     elo: info.elo,
     players: ai.players.map(pick),
     squad: ai.squad,
+    admin: admin
+      ? {
+          origin: {
+            label:
+              info.kind === "ghost"
+                ? "Copy gone, plays as AI"
+                : "AI, made for this league",
+            real: false,
+            detail: "Generated from the season seed; not a club in the game.",
+          },
+          startRating: info.startRating,
+          live: false,
+          players: Object.fromEntries(
+            ai.players.map((p) => [
+              p.id,
+              {
+                age: p.age,
+                potential: p.potential,
+                range: p.potentialRange,
+                worth: null,
+                fitness: null,
+              },
+            ]),
+          ),
+        }
+      : undefined,
   };
 }
 
 /** A club's ghost from the leaderboard: its best season, as it finished (D111, D116). */
-export async function loadGhostClub(teamId: string): Promise<ClubView | null> {
+export async function loadGhostClub(
+  teamId: string,
+  { admin = false }: { admin?: boolean } = {},
+): Promise<ClubView | null> {
   const db = createServiceClient();
   const { data, error } = await db
     .from("ghosts")
@@ -135,6 +303,13 @@ export async function loadGhostClub(teamId: string): Promise<ClubView | null> {
     players: (data.players as SnapshotPlayer[]).map(pick),
     squad: data.squad as MatchdaySquad,
     subtitle: `Season ${data.season_number as number}, its best, as it finished`,
+    admin: admin
+      ? await adminFor(
+          teamId,
+          (data.players as SnapshotPlayer[]).map((p) => p.id),
+          null,
+        )
+      : undefined,
   };
 }
 

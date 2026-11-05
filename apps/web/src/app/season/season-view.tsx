@@ -9,6 +9,7 @@ import {
 } from "@lfs/sport-soccer";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { AdminTag } from "@/components/admin-note";
 import { ClubBadge } from "@/components/club-badge";
 import { EmptyState } from "@/components/empty-state";
 import { moraleLabel } from "@/components/form-label";
@@ -39,7 +40,10 @@ export function SeasonView({
   notice,
   morale,
   skipIdleWeeks = false,
+  adminLabels,
 }: {
+  /** Admins only (D163): each club's origin, by slot. */
+  adminLabels?: Record<number, string>;
   /** Weeks without the manager's match play by themselves (D134). */
   skipIdleWeeks?: boolean;
   /** Team morale, −1 to 1 (M4). */
@@ -207,6 +211,11 @@ export function SeasonView({
                         {badge(slot)}
                         {info?.name}
                       </Link>
+                      {adminLabels?.[slot] && (
+                        <span className="ml-2">
+                          <AdminTag>{adminLabels[slot]}</AdminTag>
+                        </span>
+                      )}
                     </td>
                     {(
                       [

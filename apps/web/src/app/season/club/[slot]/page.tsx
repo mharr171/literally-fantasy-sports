@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { ClubViewPanel } from "@/components/club-view";
+import { adminView } from "@/lib/admin-view";
 import { getCurrentUser } from "@/lib/auth";
 import { loadLeagueClub } from "@/lib/club-view";
 
@@ -32,7 +33,9 @@ async function Club({
   if (!/^\d{1,2}$/.test(raw) || !Number.isInteger(slot)) notFound();
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
-  const club = await loadLeagueClub(user.id, slot);
+  const club = await loadLeagueClub(user.id, slot, {
+    admin: await adminView(),
+  });
   if (!club) notFound();
   return <ClubViewPanel club={club} />;
 }

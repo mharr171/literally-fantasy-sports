@@ -1,7 +1,10 @@
+import { cookies } from "next/headers";
 import Link from "next/link";
 import { Suspense } from "react";
 import { signOut } from "@/app/auth/actions";
 import { ClubBadge } from "@/components/club-badge";
+import { ADMIN_VIEW_COOKIE } from "@/lib/admin-view";
+import { toggleAdminView } from "@/lib/admin-view-actions";
 import { getCurrentProfile } from "@/lib/auth";
 import { loadMyTeam } from "@/lib/team";
 
@@ -31,6 +34,9 @@ export function SiteHeader() {
 async function AccountMenu() {
   const user = await getCurrentProfile();
   const team = user ? await loadMyTeam(user.id) : null;
+  const adminOn =
+    user?.isAdmin === true &&
+    (await cookies()).get(ADMIN_VIEW_COOKIE)?.value !== "off";
 
   if (!user) {
     return (
@@ -56,9 +62,24 @@ async function AccountMenu() {
         Season
       </Link>
       {user.isAdmin && (
-        <Link href="/admin" className="font-medium hover:underline">
-          Admin
-        </Link>
+        <>
+          <Link href="/admin" className="font-medium hover:underline">
+            Admin
+          </Link>
+          <form action={toggleAdminView}>
+            <button
+              type="submit"
+              title={
+                adminOn
+                  ? "Showing admin extras on public pages. Click to see pages as a player does."
+                  : "Seeing pages as a player does. Click to show admin extras."
+              }
+              className={`rounded px-1.5 py-0.5 text-xs font-semibold ${adminOn ? "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300" : "border border-zinc-300 text-zinc-500 dark:border-zinc-700"}`}
+            >
+              {adminOn ? "Admin view on" : "Player view"}
+            </button>
+          </form>
+        </>
       )}
       <Link
         href="/account"
