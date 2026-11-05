@@ -51,6 +51,10 @@ import {
 } from "./templates";
 
 export const PLAYERS_ON_FIELD = 11;
+/** Fewer starters than this and the match is forfeited (D183, ADR 0006). */
+export const MIN_PLAYERS = 7;
+/** A forfeited match counts as this many goals to nil. */
+export const FORFEIT_GOALS = 3;
 
 export interface LineupSlot {
   player: SoccerPlayer;
@@ -326,7 +330,8 @@ export interface PlayerMatchReport {
 export const ASSIST_SHARE = 0.8;
 
 export interface SoccerResult extends MatchResult {
-  decidedBy?: "extra_time" | "penalties";
+  /** "forfeit": a side had fewer than MIN_PLAYERS available (D183). */
+  decidedBy?: "extra_time" | "penalties" | "forfeit";
   /** Shoot-out score, only when decided on penalties. */
   penalties?: Record<Side, number>;
   /** Share of possession phases won (0–1). */
@@ -1087,9 +1092,13 @@ function prepareTeam(
   team: SoccerTeam,
   side: Side,
 ): TeamState {
-  if (team.lineup.length !== PLAYERS_ON_FIELD) {
+  // A club short of fit players starts a man (or more) down (D183).
+  if (
+    team.lineup.length > PLAYERS_ON_FIELD ||
+    team.lineup.length < MIN_PLAYERS
+  ) {
     throw new RangeError(
-      `Team ${team.id} has ${team.lineup.length} starters, expected 11`,
+      `Team ${team.id} has ${team.lineup.length} starters, expected ${MIN_PLAYERS}–11`,
     );
   }
   if (!team.lineup.some((s) => s.slot === "GK")) {
@@ -1148,11 +1157,43 @@ function teamMap(team: TeamState, phases: number): InfluenceMap {
 }
 
 /** Plays one match. Pure and deterministic for a given input and seed. */
+/**
+ * A match a side can't play (D183): fewer than MIN_PLAYERS fit starters.
+ * It loses FORFEIT_GOALS–0 and nobody plays; if both are short, home
+ * forfeits. No randomness, so it replays the same.
+ */
+function forfeit(
+  input: MatchInput<SoccerTeam, SoccerConfig>,
+): MatchOutput<SoccerEvent, SoccerResult> {
+  const loser: Side = input.home.lineup.length < MIN_PLAYERS ? "home" : "away";
+  const score =
+    loser === "home"
+      ? { home: 0, away: FORFEIT_GOALS }
+      : { home: FORFEIT_GOALS, away: 0 };
+  return {
+    result: {
+      score,
+      winner: other(loser),
+      possession: { home: 0.5, away: 0.5 },
+      shots: { home: 0, away: 0 },
+      players: {},
+      decidedBy: "forfeit",
+    },
+    events: [{ minute: 90, type: "full_time" }],
+    influence: {
+      home: createInfluenceMap(SOCCER_GRID),
+      away: createInfluenceMap(SOCCER_GRID),
+    },
+  };
+}
+
 export function simulateMatch(
   input: MatchInput<SoccerTeam, SoccerConfig>,
   seed: Seed,
 ): MatchOutput<SoccerEvent, SoccerResult> {
   const { config } = input;
+  const short = (t: SoccerTeam) => t.lineup.length < MIN_PLAYERS;
+  if (short(input.home) || short(input.away)) return forfeit(input);
   const root = createRng(seed);
   const { zones, baseline } = templateZones(
     config.templates,

@@ -98,14 +98,23 @@ export function nextCondition(
  * The squad that actually plays this week: unavailable starters are
  * replaced by the best available player for their slot (bench first, then
  * anyone else on the roster), unavailable substitutes drop out, and planned
- * substitutions involving anyone moved are cancelled. Throws if fewer than
- * 11 players are available.
+ * substitutions involving anyone moved are cancelled. A slot nobody fit
+ * can fill stays empty ("") and the club plays a man down (D183); with no
+ * fit keeper, the best outfield starter goes in goal and their own slot is
+ * left empty. Under MIN_PLAYERS starters the match is forfeited.
  */
 export function availableSquad(
   squad: MatchdaySquad,
   roster: readonly PickablePlayer[],
   available: (id: string) => boolean,
-): { squad: MatchdaySquad; replaced: { out: string; in: string }[] } {
+): {
+  squad: MatchdaySquad;
+  replaced: { out: string; in: string }[];
+  /** Starters who'll take the field (11 unless the club is short). */
+  starters: number;
+  /** The outfield player moved in goal, if no keeper was fit. */
+  keeperFromOutfield: string | null;
+} {
   const shape = formation(squad.formation);
   if (!shape) throw new Error(`Unknown formation: ${squad.formation}`);
   const byId = new Map(roster.map((p) => [p.id, p]));
@@ -130,15 +139,38 @@ export function availableSquad(
         (playsPosition(x, position) ? 1_000 : 0) + slotRating(x, position);
       if (!b || rank(p) > rank(b)) best = k;
     });
-    if (best === -1)
-      throw new Error(
-        "Not enough fit players: at least 11 must be available to play.",
-      );
+    // Nobody left: the slot stays empty (D183).
+    if (best === -1) return "";
     const [chosen] = pool.splice(best, 1) as [string];
     used.add(chosen);
     replaced.push({ out: id, in: chosen });
     return chosen;
   });
+  // No fit keeper: the best outfield starter in goal, their slot empty.
+  let keeperFromOutfield: string | null = null;
+  const keeperSlot = shape.slots.findIndex((sl) => sl.position === "GK");
+  if (keeperSlot >= 0 && lineup[keeperSlot] === "") {
+    let best = -1;
+    lineup.forEach((id, i) => {
+      if (!id || i === keeperSlot) return;
+      const p = byId.get(id) as PickablePlayer;
+      const b =
+        best === -1
+          ? null
+          : (byId.get(lineup[best] as string) as PickablePlayer);
+      if (!b || slotRating(p, "GK") > slotRating(b, "GK")) best = i;
+    });
+    if (best >= 0) {
+      lineup[keeperSlot] = lineup[best] as string;
+      lineup[best] = "";
+    }
+  }
+  // Whoever ended up in goal without being a keeper (from the bench or
+  // moved across), for the season page to say so.
+  if (keeperSlot >= 0 && lineup[keeperSlot]) {
+    const inGoal = byId.get(lineup[keeperSlot] as string);
+    if (inGoal && !playsPosition(inGoal, "GK")) keeperFromOutfield = inGoal.id;
+  }
   // Top the bench back up from the rest of the roster.
   while (bench.length < BENCH_SIZE && reserves.length > 0)
     bench.push(reserves.shift() as string);
@@ -151,6 +183,8 @@ export function availableSquad(
   return {
     squad: { formation: squad.formation, lineup, bench, subPlan },
     replaced,
+    starters: lineup.filter(Boolean).length,
+    keeperFromOutfield,
   };
 }
 

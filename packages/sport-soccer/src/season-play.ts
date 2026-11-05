@@ -309,7 +309,7 @@ export interface SeasonState {
 export interface MatchSummary {
   possession: Record<Side, number>;
   shots: Record<Side, number>;
-  decidedBy?: "extra_time" | "penalties";
+  decidedBy?: "extra_time" | "penalties" | "forfeit";
   penalties?: Record<Side, number>;
   events: {
     minute: number;
@@ -670,7 +670,7 @@ function summarize(
   result: {
     possession: Record<Side, number>;
     shots: Record<Side, number>;
-    decidedBy?: "extra_time" | "penalties";
+    decidedBy?: "extra_time" | "penalties" | "forfeit";
     penalties?: Record<Side, number>;
   },
   events: readonly SoccerEvent[],

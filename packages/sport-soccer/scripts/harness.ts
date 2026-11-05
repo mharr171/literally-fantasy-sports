@@ -3,7 +3,12 @@
 // --positions plays with the out-of-position penalty (D135).
 // --subs plays with logical substitutions (D159).
 
-import { formatReport, runHarness } from "../src/harness";
+import {
+  formatManDown,
+  formatReport,
+  runHarness,
+  runManDown,
+} from "../src/harness";
 import {
   defaultSoccerConfig,
   PROPOSED_MATCHUPS,
@@ -33,4 +38,14 @@ if (matchups) console.log("Color matchups on (D150 strengths)");
 if (positions) console.log("Out-of-position penalty on (D135)");
 if (subs) console.log("Logical substitutions on (D159)");
 console.log(formatReport(report));
+console.log("");
+console.log(
+  formatManDown(
+    runManDown({
+      matches: Math.max(200, Math.round(matches / 5)),
+      seed,
+      config,
+    }),
+  ),
+);
 console.log(`\n(${((performance.now() - started) / 1000).toFixed(1)}s)`);

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { formatReport, runHarness } from "../src/harness";
+import {
+  formatManDown,
+  formatReport,
+  runHarness,
+  runManDown,
+} from "../src/harness";
 
 describe("tuning harness", () => {
   // A smaller run than the full 10,000-match harness, as a regression guard.
@@ -30,5 +35,14 @@ describe("tuning harness", () => {
   it("handles an empty gap bucket", () => {
     const tiny = runHarness({ matches: 1, seed: "tiny", gaps: [0, 10] });
     expect(tiny.byGap[1]).toEqual({ gap: 10, win: 0, draw: 0, loss: 0 });
+  });
+});
+
+describe("man-down report (D183)", () => {
+  it("the side with 10 wins less than it loses", () => {
+    const r = runManDown({ matches: 200, seed: "md" });
+    expect(r.win + r.draw + r.loss).toBeCloseTo(1);
+    expect(r.win).toBeLessThan(r.loss);
+    expect(formatManDown(r)).toMatch(/man down/);
   });
 });

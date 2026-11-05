@@ -473,10 +473,12 @@ export function squadToTeam(
   };
   return {
     id: teamId,
-    lineup: squad.lineup.map((id, i) => ({
-      player: get(id),
-      ...slotOf(shape.slots[i] as FormationSlot),
-    })),
+    // An empty slot ("") is a club playing a man down (D183).
+    lineup: squad.lineup.flatMap((id, i) =>
+      id
+        ? [{ player: get(id), ...slotOf(shape.slots[i] as FormationSlot) }]
+        : [],
+    ),
     bench: squad.bench.map(get),
     subPlan: squad.subPlan.map((s) => ({ ...s })),
   };
