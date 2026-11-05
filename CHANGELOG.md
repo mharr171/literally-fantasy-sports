@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.3.0](https://github.com/mharr171/literally-fantasy-sports/compare/v1.2.0...v1.3.0) (2026-11-05)
+
+
+### Features
+
+* 12-club seasons: 22 league weeks, a play-in and an 8-club playoff bracket ([#73](https://github.com/mharr171/literally-fantasy-sports/issues/73)) ([f804711](https://github.com/mharr171/literally-fantasy-sports/commit/f8047115f9bd56c94047e1d638756f0101d13d41))
+* **admin:** AI clubs play on their own every 2 hours, with a log of each run ([#79](https://github.com/mharr171/literally-fantasy-sports/issues/79)) ([fcc82f0](https://github.com/mharr171/literally-fantasy-sports/commit/fcc82f0cec9e95943443a1be99fbc566cbad2a0a))
+* **admin:** AI clubs: real clubs run by the AI manager, with an admin page to add and test them ([#76](https://github.com/mharr171/literally-fantasy-sports/issues/76)) ([1f4af28](https://github.com/mharr171/literally-fantasy-sports/commit/1f4af28b601893eca05e9b857a4703ec1f55c4f4))
+* every club keeps one ghost, from its best season, and never meets it in its own league ([#74](https://github.com/mharr171/literally-fantasy-sports/issues/74)) ([bdddf89](https://github.com/mharr171/literally-fantasy-sports/commit/bdddf8918d5a653fcffa21fbc0be488d92cbe7f7))
+* keep a permanent record of every season and every retired player's career ([#71](https://github.com/mharr171/literally-fantasy-sports/issues/71)) ([f4b1dd1](https://github.com/mharr171/literally-fantasy-sports/commit/f4b1dd196bc46cf28a9cfa5dffafa077130616d8))
+* **soccer:** an AI manager that picks squads, buys and sorts packs, releases players and takes youth ([#75](https://github.com/mharr171/literally-fantasy-sports/issues/75)) ([03d81e4](https://github.com/mharr171/literally-fantasy-sports/commit/03d81e49c47d951069874a069eea92629fafddd6))
+* your league is now the 11 clubs nearest your Elo, from AI clubs and other players' best seasons ([#78](https://github.com/mharr171/literally-fantasy-sports/issues/78)) ([f8a427a](https://github.com/mharr171/literally-fantasy-sports/commit/f8a427a0eb6cd3cdb51b4983e8dd8fd59eacda86))
+
+
+### Bug Fixes
+
+* **admin:** running AI turns no longer times out with many clubs ([#77](https://github.com/mharr171/literally-fantasy-sports/issues/77)) ([ea76821](https://github.com/mharr171/literally-fantasy-sports/commit/ea76821b08803d2665b5c080e9c1cc626587f41b))
+
+
+### Documentation
+
+* mark M8 done and start M9 ([#68](https://github.com/mharr171/literally-fantasy-sports/issues/68)) ([16bcae4](https://github.com/mharr171/literally-fantasy-sports/commit/16bcae41676463a8e230a9ac0e3b31da25c0151b))
+* plan the AI world and 12-club seasons (ADR 0002) ([#70](https://github.com/mharr171/literally-fantasy-sports/issues/70)) ([9de3c81](https://github.com/mharr171/literally-fantasy-sports/commit/9de3c81521c278ea45c49ba429b19a569986f164))
+
 ## [1.2.0](https://github.com/mharr171/literally-fantasy-sports/compare/v1.1.0...v1.2.0) (2026-11-04)
 
 
