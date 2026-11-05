@@ -189,7 +189,7 @@ export interface RosterPlayer {
   potentialRange: [number, number];
   worth: number;
   chemistryColor: number;
-  /** Career totals (D143); games are appearances. */
+  /** Career totals (D143), all counted from when player stats started (D147). */
   stats: PlayerStats;
 }
 
@@ -197,7 +197,7 @@ export async function loadRoster(teamId: string): Promise<RosterPlayer[]> {
   const { data, error } = await createServiceClient()
     .from("players")
     .select(
-      "id, from_starter_pack, attributes, fitness, injured_weeks, suspended_weeks, yellow_cards, form, template_variant, secondary_template_variant, display_name, nationality, age, primary_position, secondary_position, overall, potential_low, potential_high, worth, chemistry_color, appearances, goals, wins, draws, losses, assists, tackles, saves",
+      "id, from_starter_pack, attributes, fitness, injured_weeks, suspended_weeks, yellow_cards, form, template_variant, secondary_template_variant, display_name, nationality, age, primary_position, secondary_position, overall, potential_low, potential_high, worth, chemistry_color, stat_games, stat_goals, wins, draws, losses, assists, tackles, saves",
     )
     .eq("team_id", teamId);
   if (error) throw new Error(error.message);
@@ -224,11 +224,11 @@ export async function loadRoster(teamId: string): Promise<RosterPlayer[]> {
     worth: p.worth,
     chemistryColor: p.chemistry_color,
     stats: {
-      games: p.appearances,
+      games: p.stat_games,
       wins: p.wins,
       draws: p.draws,
       losses: p.losses,
-      goals: p.goals,
+      goals: p.stat_goals,
       assists: p.assists,
       tackles: p.tackles,
       saves: p.saves,

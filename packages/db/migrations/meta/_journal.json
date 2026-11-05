@@ -344,6 +344,20 @@
       "when": 1793853790989,
       "tag": "0048_player_stats_functions",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1793854803919,
+      "tag": "0049_stat_games_goals",
+      "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1793854804846,
+      "tag": "0050_stat_games_goals_functions",
+      "breakpoints": true
     }
   ]
 }

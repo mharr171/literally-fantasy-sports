@@ -100,6 +100,7 @@ describe.runIf(sql)("data kept (D120)", () => {
               yellow_cards: 0,
               appeared: true,
               goals: 2,
+              games: 1,
               wins: 1,
               assists: 1,
               tackles: 3,
@@ -112,6 +113,7 @@ describe.runIf(sql)("data kept (D120)", () => {
               yellow_cards: 0,
               appeared: true,
               goals: 0,
+              games: 1,
               wins: 1,
               tackles: 4,
               saves: 2,
@@ -125,7 +127,8 @@ describe.runIf(sql)("data kept (D120)", () => {
       const season = await startSeason(tx, "s1");
       await playWeek(tx, season, "finished");
       const counts =
-        await tx`select display_name, appearances, goals, wins, draws, losses,
+        await tx`select display_name, appearances, goals, stat_games, stat_goals,
+          wins, draws, losses,
           assists, tackles, saves from players
         where team_id = ${team} order by display_name`;
       await tx`select public.close_season(${season},
@@ -138,8 +141,8 @@ describe.runIf(sql)("data kept (D120)", () => {
         from season_records where season_id = ${season}`;
       const careers = await tx`
         select display_name, nationality, primary_position, retired_age, seasons,
-          appearances, goals, wins, draws, losses, assists, tackles, saves,
-          best_overall, clubs, retired_season
+          appearances, goals, stat_games, stat_goals, wins, draws, losses,
+          assists, tackles, saves, best_overall, clubs, retired_season
         from player_careers where team_id = ${team}`;
       const [kept] = await tx`
         select seasons, best_overall, overall from players where id = ${young}`;
@@ -150,6 +153,8 @@ describe.runIf(sql)("data kept (D120)", () => {
         display_name: "Al Y",
         appearances: 1,
         goals: 2,
+        stat_games: 1,
+        stat_goals: 2,
         wins: 1,
         draws: 0,
         losses: 0,
@@ -161,6 +166,8 @@ describe.runIf(sql)("data kept (D120)", () => {
         display_name: "Bo O",
         appearances: 1,
         goals: 0,
+        stat_games: 1,
+        stat_goals: 0,
         wins: 1,
         draws: 0,
         losses: 0,
@@ -194,6 +201,8 @@ describe.runIf(sql)("data kept (D120)", () => {
         seasons: 1,
         appearances: 1,
         goals: 0,
+        stat_games: 1,
+        stat_goals: 0,
         wins: 1,
         draws: 0,
         losses: 0,

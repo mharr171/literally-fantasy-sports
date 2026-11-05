@@ -275,6 +275,10 @@ export const players = pgTable(
     appearances: integer().notNull().default(0),
     goals: integer().notNull().default(0),
     /** More career totals (D143), counted from the club's own matches. */
+    /** Games and goals counted from when player stats started (D147), so
+     * they agree with the wins, draws and losses on the card. */
+    statGames: integer().notNull().default(0),
+    statGoals: integer().notNull().default(0),
     wins: integer().notNull().default(0),
     draws: integer().notNull().default(0),
     losses: integer().notNull().default(0),
@@ -493,6 +497,8 @@ export const playerCareers = pgTable(
     appearances: integer().notNull(),
     goals: integer().notNull(),
     /** Totals added by D143; zero for careers that ended before. */
+    statGames: integer().notNull().default(0),
+    statGoals: integer().notNull().default(0),
     wins: integer().notNull().default(0),
     draws: integer().notNull().default(0),
     losses: integer().notNull().default(0),
