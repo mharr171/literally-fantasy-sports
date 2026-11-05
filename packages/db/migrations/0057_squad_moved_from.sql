@@ -1,0 +1,1 @@
+ALTER TABLE "matchday_squads" ADD COLUMN "moved_from" text;

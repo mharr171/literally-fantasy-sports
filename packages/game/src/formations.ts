@@ -5,14 +5,18 @@
  * here before any squad that may use one is read.
  */
 import {
+  closestFormation,
   FORMATIONS,
   type Formation,
   type FormationSlot,
   formation,
   formationProblems,
+  type MatchdaySquad,
+  moveSquad,
   POSITIONS,
   type Position,
   registerFormations,
+  type SoccerPlayer,
 } from "@lfs/sport-soccer";
 import { createServiceClient } from "./db";
 
@@ -149,4 +153,53 @@ export async function setFormationEnabled(
         .eq("id", id);
   if (error) throw new Error(error.message);
   await log(adminId, enabled ? "formation_on" : "formation_off", { id });
+}
+
+/**
+ * The formation that's on and most like `id` (D140), or `id` itself while
+ * it's on. Null when it's off and nothing is on.
+ */
+export async function formationToUse(
+  id: string,
+  all?: readonly FormationRow[],
+): Promise<Formation | null> {
+  const rows = all ?? (await loadFormations());
+  const row = rows.find((f) => f.id === id);
+  if (row?.enabled) return row.formation;
+  return (
+    closestFormation(
+      id,
+      rows.filter((f) => f.enabled).map((f) => f.formation),
+    ) ?? null
+  );
+}
+
+/**
+ * A squad whose formation an admin turned off moves, at the club's next
+ * match, to the closest one that's on, with the same players (D140). The
+ * squad is saved with the formation it came from, so the manager is asked
+ * to check it. Returns the squad to play.
+ */
+export async function moveOffTurnedOff(
+  teamId: string,
+  squad: MatchdaySquad,
+  players: readonly (SoccerPlayer & { id: string })[],
+): Promise<MatchdaySquad> {
+  const all = await loadFormations();
+  if (all.find((f) => f.id === squad.formation)?.enabled !== false)
+    return squad;
+  const to = await formationToUse(squad.formation, all);
+  if (!to) return squad;
+  const moved = moveSquad(squad, to, new Map(players.map((p) => [p.id, p])));
+  const { error } = await createServiceClient()
+    .from("matchday_squads")
+    .update({
+      formation: moved.formation,
+      lineup: moved.lineup,
+      moved_from: squad.formation,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("team_id", teamId);
+  if (error) throw new Error(error.message);
+  return moved;
 }

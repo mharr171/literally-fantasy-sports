@@ -376,6 +376,11 @@ export const matchdaySquads = pgTable(
     lineup: jsonb().notNull(),
     bench: jsonb().notNull(),
     subPlan: jsonb().notNull().default([]),
+    /**
+     * The formation this squad was moved off because an admin turned it off
+     * (D140), until the manager saves the squad again.
+     */
+    movedFrom: text(),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

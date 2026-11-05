@@ -120,8 +120,10 @@ export function FormationList({
         ))}
       </ul>
       <p className="text-xs text-zinc-500">
-        Turning a formation off stops managers and the AI picking it. Squads
-        already saved in it keep it for now.
+        Turning a formation off stops managers and the AI picking it. At each
+        club&apos;s next match, a squad saved in it moves to the closest
+        formation that&apos;s on with the same players, and the manager is asked
+        to check it. League copies already in a season keep theirs.
       </p>
     </div>
   );

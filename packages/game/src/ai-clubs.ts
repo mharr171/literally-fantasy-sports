@@ -22,6 +22,7 @@ import {
   youthIntake,
 } from "@lfs/sport-soccer";
 import { createServiceClient } from "./db";
+import { enabledFormations, formationToUse } from "./formations";
 import { playOneWeek } from "./play-week";
 import {
   liveGenerationSettings,
@@ -157,8 +158,14 @@ export async function createAiClub(seed: string = crypto.randomUUID()) {
     (names ?? []).map((n) => (n.name as string).toLowerCase()),
   );
   const rng = createRng(seed);
+  // New clubs only pick formations that are on (D140).
+  const formations = (await enabledFormations()).map((f) => f.id);
   for (let attempt = 0; attempt < 5; attempt++) {
-    const identity = rollAiIdentity(rng.fork(`club-${attempt}`), taken);
+    const identity = rollAiIdentity(
+      rng.fork(`club-${attempt}`),
+      taken,
+      formations,
+    );
     const { data: id, error } = await db.rpc("create_ai_team", {
       p_sport: SOCCER,
       p_name: identity.name,
@@ -271,6 +278,17 @@ export async function aiClubTurn(
     const start = await loadTeamById(teamId);
     if (!start || start.kind !== "ai") throw new Error("Not an AI club.");
     const profile = await profileOf(teamId);
+    // Its formation was turned off (D140): it keeps the closest one that's on.
+    const to = await formationToUse(profile.formation);
+    if (to && to.id !== profile.formation) {
+      const { error } = await createServiceClient()
+        .from("teams")
+        .update({ ai: { ...profile, formation: to.id } })
+        .eq("id", teamId);
+      if (error) throw new Error(error.message);
+      turn.notes.push(`moved from ${profile.formation} to ${to.id}`);
+      profile.formation = to.id;
+    }
     const starter = await loadStarterPacks(teamId);
     if (starter.some((p) => !p.resolved)) {
       await pickFirstSquad(start, profile);

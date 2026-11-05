@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { FormationMoved } from "@/components/formation-moved";
 import { GettingStarted } from "@/components/getting-started";
 import { WithTemplates } from "@/components/player/with-templates";
 import { getCurrentUser } from "@/lib/auth";
@@ -10,6 +11,7 @@ import { loadFormations } from "@/lib/formations";
 import { pickOptions } from "@/lib/pick-options";
 import { currentOutOfPosition } from "@/lib/season";
 import {
+  loadMovedFrom,
   loadMyTeam,
   loadRoster,
   loadSquad,
@@ -39,13 +41,15 @@ async function SquadContent() {
   if (!user) redirect("/sign-in");
   const team = await loadMyTeam(user.id);
   if (!team) redirect("/team");
-  const [packs, roster, saved, outOfPosition, all] = await Promise.all([
-    loadStarterPacks(team.id),
-    loadRoster(team.id),
-    loadSquad(team.id),
-    currentOutOfPosition(team.id),
-    loadFormations(),
-  ]);
+  const [packs, roster, saved, outOfPosition, all, movedFrom] =
+    await Promise.all([
+      loadStarterPacks(team.id),
+      loadRoster(team.id),
+      loadSquad(team.id),
+      currentOutOfPosition(team.id),
+      loadFormations(),
+      loadMovedFrom(team.id),
+    ]);
   // The ones that are on, and the saved one even if it's off (D140).
   const formations = all
     .filter((f) => f.enabled || f.id === saved?.formation)
@@ -68,6 +72,9 @@ async function SquadContent() {
           ← Back to team
         </Link>
       </div>
+      {saved && movedFrom && (
+        <FormationMoved from={movedFrom} to={saved.formation} link={false} />
+      )}
       <SquadBuilder
         roster={roster}
         formations={formations}

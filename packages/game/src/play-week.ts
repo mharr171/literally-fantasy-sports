@@ -16,6 +16,7 @@ import {
   squadToTeam,
 } from "@lfs/sport-soccer";
 import { createServiceClient } from "./db";
+import { moveOffTurnedOff } from "./formations";
 import { scoreOnly } from "./match-kept";
 import {
   configFor,
@@ -35,13 +36,14 @@ export async function readyToPlay(team: MyTeam) {
   const packs = await loadStarterPacks(team.id);
   if (packs.some((p) => !p.resolved))
     throw new Error("Pick your starting squad first.");
-  const [roster, squad] = await Promise.all([
+  const [roster, saved] = await Promise.all([
     loadRoster(team.id),
     loadSquad(team.id),
   ]);
   const warning = rosterWarning(roster.length);
   if (warning) throw new Error(warning);
-  if (!squad) throw new Error("Save a matchday squad first.");
+  if (!saved) throw new Error("Save a matchday squad first.");
+  const squad = await moveOffTurnedOff(team.id, saved, roster);
   const problems = squadProblems(squad, new Set(roster.map((p) => p.id)));
   if (problems.length > 0)
     throw new Error(`Fix your matchday squad first: ${problems.join(" ")}`);

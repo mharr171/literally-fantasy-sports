@@ -9,6 +9,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { FormationMoved } from "@/components/formation-moved";
 import { GettingStarted } from "@/components/getting-started";
 import { WithTemplates } from "@/components/player/with-templates";
 import { adminView } from "@/lib/admin-view";
@@ -23,6 +24,7 @@ import {
 } from "@/lib/season";
 import { loadEnergySettings } from "@/lib/sport-settings";
 import {
+  loadMovedFrom,
   loadMyTeam,
   loadRoster,
   loadSquad,
@@ -138,11 +140,15 @@ async function SeasonContent() {
     : null;
 
   let notice: React.ReactNode = null;
+  let moved: React.ReactNode = null;
   if (season.status !== "finished") {
-    const [roster, squad] = await Promise.all([
+    const [roster, squad, movedFrom] = await Promise.all([
       loadRoster(team.id),
       loadSquad(team.id),
+      loadMovedFrom(team.id),
     ]);
+    if (squad && movedFrom)
+      moved = <FormationMoved from={movedFrom} to={squad.formation} />;
     const out = roster.filter((p) => !isAvailable(p.condition));
     if (squad && out.length > 0) {
       const name = new Map(roster.map((p) => [p.id, p.displayName]));
@@ -194,7 +200,14 @@ async function SeasonContent() {
   return (
     <SeasonView
       adminLabels={await seasonAdminLabels(season)}
-      notice={notice}
+      notice={
+        moved || notice ? (
+          <>
+            {moved}
+            {notice}
+          </>
+        ) : null
+      }
       morale={team.morale}
       skipIdleWeeks={team.skipIdleWeeks}
       energy={

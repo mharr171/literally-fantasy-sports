@@ -255,6 +255,20 @@ export async function loadSquad(teamId: string): Promise<MatchdaySquad | null> {
   };
 }
 
+/**
+ * The formation the club's squad was moved off because an admin turned it
+ * off (D140), until the manager saves the squad again; else null.
+ */
+export async function loadMovedFrom(teamId: string): Promise<string | null> {
+  const { data, error } = await createServiceClient()
+    .from("matchday_squads")
+    .select("moved_from")
+    .eq("team_id", teamId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data?.moved_from as string | null) ?? null;
+}
+
 /** Everything season end needs, true potential included (server only, D48). */
 export async function loadAgingPlayers(teamId: string) {
   const { data, error } = await createServiceClient()

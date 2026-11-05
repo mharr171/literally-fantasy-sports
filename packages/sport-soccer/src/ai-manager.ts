@@ -76,6 +76,8 @@ export interface AiIdentity {
 export function rollAiIdentity(
   rng: Rng,
   taken: ReadonlySet<string> = new Set(),
+  /** The formations that are on (D140); every built-in one by default. */
+  formations: readonly string[] = FORMATIONS.map((f) => f.id),
 ): AiIdentity {
   let name = aiTeamName(rng.fork("name"));
   for (let k = 0; taken.has(name.toLowerCase()); k++)
@@ -100,7 +102,7 @@ export function rollAiIdentity(
     profile: {
       personality: rng.fork("personality").pick(PERSONALITIES),
       pace,
-      formation: rng.fork("formation").pick(FORMATIONS.map((f) => f.id)),
+      formation: rng.fork("formation").pick([...formations]),
     },
   };
 }
