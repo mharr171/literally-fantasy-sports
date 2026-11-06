@@ -1,0 +1,4 @@
+ALTER TABLE "players" DROP CONSTRAINT "players_condition";--> statement-breakpoint
+ALTER TABLE "players" ADD COLUMN "injured_days" integer DEFAULT 0 NOT NULL;--> statement-breakpoint
+ALTER TABLE "players" ADD COLUMN "suspended_games" integer DEFAULT 0 NOT NULL;--> statement-breakpoint
+ALTER TABLE "players" ADD CONSTRAINT "players_condition" CHECK ("players"."fitness" between 0 and 100 and "players"."injured_weeks" >= 0 and "players"."suspended_weeks" >= 0 and "players"."injured_days" >= 0 and "players"."suspended_games" >= 0 and "players"."yellow_cards" >= 0 and "players"."form" between -1 and 1);
