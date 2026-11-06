@@ -23,6 +23,11 @@ export interface FatigueTuning {
   floor: number;
   /** A tired pitcher comes out this many pitches past the budget. */
   tiredMargin: number;
+  /**
+   * A starter throwing a no-hitter (or a perfect game) stays in: no pitch
+   * limit, no closer or setup man, and out only this far past the budget.
+   */
+  noHitterLeeway: number;
 }
 
 export const DEFAULT_FATIGUE: FatigueTuning = {
@@ -32,6 +37,7 @@ export const DEFAULT_FATIGUE: FatigueTuning = {
   perPitchPast: 0.008,
   floor: 0.6,
   tiredMargin: 10,
+  noHitterLeeway: 30,
 };
 
 /** Pitches a pitcher can throw before tiring (60 at stamina 40 to 110 at 90, for starters). */
@@ -110,9 +116,14 @@ export function bullpenDecision(input: {
   bullpen: readonly BaseballPlayer[];
   used: ReadonlySet<string>;
   unavailable: ReadonlySet<string>;
+  /** The other side has no hits yet. */
+  noHitter?: boolean;
   fatigue?: FatigueTuning;
 }): { pitcher: BaseballPlayer; reason: ChangeReason } | null {
   const t = input.fatigue ?? DEFAULT_FATIGUE;
+  // A starter with a no-hitter going stays in until well past his budget.
+  const keepIn = input.starter && input.noHitter === true;
+  if (keepIn && input.thrown < input.budget + t.noHitterLeeway) return null;
   const free = (id: string | null) =>
     id !== null &&
     id !== input.current.id &&
@@ -134,8 +145,9 @@ export function bullpenDecision(input: {
     const setup = free(input.plan.setup);
     if (setup) return { pitcher: setup, reason: "setup" };
   }
-  const reason: ChangeReason | null =
-    input.starter && input.thrown >= input.plan.starterPitchLimit
+  const reason: ChangeReason | null = keepIn
+    ? "tired"
+    : input.starter && input.thrown >= input.plan.starterPitchLimit
       ? "limit"
       : input.thrown >= input.budget + t.tiredMargin
         ? "tired"

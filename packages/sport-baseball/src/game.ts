@@ -508,6 +508,7 @@ export function simulateGame(
         bullpen: def.team.bullpen ?? [],
         used: def.used,
         unavailable: def.unavailable,
+        noHitter: hits[batting] === 0,
         fatigue,
       });
       if (change) {
