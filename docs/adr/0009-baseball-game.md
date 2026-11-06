@@ -1,8 +1,8 @@
 # ADR 0009: The baseball game (M18)
 
-Status: proposed (Nov 6, 2026). Covers D193, D196, D197, D199, D201, D204
-and D212 for the game around the engine, as D205 asks. Needs Gary's answers
-to the questions at the end before coding starts.
+Status: accepted (Nov 6, 2026: Gary answered every question, D217–D224).
+Covers D193, D196, D197, D199, D201, D204 and D212 for the game around the
+engine, as D205 asks, and adds handedness (D224).
 
 ## Context
 
@@ -128,6 +128,7 @@ unavailable, and the bullpen plan skips them.
 Baseball's extra traits go in one new `players.traits jsonb` column:
 - the pitcher's role
 - the zone, spray and location presets
+- how a player bats and throws (§13)
 
 Soccer leaves it empty. Every other column already fits: positions,
 secondary position, colors 0–3, attributes and condition. The player row
@@ -155,13 +156,14 @@ it.
 
 **Sizes and focuses.**
 - Packs are 5 players, as soccer's.
-- Baseball's focuses: **Pitchers**, **Infield** (C, 1B, 2B, 3B, SS),
-  **Outfield** (LF, CF, RF, DH) and **Any**. The `packs_focus` check
-  widens to allow them.
+- Baseball's focuses: **Starting pitchers**, **Relievers**, **Infield**
+  (C, 1B, 2B, 3B, SS), **Outfield** (LF, CF, RF, DH) and **Any** (D221).
+  Catchers stay in Infield. The `packs_focus` check widens to allow them.
 
-**Starter packs (proposed).**
-- 16 starter packs: 6 of Pitchers and 10 batters (5 Infield, 5 Outfield),
-  80 players in all.
+**Starter packs (D221).**
+- 16 starter packs: 3 of Starting pitchers, 3 of Relievers and 10 of
+  batters (5 Infield, 5 Outfield), 80 players in all. That gives 15
+  starters and 15 relievers to choose from.
 - The manager keeps 14 to 30 of them (D196).
 - At least 9 pitchers and 9 batters, so a rotation of 5 and a lineup of 9
   can be set.
@@ -278,6 +280,47 @@ soccer's pruning does.
 **AI world** switches (D207). Release `v2.0.0` uses a `Release-As`
 footer.
 
+### 13. Handedness (D224)
+
+Handedness changes baseball's central matchup and where the ball goes, so
+M18 adds it to the engine before the game screens.
+
+**Each player gets:**
+- **Bats:** right, left or switch.
+- **Throws:** right or left.
+
+Both are stored in `traits` and generated with real shares:
+- **Batters:** about 58% bat right, 32% left and 10% switch.
+- **Pitchers:** about 72% throw right and 28% left.
+- **Fielders:** mostly throw right. A left-handed thrower is never made a
+  C, 2B, 3B or SS: his primary and secondary positions are 1B, the
+  outfield or DH.
+
+**In the engine:**
+- **The platoon edge.** A batter facing a pitcher who throws from the
+  other side gets a skill edge, a setting (proposed +5%). The pitcher gets
+  it on same-side matchups. A switch hitter always bats from the side
+  opposite the pitcher.
+- **Where the ball goes.** Spray presets become relative to the batter's
+  pull side: pull, opposite field, up the middle, spray. A right-handed
+  pull hitter sends the ball to left field, a left-handed one to right.
+  Fielding ranges are unchanged, so lefty-heavy lineups keep the right
+  side of the field busier.
+- **Zones.** A batter's zone preset and a pitcher's location preset are
+  mirrored for left-handers ("middle-in" means inside to that batter).
+- **The bullpen and the bench.**
+  - A pinch hitter's edge counts the platoon against the pitcher on the
+    mound.
+  - Auto-pick weighs it for the bench.
+  - A **lefty specialist** role (a left-handed reliever who comes in to
+    face left-handed hitters late) is left for later.
+
+**On screen:** player cards show B/T, e.g. "Bats L · Throws R", and the
+match view shows each batter's side.
+
+**Tuning:** the harness re-runs after this step and the win probability
+table is rebuilt, as CLAUDE.md asks.
+
 ## Order of work (M18)
 
 One PR each. Database PRs (marked) wait for Gary and go live before their
@@ -286,6 +329,7 @@ code.
 | Step | What | Risk |
 | --- | --- | --- |
 | 1 | Season module in the registry; soccer behind it, unchanged | Refactor; harness unchanged |
+| 1b | Handedness in the engine: bats and throws, platoon edge, pull-side spray, mirrored zones, fielding positions for lefties; harness re-run | Low (engine); harness report in the PR |
 | 2 | **DB:** `players.traits`, `players.rest_days`, `fixtures.skipped`, `packs_focus` and `season_records_playoffs` widened | Migration |
 | 3 | **DB:** `record_week` takes stat deltas by key and optional fitness; `start_season`/`record_week` write `event`/`game_no` and week 0 | Migration |
 | 4 | Soccer sends stats by key (no behaviour change) | Low |
@@ -306,24 +350,21 @@ code.
 - Baseball morale beyond soccer's (form only).
 - Trades.
 - Two-way players.
-- Handedness.
+- A lefty-specialist bullpen role.
 - Per-season stat lines (careers only, as soccer).
 
-## Needs Gary
+## Gary's answers (Nov 6, 2026)
 
-1. **Season module:** each sport plugs its season into the registry, and
-   soccer's code moves behind it unchanged. OK?
-2. **Postseason games not needed:** marked "not played" (a new flag)
-   rather than deleted. OK?
-3. **Pitchers' rest:** a `rest_days` column on players, with the rotation
-   and last starter in the saved squad. OK?
-4. **Baseball traits:** role and presets in one `traits` column. OK?
-5. **Starter packs:** 16 packs of 5 (6 Pitchers, 5 Infield, 5 Outfield),
-   keeping 14–30, with at least 9 pitchers and 9 batters. OK, or a
-   different mix?
-6. **Pack focuses:** Pitchers, Infield, Outfield, Any. OK?
-7. **Payouts:** 120 per game and 180 per win, with round bonuses as
-   soccer's. Elo after every game at K = 8. OK as starting values?
-8. **Player charts:** zones and spray from the presets, plus pitches and
-   batted balls replayed from the most recent games. How many games: the
-   last 5?
+1. **Season module per sport:** OK (D217).
+2. **Unneeded postseason games** marked "not played": OK (D218).
+3. **Pitchers' rest** in days on the player, with the rotation and last
+   starter in the saved squad: OK (D219).
+4. **Traits** in one `traits` column: OK (D220).
+5. **Starter packs:** 16 packs of 5, with the pitcher focus split into
+   Starting pitchers and Relievers (3 packs each), 5 Infield and 5
+   Outfield, keeping 14–30 (D221).
+6. **Focuses:** Starting pitchers, Relievers, Infield, Outfield, Any
+   (D221). Handedness is essential, so it comes into M18 (§13, D224).
+7. **Payouts** of 120 per game and 180 per win, round bonuses as soccer's,
+   Elo after every game at K = 8: OK (D222).
+8. **Player charts:** presets plus the last 5 games replayed: OK (D223).

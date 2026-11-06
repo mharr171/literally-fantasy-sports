@@ -1,6 +1,6 @@
 # LiterallyFantasySports — Project Roadmap
 
-Nov 2, 2026 · @Gary · Last updated: Nov 6, 2026 (D216)
+Nov 2, 2026 · @Gary · Last updated: Nov 6, 2026 (D224)
 
 ## Review progress
 
@@ -237,6 +237,14 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D214 | Nov 6, 2026 | Baseball earned runs (Gary, ADR 0008): MLB's two main rules: a runner who reached on an error scores unearned, and once the outs there would have been without errors reach three, every later run in the inning is unearned | M17 |
 | D215 | Nov 6, 2026 | No-hitters (Gary): a starter throwing a no-hitter or a perfect game stays in: no pitch limit, no closer or setup man, out only once well past his stamina budget (30 pitches, a setting). Over 100,000 harness games all 4 perfect games were by one pitcher | M17 |
 | D216 | Nov 6, 2026 | M17 done: the pitch-by-pitch engine (ADR 0008) with fatigue and the bullpen plan, the rotation and rest days, bench roles and injuries, auto-pick with lineup styles, the box score, stats by key, W/L/S and earned runs, form, and the win probability table. Over 10,000 harness games every target is met: 8.76 runs a game, home sides 52.6%, 9.6% extra innings, K 8.17, BB 2.92, HR 1.15, AVG .251, the stronger side 64% at a 5-point gap and 75% at 10, every position's average form within 0.03, 0.88 ms a game; engine coverage 99.8% of lines. Soccer's old stat, lineup and condition columns are dropped. Baseball's settings are in Admin → Balance with their own versions; baseball stays hidden until M18 | M17 |
+| D217 | Nov 6, 2026 | A season module per sport (Gary, ADR 0009): the registry gains each sport's schedule, week, season-end, pack and player-row steps; soccer's code moves behind it unchanged, baseball plugs in its own | M18 |
+| D218 | Nov 6, 2026 | Unneeded postseason games (Gary, ADR 0009): a best-of series is drawn in full, and games it doesn't need are marked not played (a `skipped` flag), never deleted | M18 |
+| D219 | Nov 6, 2026 | Pitchers' rest (Gary, ADR 0009): rest days on each player, counted down 4 a week (a series or a bye); the rotation order and last starter are saved with the squad, and each game's starter is the next rested one | M18 |
+| D220 | Nov 6, 2026 | Baseball traits (Gary, ADR 0009): a pitcher's role, the zone, spray and location presets, and bats and throws go in one `players.traits` column; soccer leaves it empty | M18 |
+| D221 | Nov 6, 2026 | Baseball packs (Gary, ADR 0009): focuses Starting pitchers, Relievers, Infield (C, 1B, 2B, 3B, SS), Outfield (LF, CF, RF, DH) and Any; 16 starter packs of 5 (3 Starting pitchers, 3 Relievers, 5 Infield, 5 Outfield), keeping 14–30 with at least 9 pitchers and 9 batters | M18 |
+| D222 | Nov 6, 2026 | Baseball payouts and Elo (Gary, ADR 0009): 120 per game and 180 per win, postseason round bonuses as soccer's; Elo moves after every game with K = 8; energy is spent once per week (series) | M18 |
+| D223 | Nov 6, 2026 | Baseball player charts (Gary, ADR 0009): strike zone and spray charts from the player's presets, plus the pitches and batted balls of his last 5 games, replayed from their seeds | M18 |
+| D224 | Nov 6, 2026 | Handedness (Gary): essential to baseball, so it comes into M18's engine: bats right, left or switch and throws right or left (real shares; left-handed throwers never C, 2B, 3B or SS), a platoon edge for opposite-side matchups (setting, proposed +5%), spray relative to the batter's pull side, zones mirrored for left-handers, the platoon counted in pinch-hitting and auto-pick, and B/T shown on player cards. A lefty-specialist bullpen role is left for later | M18 |
 
 ## 1. Vision & goals
 
