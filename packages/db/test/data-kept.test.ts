@@ -128,9 +128,11 @@ describe.runIf(sql)("data kept (D120)", () => {
       const season = await startSeason(tx, "s1");
       await playWeek(tx, season, "finished");
       const counts =
-        await tx`select display_name, appearances, goals, stat_games, stat_goals, season_minutes,
-          wins, draws, losses,
-          assists, tackles, saves from players
+        await tx`select display_name, appearances, goals, season_minutes,
+          coalesce((stats ->> 'games')::int, 0) as stat_games, coalesce((stats ->> 'goals')::int, 0) as stat_goals,
+          coalesce((stats ->> 'wins')::int, 0) as wins, coalesce((stats ->> 'draws')::int, 0) as draws,
+          coalesce((stats ->> 'losses')::int, 0) as losses, coalesce((stats ->> 'assists')::int, 0) as assists,
+          coalesce((stats ->> 'tackles')::int, 0) as tackles, coalesce((stats ->> 'saves')::int, 0) as saves from players
         where team_id = ${team} order by display_name`;
       await tx`select public.close_season(${season},
         ${tx.json([{ id: young, age: 20, attributes: {}, overall: 58, worth: 2600 }])},
@@ -142,8 +144,11 @@ describe.runIf(sql)("data kept (D120)", () => {
         from season_records where season_id = ${season}`;
       const careers = await tx`
         select display_name, nationality, primary_position, retired_age, seasons,
-          appearances, goals, stat_games, stat_goals, wins, draws, losses,
-          assists, tackles, saves, best_overall, clubs, retired_season
+          appearances, goals, coalesce((stats ->> 'games')::int, 0) as stat_games, coalesce((stats ->> 'goals')::int, 0) as stat_goals,
+          coalesce((stats ->> 'wins')::int, 0) as wins, coalesce((stats ->> 'draws')::int, 0) as draws,
+          coalesce((stats ->> 'losses')::int, 0) as losses, coalesce((stats ->> 'assists')::int, 0) as assists,
+          coalesce((stats ->> 'tackles')::int, 0) as tackles, coalesce((stats ->> 'saves')::int, 0) as saves,
+          best_overall, clubs, retired_season
         from player_careers where team_id = ${team}`;
       const [kept] = await tx`
         select seasons, best_overall, overall, season_minutes from players where id = ${young}`;
@@ -340,8 +345,7 @@ describe.runIf(sql)("data kept (D120)", () => {
       db,
       owner,
       (tx) =>
-        tx`select appearances, goals, seasons, best_overall, wins, draws, losses,
-          assists, tackles, saves from players where id = ${young}`,
+        tx`select appearances, goals, seasons, best_overall, stats from players where id = ${young}`,
     );
     expect(own).toHaveLength(1);
   });

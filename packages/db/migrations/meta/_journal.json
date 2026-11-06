@@ -561,6 +561,13 @@
       "when": 1793945024902,
       "tag": "0079_account_progress_writer",
       "breakpoints": true
+    },
+    {
+      "idx": 80,
+      "version": "7",
+      "when": 1793948981342,
+      "tag": "0080_soccer_writers_to_new_columns",
+      "breakpoints": true
     }
   ]
 }

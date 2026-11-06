@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { asService, asUser, sql } from "./db";
+import { asUser, sql } from "./db";
 
 describe.runIf(sql)("condition in days and games (ADR 0007 §5)", () => {
   // biome-ignore lint/style/noNonNullAssertion: guarded by runIf
@@ -26,30 +26,19 @@ describe.runIf(sql)("condition in days and games (ADR 0007 §5)", () => {
   const add = (injured: number, banned: number) => db<{ id: string }[]>`
     insert into players (team_id, sport, first_name, last_name, display_name,
       nationality, age, primary_position, attributes, overall, potential,
-      potential_low, potential_high, worth, chemistry_color, injured_weeks,
-      suspended_weeks)
+      potential_low, potential_high, worth, chemistry_color, injured_days,
+      suspended_games)
     values (${team}, 'soccer', 'Al', 'X', 'Al X', 'ENG', 25, 'CB', '{}', 60,
       60, 58, 62, 1000, 1, ${injured}, ${banned})
     returning id`;
 
-  it("keeps days and games equal to soccer's weeks on insert and every change", async () => {
+  it("lets managers read their own players' days out and games banned", async () => {
     const [p] = await add(3, 1);
-    const id = p?.id as string;
-    const result = await asService(db, async (tx) => {
-      const [inserted] =
-        await tx`select injured_days, suspended_games from players where id = ${id}`;
-      await tx`update players set injured_weeks = 2, suspended_weeks = 0 where id = ${id}`;
-      const [updated] =
-        await tx`select injured_days, suspended_games from players where id = ${id}`;
-      return { inserted, updated };
-    });
-    expect(result.inserted).toEqual({ injured_days: 3, suspended_games: 1 });
-    expect(result.updated).toEqual({ injured_days: 2, suspended_games: 0 });
     const own = await asUser(
       db,
       owner,
       (tx) =>
-        tx`select injured_days, suspended_games from players where id = ${id}`,
+        tx`select injured_days, suspended_games from players where id = ${p?.id as string}`,
     );
     expect(own[0]).toEqual({ injured_days: 3, suspended_games: 1 });
   });

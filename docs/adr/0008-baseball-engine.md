@@ -371,7 +371,9 @@ merge on green CI. The two database PRs (step 1 and step 9) wait for Gary.
 
 | Step | What | Risk |
 | --- | --- | --- |
-| 1 | Drop the old soccer columns (stats, lineup, condition), after the lfs-prod check (ADR 0007 §13) | Migration; waits for Gary |
+| 1a | Soccer's SQL writers move to the new columns, after a check that old and new agree on every row (the lfs-prod check, ADR 0007 §13); the copy triggers go | Migration; waits for Gary |
+| 1b | The app stops writing the old columns, once 1a is on lfs-prod | Low |
+| 1c | Drop the old soccer columns (stats, lineup, condition) | Migration; waits for Gary |
 | 2 | Core: `colorEdge` for even rings, optional `MatchOutput.influence`, name pools for DOM, VEN, CUB, PUR | Low |
 | 3 | Positions, attributes, overall, player, generation | Low |
 | 4 | Effective skill, chemistry, matchups, home boost | Low |
