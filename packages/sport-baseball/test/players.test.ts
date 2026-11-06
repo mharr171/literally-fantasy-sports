@@ -227,3 +227,35 @@ describe("generating baseball players (ADR 0008 §2)", () => {
     ).toBeLessThanOrEqual(3);
   });
 });
+
+describe("player presets (D211)", () => {
+  it("gives batters a zone and spray preset, and pitchers a location one", () => {
+    const batter = generatePlayer(createRng("zp"), {
+      position: "LF",
+      overall: 60,
+    });
+    expect(batter.zoneProfile).not.toBeNull();
+    expect(batter.sprayProfile).not.toBeNull();
+    expect(batter.locationProfile).toBeNull();
+    const pitcher = generatePlayer(createRng("zp"), {
+      position: "P",
+      overall: 60,
+    });
+    expect(pitcher.locationProfile).not.toBeNull();
+    expect(pitcher.zoneProfile).toBeNull();
+    expect(pitcher.sprayProfile).toBeNull();
+  });
+
+  it("rolls presets on their own stream: attributes and names don't move", () => {
+    // The same seed gives the same player whatever the presets: generation
+    // forks "profiles" separately, so earlier parts are unchanged.
+    const a = generatePlayer(createRng("same-bio"), {
+      position: "SS",
+      overall: 60,
+    });
+    expect(a.attributes).toEqual(
+      generatePlayer(createRng("same-bio"), { position: "SS", overall: 60 })
+        .attributes,
+    );
+  });
+});

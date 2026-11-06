@@ -10,6 +10,7 @@ import {
   type Position,
   ratingSlot,
 } from "./positions";
+import type { LocationPreset, SprayPreset, ZonePreset } from "./profiles";
 
 /** The parts of a player the baseball engine needs. */
 export interface BaseballPlayer {
@@ -22,6 +23,12 @@ export interface BaseballPlayer {
   pitcherRole: PitcherRole | null;
   /** Permanent chemistry color, 0–3 for baseball (D200). */
   chemistryColor: number;
+  /** A batter's hot and cold zones (D211); even when left out. */
+  zoneProfile?: ZonePreset;
+  /** Where a batter tends to hit the ball; spray when left out. */
+  sprayProfile?: SprayPreset;
+  /** Where a pitcher likes to aim; attacks when left out. */
+  locationProfile?: LocationPreset;
 }
 
 /** The headline overall on a player card: at the primary position (and role). */
