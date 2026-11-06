@@ -554,6 +554,13 @@
       "when": 1793944421228,
       "tag": "0078_account_progress_backfill",
       "breakpoints": true
+    },
+    {
+      "idx": 79,
+      "version": "7",
+      "when": 1793945024902,
+      "tag": "0079_account_progress_writer",
+      "breakpoints": true
     }
   ]
 }

@@ -30,6 +30,7 @@ const PROTECTED = [
   "public.sport_settings",
   "public.ai_settings",
   "public.formations",
+  "public.account_progress",
 ];
 
 const base = process.argv[2];
