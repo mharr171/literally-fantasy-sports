@@ -10,9 +10,9 @@ import {
   type MatchResult,
   type Seed,
   type Sport,
-  type StatDef,
 } from "@lfs/core";
 import { PLAYERS_ON_FIELD } from "./generation";
+import { BASEBALL_STATS } from "./stats";
 
 /** A stand-in club: a name and nine players (one lineup group). */
 export interface StandInTeam {
@@ -25,10 +25,6 @@ export interface StandInEvent {
   side: "home" | "away";
   runs: number;
 }
-
-export const BASEBALL_STATS: readonly StatDef[] = [
-  { key: "games", label: "Games", short: "G", kind: "total" },
-];
 
 /**
  * A stand-in game: each side scores 0–2 runs in each of 9 innings, at
@@ -89,3 +85,4 @@ export * from "./player";
 export * from "./positions";
 export * from "./profiles";
 export * from "./skill";
+export * from "./stats";

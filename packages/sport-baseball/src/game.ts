@@ -178,6 +178,18 @@ export type PlayResult =
   | "sacFly"
   | "error";
 
+/**
+ * A run (D214): the pitcher charged is the one who let the runner on, and
+ * it's unearned if the runner reached on an error (or was placed on second
+ * in extra innings), or if it scored after the inning would have ended
+ * without errors.
+ */
+export interface ScoredRun {
+  runner: string;
+  pitcher: string;
+  earned: boolean;
+}
+
 /** Runners on first, second and third: each base's runner id, or null. */
 export type Bases = [string | null, string | null, string | null];
 
@@ -216,6 +228,8 @@ export type BaseballEvent =
       fielder?: FieldPosition | "P";
       runs: number;
       rbi: number;
+      /** Who scored on the play, which pitcher is charged and whether it's earned. */
+      scored: ScoredRun[];
     })
   | (Situation & {
       type: "pitchingChange";
@@ -255,6 +269,8 @@ export interface BaseballResult extends MatchResult {
   errors: Record<Side, number>;
   /** Pitches each pitcher threw, by player id. */
   pitches: Record<string, number>;
+  /** Outs each pitcher recorded, by player id. */
+  pitcherOuts: Record<string, number>;
   /** Players hurt in the game, and the days they're out (D213). */
   injuries: { id: string; days: number }[];
 }
@@ -361,6 +377,7 @@ export function simulateGame(
   const errors: Record<Side, number> = { home: 0, away: 0 };
   const lineScore: Record<Side, number[]> = { home: [], away: [] };
   const pitches: Record<string, number> = {};
+  const pitcherOuts: Record<string, number> = {};
   const injuries: { id: string; days: number }[] = [];
   const events: BaseballEvent[] = [];
 
@@ -384,10 +401,21 @@ export function simulateGame(
     };
     let outs = 0;
     const bases: Bases = [null, null, null];
-    // Extra innings start with the batter before the leadoff man on second.
+    // Who let each runner on, who reached on an error, and errors this half (D214).
+    const charged = new Map<string, string>();
+    const unearned = new Set<string>();
+    let halfErrors = 0;
+    let scored: ScoredRun[] = [];
+    // Extra innings start with the batter before the leadoff man on second;
+    // his run is unearned (MLB's rule) and charged to the pitcher on the mound.
     if (inning > 9) {
       const prev = (off.next + 8) % 9;
-      bases[1] = off.gameSide.batters[prev]?.player.id ?? null;
+      const placed = off.gameSide.batters[prev]?.player.id ?? null;
+      bases[1] = placed;
+      if (placed) {
+        charged.set(placed, def.pitcher.id);
+        unearned.add(placed);
+      }
     }
     let runs = 0;
     const situation = (): Situation => ({
@@ -398,9 +426,23 @@ export function simulateGame(
     });
     const walkOff = () =>
       batting === "home" && inning >= 9 && score.home > score.away;
-    const scoreRun = () => {
+    const scoreRun = (runner: string) => {
       runs++;
       score[batting]++;
+      scored.push({
+        runner,
+        pitcher: charged.get(runner) ?? def.pitcher.id,
+        earned: !unearned.has(runner) && outs + halfErrors < 3,
+      });
+    };
+    /** `to` takes over `from`'s place on base, and what's charged with it. */
+    const replaceRunner = (from: string, to: string) => {
+      const i = bases.indexOf(from);
+      if (i < 0) return;
+      bases[i] = to;
+      const who = charged.get(from);
+      if (who) charged.set(to, who);
+      if (unearned.has(from)) unearned.add(to);
     };
     /** A bench player takes over lineup spot `index` for `side`. */
     const substitute = (
@@ -525,6 +567,8 @@ export function simulateGame(
       let fielderPos: FieldPosition | "P" | undefined;
       let rbi = 0;
       const runsBefore = runs;
+      const outsBefore = outs;
+      scored = [];
 
       while (result === null) {
         // A steal before the pitch: from first with second open, or second with third open.
@@ -727,6 +771,8 @@ export function simulateGame(
       }
       if (result === null) {
         // Caught stealing for the third out: this batter leads off next time.
+        pitcherOuts[pitcher.id] =
+          (pitcherOuts[pitcher.id] ?? 0) + outs - outsBefore;
         off.next--;
         break;
       }
@@ -748,7 +794,7 @@ export function simulateGame(
           if (!forced && to < 3 && extra(r)) to++;
           bases[i] = null;
           if (to >= 3) {
-            scoreRun();
+            scoreRun(r);
             rbi++;
           } else bases[to] = r;
         }
@@ -767,15 +813,15 @@ export function simulateGame(
               const r = bases[i];
               if (!r) continue;
               bases[i] = null;
-              if (i + 1 >= 3) scoreRun();
+              if (i + 1 >= 3) scoreRun(r);
               else bases[i + 1] = r;
             }
           }
           break;
         case "sacFly":
           outs++;
+          scoreRun(bases[2] as string);
           bases[2] = null;
-          scoreRun();
           rbi++;
           break;
         case "walk": {
@@ -783,7 +829,7 @@ export function simulateGame(
           if (bases[0]) {
             if (bases[1]) {
               if (bases[2]) {
-                scoreRun();
+                scoreRun(bases[2]);
                 rbi++;
               }
               bases[2] = bases[1];
@@ -795,8 +841,10 @@ export function simulateGame(
         }
         case "error":
           errors[def.side]++;
+          halfErrors++;
           advance(1, true);
           bases[0] = batter.id;
+          unearned.add(batter.id);
           rbi = 0;
           break;
         case "single":
@@ -817,10 +865,16 @@ export function simulateGame(
         case "homeRun":
           hits[batting]++;
           advance(3, true);
-          scoreRun();
+          charged.set(batter.id, pitcher.id);
+          scoreRun(batter.id);
           rbi++;
           break;
       }
+      // The batter on base is this pitcher's runner; the outs are his.
+      if (bases.includes(batter.id) && !charged.has(batter.id))
+        charged.set(batter.id, pitcher.id);
+      pitcherOuts[pitcher.id] =
+        (pitcherOuts[pitcher.id] ?? 0) + outs - outsBefore;
       events.push({
         ...situation(),
         type: "play",
@@ -831,9 +885,19 @@ export function simulateGame(
         ...(fielderPos ? { fielder: fielderPos } : {}),
         runs: runs - runsBefore,
         rbi,
+        scored,
       });
       if (outs < 3 && !walkOff())
-        afterPlay(inning, off, def, bases, batter.id, situation, substitute);
+        afterPlay(
+          inning,
+          off,
+          def,
+          bases,
+          batter.id,
+          situation,
+          substitute,
+          replaceRunner,
+        );
     }
     lineScore[batting].push(runs);
   };
@@ -852,6 +916,7 @@ export function simulateGame(
       sub: BenchPlayer,
       role: BenchRole,
     ) => void,
+    replaceRunner: (from: string, to: string) => void,
   ) => {
     const lineup = off.gameSide.batters;
     const indexOf = (id: string) => lineup.findIndex((b) => b.player.id === id);
@@ -875,8 +940,7 @@ export function simulateGame(
         });
         if (cover) {
           substitute(off, at, cover, "injury");
-          const on = bases.indexOf(batterId);
-          if (on >= 0) bases[on] = cover.player.id;
+          replaceRunner(batterId, cover.player.id);
         }
       }
     }
@@ -897,7 +961,7 @@ export function simulateGame(
       });
       if (pr) {
         substitute(off, at, pr, "pinchRunner");
-        bases[i] = pr.player.id;
+        replaceRunner(runnerId, pr.player.id);
         break;
       }
     }
@@ -923,6 +987,7 @@ export function simulateGame(
       hits,
       errors,
       pitches,
+      pitcherOuts,
       injuries,
     },
     events,
