@@ -75,14 +75,10 @@
         "admin_actions_admin_id_users_id_fk": {
           "name": "admin_actions_admin_id_users_id_fk",
           "tableFrom": "admin_actions",
-          "columnsFrom": [
-            "admin_id"
-          ],
+          "columnsFrom": ["admin_id"],
           "tableTo": "users",
           "schemaTo": "auth",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "set null"
         }
@@ -94,9 +90,7 @@
           "name": "admin_actions_select_admin",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "authenticated"
-          ],
+          "to": ["authenticated"],
           "using": "(select public.is_admin())"
         }
       },
@@ -366,13 +360,9 @@
         "fixtures_season_id_seasons_id_fk": {
           "name": "fixtures_season_id_seasons_id_fk",
           "tableFrom": "fixtures",
-          "columnsFrom": [
-            "season_id"
-          ],
+          "columnsFrom": ["season_id"],
           "tableTo": "seasons",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -384,9 +374,7 @@
           "name": "fixtures_select_own",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "authenticated"
-          ],
+          "to": ["authenticated"],
           "using": "exists (select 1 from public.seasons s join public.teams tm on tm.id = s.team_id where s.id = \"fixtures\".\"season_id\" and tm.owner_id = (select auth.uid()))"
         }
       },
@@ -462,10 +450,7 @@
       "compositePrimaryKeys": {
         "formations_sport_id_pk": {
           "name": "formations_sport_id_pk",
-          "columns": [
-            "sport",
-            "id"
-          ]
+          "columns": ["sport", "id"]
         }
       },
       "uniqueConstraints": {},
@@ -474,9 +459,7 @@
           "name": "formations_select",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "authenticated"
-          ],
+          "to": ["authenticated"],
           "using": "true"
         }
       },
@@ -537,15 +520,9 @@
         "game_config_scope_version_game_config_versions_scope_version_fk": {
           "name": "game_config_scope_version_game_config_versions_scope_version_fk",
           "tableFrom": "game_config",
-          "columnsFrom": [
-            "scope",
-            "version"
-          ],
+          "columnsFrom": ["scope", "version"],
           "tableTo": "game_config_versions",
-          "columnsTo": [
-            "scope",
-            "version"
-          ],
+          "columnsTo": ["scope", "version"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -553,11 +530,7 @@
       "compositePrimaryKeys": {
         "game_config_scope_version_key_pk": {
           "name": "game_config_scope_version_key_pk",
-          "columns": [
-            "scope",
-            "version",
-            "key"
-          ]
+          "columns": ["scope", "version", "key"]
         }
       },
       "uniqueConstraints": {},
@@ -566,27 +539,21 @@
           "name": "game_config_select",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "authenticated"
-          ],
+          "to": ["authenticated"],
           "using": "(select public.is_admin()) or exists (\n        select 1 from public.game_config_versions v\n        where v.scope = \"game_config\".\"scope\" and v.version = \"game_config\".\"version\" and v.published_at is not null\n      )"
         },
         "game_config_insert_admin": {
           "name": "game_config_insert_admin",
           "as": "PERMISSIVE",
           "for": "INSERT",
-          "to": [
-            "authenticated"
-          ],
+          "to": ["authenticated"],
           "withCheck": "(select public.is_admin())"
         },
         "game_config_update_admin": {
           "name": "game_config_update_admin",
           "as": "PERMISSIVE",
           "for": "UPDATE",
-          "to": [
-            "authenticated"
-          ],
+          "to": ["authenticated"],
           "using": "(select public.is_admin())",
           "withCheck": "(select public.is_admin())"
         },
@@ -594,9 +561,7 @@
           "name": "game_config_delete_admin",
           "as": "PERMISSIVE",
           "for": "DELETE",
-          "to": [
-            "authenticated"
-          ],
+          "to": ["authenticated"],
           "using": "(select public.is_admin())"
         }
       },
@@ -656,14 +621,10 @@
         "game_config_versions_created_by_users_id_fk": {
           "name": "game_config_versions_created_by_users_id_fk",
           "tableFrom": "game_config_versions",
-          "columnsFrom": [
-            "created_by"
-          ],
+          "columnsFrom": ["created_by"],
           "tableTo": "users",
           "schemaTo": "auth",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "set null"
         }
@@ -671,10 +632,7 @@
       "compositePrimaryKeys": {
         "game_config_versions_scope_version_pk": {
           "name": "game_config_versions_scope_version_pk",
-          "columns": [
-            "scope",
-            "version"
-          ]
+          "columns": ["scope", "version"]
         }
       },
       "uniqueConstraints": {},
@@ -683,27 +641,21 @@
           "name": "game_config_versions_select",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "authenticated"
-          ],
+          "to": ["authenticated"],
           "using": "\"game_config_versions\".\"published_at\" is not null or (select public.is_admin())"
         },
         "game_config_versions_insert_admin": {
           "name": "game_config_versions_insert_admin",
           "as": "PERMISSIVE",
           "for": "INSERT",
-          "to": [
-            "authenticated"
-          ],
+          "to": ["authenticated"],
           "withCheck": "(select public.is_admin())"
         },
         "game_config_versions_update_admin": {
           "name": "game_config_versions_update_admin",
           "as": "PERMISSIVE",
           "for": "UPDATE",
-          "to": [
-            "authenticated"
-          ],
+          "to": ["authenticated"],
           "using": "(select public.is_admin())",
           "withCheck": "(select public.is_admin())"
         },
@@ -711,9 +663,7 @@
           "name": "game_config_versions_delete_admin",
           "as": "PERMISSIVE",
           "for": "DELETE",
-          "to": [
-            "authenticated"
-          ],
+          "to": ["authenticated"],
           "using": "(select public.is_admin())"
         }
       },
@@ -822,26 +772,18 @@
         "ghosts_team_id_teams_id_fk": {
           "name": "ghosts_team_id_teams_id_fk",
           "tableFrom": "ghosts",
-          "columnsFrom": [
-            "team_id"
-          ],
+          "columnsFrom": ["team_id"],
           "tableTo": "teams",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         },
         "ghosts_season_id_seasons_id_fk": {
           "name": "ghosts_season_id_seasons_id_fk",
           "tableFrom": "ghosts",
-          "columnsFrom": [
-            "season_id"
-          ],
+          "columnsFrom": ["season_id"],
           "tableTo": "seasons",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "set null"
         }
@@ -918,13 +860,9 @@
         "matchday_squads_team_id_teams_id_fk": {
           "name": "matchday_squads_team_id_teams_id_fk",
           "tableFrom": "matchday_squads",
-          "columnsFrom": [
-            "team_id"
-          ],
+          "columnsFrom": ["team_id"],
           "tableTo": "teams",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -936,9 +874,7 @@
           "name": "matchday_squads_select_own",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "authenticated"
-          ],
+          "to": ["authenticated"],
           "using": "exists (select 1 from public.teams tm where tm.id = \"matchday_squads\".\"team_id\" and tm.owner_id = (select auth.uid()))"
         }
       },
@@ -1053,13 +989,9 @@
         "packs_team_id_teams_id_fk": {
           "name": "packs_team_id_teams_id_fk",
           "tableFrom": "packs",
-          "columnsFrom": [
-            "team_id"
-          ],
+          "columnsFrom": ["team_id"],
           "tableTo": "teams",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -1071,9 +1003,7 @@
           "name": "packs_select_own",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "authenticated"
-          ],
+          "to": ["authenticated"],
           "using": "exists (select 1 from public.teams tm where tm.id = \"packs\".\"team_id\" and tm.owner_id = (select auth.uid()))"
         }
       },
@@ -1393,13 +1323,9 @@
         "player_careers_team_id_teams_id_fk": {
           "name": "player_careers_team_id_teams_id_fk",
           "tableFrom": "player_careers",
-          "columnsFrom": [
-            "team_id"
-          ],
+          "columnsFrom": ["team_id"],
           "tableTo": "teams",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -1809,13 +1735,9 @@
         "players_team_id_teams_id_fk": {
           "name": "players_team_id_teams_id_fk",
           "tableFrom": "players",
-          "columnsFrom": [
-            "team_id"
-          ],
+          "columnsFrom": ["team_id"],
           "tableTo": "teams",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -1827,9 +1749,7 @@
           "name": "players_select_own",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "authenticated"
-          ],
+          "to": ["authenticated"],
           "using": "exists (select 1 from public.teams tm where tm.id = \"players\".\"team_id\" and tm.owner_id = (select auth.uid()))"
         }
       },
@@ -1897,14 +1817,10 @@
         "profiles_id_users_id_fk": {
           "name": "profiles_id_users_id_fk",
           "tableFrom": "profiles",
-          "columnsFrom": [
-            "id"
-          ],
+          "columnsFrom": ["id"],
           "tableTo": "users",
           "schemaTo": "auth",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -1916,18 +1832,14 @@
           "name": "profiles_select_own",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "authenticated"
-          ],
+          "to": ["authenticated"],
           "using": "(select auth.uid()) = \"profiles\".\"id\""
         },
         "profiles_update_own": {
           "name": "profiles_update_own",
           "as": "PERMISSIVE",
           "for": "UPDATE",
-          "to": [
-            "authenticated"
-          ],
+          "to": ["authenticated"],
           "using": "(select auth.uid()) = \"profiles\".\"id\"",
           "withCheck": "(select auth.uid()) = \"profiles\".\"id\""
         }
@@ -2119,26 +2031,18 @@
         "season_records_team_id_teams_id_fk": {
           "name": "season_records_team_id_teams_id_fk",
           "tableFrom": "season_records",
-          "columnsFrom": [
-            "team_id"
-          ],
+          "columnsFrom": ["team_id"],
           "tableTo": "teams",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         },
         "season_records_season_id_seasons_id_fk": {
           "name": "season_records_season_id_seasons_id_fk",
           "tableFrom": "season_records",
-          "columnsFrom": [
-            "season_id"
-          ],
+          "columnsFrom": ["season_id"],
           "tableTo": "seasons",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "set null"
         }
@@ -2223,26 +2127,18 @@
         "season_teams_season_id_seasons_id_fk": {
           "name": "season_teams_season_id_seasons_id_fk",
           "tableFrom": "season_teams",
-          "columnsFrom": [
-            "season_id"
-          ],
+          "columnsFrom": ["season_id"],
           "tableTo": "seasons",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         },
         "season_teams_source_team_id_teams_id_fk": {
           "name": "season_teams_source_team_id_teams_id_fk",
           "tableFrom": "season_teams",
-          "columnsFrom": [
-            "source_team_id"
-          ],
+          "columnsFrom": ["source_team_id"],
           "tableTo": "teams",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "set null"
         }
@@ -2250,10 +2146,7 @@
       "compositePrimaryKeys": {
         "season_teams_season_id_slot_pk": {
           "name": "season_teams_season_id_slot_pk",
-          "columns": [
-            "season_id",
-            "slot"
-          ]
+          "columns": ["season_id", "slot"]
         }
       },
       "uniqueConstraints": {},
@@ -2262,9 +2155,7 @@
           "name": "season_teams_select_own",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "authenticated"
-          ],
+          "to": ["authenticated"],
           "using": "exists (select 1 from public.seasons s join public.teams tm on tm.id = s.team_id where s.id = \"season_teams\".\"season_id\" and tm.owner_id = (select auth.uid()))"
         }
       },
@@ -2418,13 +2309,9 @@
         "seasons_team_id_teams_id_fk": {
           "name": "seasons_team_id_teams_id_fk",
           "tableFrom": "seasons",
-          "columnsFrom": [
-            "team_id"
-          ],
+          "columnsFrom": ["team_id"],
           "tableTo": "teams",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -2436,9 +2323,7 @@
           "name": "seasons_select_own",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "authenticated"
-          ],
+          "to": ["authenticated"],
           "using": "exists (select 1 from public.teams tm where tm.id = \"seasons\".\"team_id\" and tm.owner_id = (select auth.uid()))"
         }
       },
@@ -2523,18 +2408,14 @@
           "name": "sport_settings_select",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "authenticated"
-          ],
+          "to": ["authenticated"],
           "using": "true"
         },
         "sport_settings_update_admin": {
           "name": "sport_settings_update_admin",
           "as": "PERMISSIVE",
           "for": "UPDATE",
-          "to": [
-            "authenticated"
-          ],
+          "to": ["authenticated"],
           "using": "(select public.is_admin())",
           "withCheck": "(select public.is_admin())"
         }
@@ -2708,14 +2589,10 @@
         "teams_owner_id_users_id_fk": {
           "name": "teams_owner_id_users_id_fk",
           "tableFrom": "teams",
-          "columnsFrom": [
-            "owner_id"
-          ],
+          "columnsFrom": ["owner_id"],
           "tableTo": "users",
           "schemaTo": "auth",
-          "columnsTo": [
-            "id"
-          ],
+          "columnsTo": ["id"],
           "onUpdate": "no action",
           "onDelete": "cascade"
         }
@@ -2727,9 +2604,7 @@
           "name": "teams_select_own",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "authenticated"
-          ],
+          "to": ["authenticated"],
           "using": "\"teams\".\"owner_id\" = (select auth.uid())"
         }
       },
