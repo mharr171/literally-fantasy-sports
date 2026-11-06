@@ -94,26 +94,32 @@ export interface Tribute {
   retiredSeason: number;
 }
 
+/** A stored stat by key (ADR 0007 §2); 0 when it isn't there yet. */
+const stat = (r: Record<string, unknown>, key: string): number => {
+  const v = (r.stats as Record<string, unknown> | null)?.[key];
+  return typeof v === "number" ? v : 0;
+};
+
 const tribute = (r: Record<string, unknown>): Tribute => ({
   id: r.id as string,
   name: r.display_name as string,
   position: r.primary_position as string,
   age: r.retired_age as number,
   seasons: r.seasons as number,
-  games: r.stat_games as number,
-  wins: r.wins as number,
-  draws: r.draws as number,
-  losses: r.losses as number,
-  goals: r.stat_goals as number,
-  assists: r.assists as number,
-  tackles: r.tackles as number,
-  saves: r.saves as number,
+  games: stat(r, "games"),
+  wins: stat(r, "wins"),
+  draws: stat(r, "draws"),
+  losses: stat(r, "losses"),
+  goals: stat(r, "goals"),
+  assists: stat(r, "assists"),
+  tackles: stat(r, "tackles"),
+  saves: stat(r, "saves"),
   bestOverall: r.best_overall as number,
   retiredSeason: r.retired_season as number,
 });
 
 const TRIBUTE_COLUMNS =
-  "id, display_name, primary_position, retired_age, seasons, stat_games, wins, draws, losses, stat_goals, assists, tackles, saves, best_overall, retired_season";
+  "id, display_name, primary_position, retired_age, seasons, stats, best_overall, retired_season";
 
 /**
  * Careers of the club's players who retired at the end of a season, or of
@@ -270,7 +276,7 @@ export async function loadClubHallOfFame(
     db
       .from("players")
       .select(
-        "id, display_name, primary_position, seasons, stat_games, stat_goals, assists, tackles, saves, best_overall, overall",
+        "id, display_name, primary_position, seasons, stats, best_overall, overall",
       )
       .eq("team_id", teamId),
     loadTributes(teamId),
@@ -285,11 +291,11 @@ export async function loadClubHallOfFame(
       position: p.primary_position as string,
       seasons: p.seasons as number,
       retired: false,
-      games: p.stat_games as number,
-      goals: p.stat_goals as number,
-      assists: p.assists as number,
-      tackles: p.tackles as number,
-      saves: p.saves as number,
+      games: stat(p, "games"),
+      goals: stat(p, "goals"),
+      assists: stat(p, "assists"),
+      tackles: stat(p, "tackles"),
+      saves: stat(p, "saves"),
       bestOverall: Math.max(
         (p.best_overall as number | null) ?? 0,
         p.overall as number,

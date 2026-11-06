@@ -286,6 +286,11 @@ export const players = pgTable(
     losses: integer().notNull().default(0),
     assists: integer().notNull().default(0),
     tackles: integer().notNull().default(0),
+    /**
+     * Career stats by key (ADR 0007 §2), e.g. {"goals": 12}. For soccer a
+     * trigger keeps it in step with the stat columns until M17 drops them.
+     */
+    stats: jsonb().notNull().default({}),
     saves: integer().notNull().default(0),
     /** Season ends the player has been through. */
     seasons: integer().notNull().default(0),
@@ -525,6 +530,8 @@ export const playerCareers = pgTable(
     losses: integer().notNull().default(0),
     assists: integer().notNull().default(0),
     tackles: integer().notNull().default(0),
+    /** Career stats by key (ADR 0007 §2); kept in step as on `players`. */
+    stats: jsonb().notNull().default({}),
     saves: integer().notNull().default(0),
     bestOverall: integer().notNull(),
     /** Clubs played for, as named when the player retired. */
