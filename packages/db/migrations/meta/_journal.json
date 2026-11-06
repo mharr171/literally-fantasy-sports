@@ -540,6 +540,20 @@
       "when": 1793943926359,
       "tag": "0076_one_ai_switch",
       "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1793944419949,
+      "tag": "0077_account_progress",
+      "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1793944421228,
+      "tag": "0078_account_progress_backfill",
+      "breakpoints": true
     }
   ]
 }

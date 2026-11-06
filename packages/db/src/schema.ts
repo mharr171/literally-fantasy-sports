@@ -849,3 +849,41 @@ export type Team = typeof teams.$inferSelect;
 export type Player = typeof players.$inferSelect;
 export type Pack = typeof packs.$inferSelect;
 export type MatchdaySquadRow = typeof matchdaySquads.$inferSelect;
+
+/**
+ * A manager's milestones in each sport (D206.9, ADR 0007 §9), recorded
+ * sport-neutrally at season end so cross-sport bonuses can read them later:
+ * seasons played, titles, finals and best Elo. One row per club season and
+ * kind. Nothing reads it yet except admins.
+ */
+export const accountProgress = pgTable(
+  "account_progress",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    ownerId: uuid()
+      .notNull()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    sport: text().notNull(),
+    /** The season it was earned in; kept (as null) if the club is reset. */
+    seasonId: uuid().references(() => seasons.id, { onDelete: "set null" }),
+    kind: text().notNull(),
+    /** 1 for a season, title or final; the Elo for best_elo. */
+    value: integer().notNull(),
+    seasonNumber: integer().notNull(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("account_progress_once").on(t.seasonId, t.kind),
+    index("account_progress_owner").on(t.ownerId, t.sport),
+    check("account_progress_sport", sql`${t.sport} ${SPORT_CHECK}`),
+    check(
+      "account_progress_kind",
+      sql`${t.kind} in ('season_played', 'title', 'final', 'best_elo')`,
+    ),
+    pgPolicy("account_progress_select_own", {
+      for: "select",
+      to: authenticatedRole,
+      using: sql`${t.ownerId} = ${authUid}`,
+    }),
+  ],
+).enableRLS();
