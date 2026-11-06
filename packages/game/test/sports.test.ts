@@ -12,12 +12,15 @@ import {
 } from "../src/sports/soccer";
 
 describe("the sport registry (ADR 0007 §1)", () => {
-  it("knows soccer and refuses sports it can't run yet", () => {
-    expect(SPORTS).toEqual(["soccer"]);
+  it("knows soccer and baseball's stand-in, and refuses sports it can't run yet", () => {
+    expect(SPORTS).toEqual(["soccer", "baseball"]);
     expect(isRegisteredSport("soccer")).toBe(true);
-    expect(isRegisteredSport("baseball")).toBe(false);
+    expect(isRegisteredSport("hockey")).toBe(false);
     expect(sportModule(SOCCER).engine.id).toBe("soccer");
-    expect(() => sportModule("baseball")).toThrow(/No sport module/);
+    // Baseball's stand-in has no AI manager: its AI world stays off (D207).
+    expect(sportModule("baseball").engine.id).toBe("baseball");
+    expect(sportModule("baseball").ai).toBeUndefined();
+    expect(() => sportModule("hockey")).toThrow(/No sport module/);
   });
 
   it("soccer's AI decides exactly as before through the interface (§8)", () => {

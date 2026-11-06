@@ -8,10 +8,13 @@ import {
 import {
   loadEnergySettings,
   loadRosterLimits,
+  loadSportSwitches,
   SPORTS,
 } from "@/lib/sport-settings";
+import { sportUi } from "@/sports/registry";
 import { EnergyForm } from "./energy-form";
 import { RosterForm } from "./roster-form";
+import { SwitchesForm } from "./switches-form";
 
 export const metadata: Metadata = { title: "Game settings" };
 
@@ -118,17 +121,28 @@ async function VersionTable() {
 
 async function EnergySettingsList() {
   await requireAdmin();
+  const switches = await loadSportSwitches();
   const settings = await Promise.all(
     SPORTS.map(async (sport) => ({
       sport,
       value: await loadEnergySettings(sport),
       limits: await loadRosterLimits(sport),
+      switches: switches.find((s) => s.sport === sport),
     })),
   );
   return (
     <div className="flex flex-col gap-3">
-      {settings.map(({ sport, value, limits }) => (
+      {settings.map(({ sport, value, limits, switches: sw }) => (
         <div key={sport} className="flex flex-col gap-3">
+          {/* Show or hide the sport, and run its AI world (D207). */}
+          <SwitchesForm
+            sport={sport}
+            name={sportUi(sport)?.name ?? sport}
+            initial={{
+              public: sw?.public ?? false,
+              aiEnabled: sw?.aiEnabled ?? false,
+            }}
+          />
           <EnergyForm sport={sport} initial={value} />
           <RosterForm sport={sport} initial={limits} />
         </div>

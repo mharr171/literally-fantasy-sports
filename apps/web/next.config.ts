@@ -17,7 +17,12 @@ const nextConfig: NextConfig = {
   env: { GAME_VERSION: gameVersion() },
   cacheComponents: true,
   // The engine packages are TypeScript source in the monorepo.
-  transpilePackages: ["@lfs/core", "@lfs/game", "@lfs/sport-soccer"],
+  transpilePackages: [
+    "@lfs/core",
+    "@lfs/game",
+    "@lfs/sport-baseball",
+    "@lfs/sport-soccer",
+  ],
   partialPrefetching: true,
   // Soccer's pages moved under /soccer (D191, ADR 0007 §10): every old link
   // and bookmark goes to its new address, query string included.

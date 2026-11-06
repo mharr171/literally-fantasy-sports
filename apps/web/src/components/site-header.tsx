@@ -7,10 +7,27 @@ import { ADMIN_VIEW_COOKIE } from "@/lib/admin-view";
 import { toggleAdminView } from "@/lib/admin-view-actions";
 import { getCurrentProfile } from "@/lib/auth";
 import { loadMyTeam } from "@/lib/team";
-import { SPORT_UI, type SportUi } from "@/sports/registry";
+import { visibleSports } from "@/lib/visible-sports";
 
-/** The sports the top bar shows; each sport's Public toggle comes in M16 step 11. */
-const SPORTS_SHOWN = Object.values(SPORT_UI) as SportUi[];
+/** An icon per sport this viewer may see (D191, D207). */
+async function SportNav() {
+  const sports = await visibleSports();
+  return (
+    <nav aria-label="Sports" className="flex items-center gap-1">
+      {sports.map((s) => (
+        <Link
+          key={s.id}
+          href={`${s.basePath}/team`}
+          title={s.name}
+          aria-label={s.name}
+          className="rounded px-1 text-lg leading-none hover:bg-zinc-100 dark:hover:bg-zinc-900"
+        >
+          <span aria-hidden="true">{s.icon}</span>
+        </Link>
+      ))}
+    </nav>
+  );
+}
 
 export function SiteHeader() {
   return (
@@ -20,20 +37,10 @@ export function SiteHeader() {
           <Link href="/" className="text-lg font-semibold tracking-tight">
             LiterallyFantasySports
           </Link>
-          {/* A small icon per sport, for quick switching (D191). */}
-          <nav aria-label="Sports" className="flex items-center gap-1">
-            {SPORTS_SHOWN.map((s) => (
-              <Link
-                key={s.id}
-                href={`${s.basePath}/team`}
-                title={s.name}
-                aria-label={s.name}
-                className="rounded px-1 text-lg leading-none hover:bg-zinc-100 dark:hover:bg-zinc-900"
-              >
-                <span aria-hidden="true">{s.icon}</span>
-              </Link>
-            ))}
-          </nav>
+          {/* A small icon per sport, for quick switching (D191, D207). */}
+          <Suspense fallback={null}>
+            <SportNav />
+          </Suspense>
           <Link
             href="/soccer/leaderboard"
             className="hidden text-sm font-medium hover:underline sm:inline"

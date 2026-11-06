@@ -104,3 +104,44 @@ export async function saveRosterLimits(
     };
   }
 }
+
+const switchesSchema = z.object({
+  sport: z.enum(SPORTS as [SportId, ...SportId[]]),
+  public: z.boolean(),
+  aiEnabled: z.boolean(),
+});
+
+/**
+ * Turns a sport's Public and AI world switches on or off (D207). Applies at
+ * once: a hidden sport's pages show "not found" to players, and the next
+ * scheduled AI run skips a sport whose AI world is off. The database also
+ * refuses non-admins.
+ */
+export async function saveSportSwitches(
+  input: z.input<typeof switchesSchema>,
+): Promise<ActionResult> {
+  try {
+    const profile = await getCurrentProfile();
+    if (!profile?.isAdmin)
+      throw new Error("Only admins can change game settings.");
+    const s = switchesSchema.parse(input);
+    const { data, error } = await (await createClient())
+      .from("sport_settings")
+      .update({
+        public: s.public,
+        ai_enabled: s.aiEnabled,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("sport", s.sport)
+      .select("sport");
+    if (error) throw new Error(error.message);
+    if (!data?.length) throw new Error(`No settings for ${s.sport}.`);
+    refresh();
+    return { ok: true };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "Something went wrong.",
+    };
+  }
+}
