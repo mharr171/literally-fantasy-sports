@@ -526,6 +526,13 @@
       "when": 1793942648984,
       "tag": "0074_sport_toggles_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1793943430423,
+      "tag": "0075_reset_account_soccer",
+      "breakpoints": true
     }
   ]
 }

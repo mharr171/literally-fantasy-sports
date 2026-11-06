@@ -3,12 +3,31 @@
 import { TEAM_NAME_MAX, TEAM_NAME_MIN } from "@lfs/core";
 import { useActionState, useState } from "react";
 import { ClubColorPicker } from "@/components/club-color-picker";
-import { type CreateTeamState, createTeam } from "./actions";
 
-const initialState: CreateTeamState = { status: "idle" };
+/** What creating a club returns: nothing, or what to show and keep. */
+export type CreateClubState =
+  | { status: "idle" }
+  | { status: "error"; name: string; colors: string[]; message: string };
 
-export function CreateTeamForm() {
-  const [state, formAction, pending] = useActionState(createTeam, initialState);
+const initialState: CreateClubState = { status: "idle" };
+
+/**
+ * Starting a club in a sport (D192): its name and colors, with an option to
+ * copy them from the manager's club in another sport.
+ */
+export function CreateClubForm({
+  action,
+  intro,
+  submitLabel,
+  copyFrom,
+}: {
+  action: (prev: CreateClubState, data: FormData) => Promise<CreateClubState>;
+  intro: string;
+  submitLabel: string;
+  /** The manager's club in another sport, to copy (D192). */
+  copyFrom?: { sportName: string; name: string; colors: string[] };
+}) {
+  const [state, formAction, pending] = useActionState(action, initialState);
   const [colors, setColors] = useState<string[]>(
     state.status === "error" ? state.colors : [],
   );
@@ -20,12 +39,20 @@ export function CreateTeamForm() {
         <h1 className="text-3xl font-semibold tracking-tight">
           Start your club
         </h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Name your soccer team and pick its colors. You&apos;ll get 22 free
-          starter packs of 5 players each: open them all, then keep the 11 to 33
-          players you want. Everyone else is released.
-        </p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">{intro}</p>
       </div>
+      {copyFrom && (
+        <button
+          type="button"
+          onClick={() => {
+            setName(copyFrom.name);
+            setColors(copyFrom.colors);
+          }}
+          className="self-start rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+        >
+          Copy name and colors from my {copyFrom.sportName} club
+        </button>
+      )}
       <form action={formAction} className="flex flex-col gap-3">
         <label htmlFor="name" className="text-sm font-medium">
           Team name
@@ -57,7 +84,7 @@ export function CreateTeamForm() {
           disabled={pending || colors.length < 2}
           className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
         >
-          {pending ? "Creating…" : "Create team and get 22 packs"}
+          {pending ? "Creating…" : submitLabel}
         </button>
       </form>
     </div>

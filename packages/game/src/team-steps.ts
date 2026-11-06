@@ -4,7 +4,12 @@
  * same code runs for managers and AI clubs. Callers check who is acting
  * (and the shape of the input) first; these check the game rules.
  */
-import { clubColorsError, resalePrice, teamNameError } from "@lfs/core";
+import {
+  clubColorsError,
+  resalePrice,
+  type SportId,
+  teamNameError,
+} from "@lfs/core";
 import { createServiceClient } from "./db";
 import { loadFormations } from "./formations";
 import { playerRow } from "./scouting";
@@ -56,6 +61,8 @@ export async function createClub(
   ownerId: string,
   name: string,
   colors: string[],
+  /** The sport (D192); a club per sport, each with its own name and colors. */
+  sport: SportId = SOCCER,
 ): Promise<"created" | "exists"> {
   const problem = teamNameError(name) ?? clubColorsError(colors);
   if (problem) throw new Error(problem);
@@ -63,9 +70,10 @@ export async function createClub(
     "create_team_with_starter_packs",
     {
       p_owner: ownerId,
-      p_sport: SOCCER,
+      p_sport: sport,
       p_name: name,
-      p_packs: starterPackPlan(),
+      // Soccer's 22 starter packs (D83); baseball's stand-in has none yet.
+      p_packs: sport === SOCCER ? starterPackPlan() : [],
       p_colors: colors,
     },
   );
