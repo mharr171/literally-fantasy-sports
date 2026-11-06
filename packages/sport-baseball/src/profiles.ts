@@ -4,13 +4,15 @@
  * them in M18.
  *
  * - The **strike zone** is a 5 × 5 grid: the 3 × 3 zone (rows and columns
- *   1–3) with a ring of balls just outside. Row 0 is high, column 0 the
- *   left side as the pitcher sees it.
+ *   1–3) with a ring of balls just outside. Row 0 is high; column 0 is the
+ *   inside edge to a right-handed batter. Presets are written for a
+ *   right-handed batter and pitcher, and mirrored for left-handers (D224).
  * - A batter's **zone profile** says how well they hit in each cell (1 is
  *   average, above is hot, below cold).
  * - A batter's **spray profile** weighs the 12 directions of fair
  *   territory, from the left-field line (0) round to the right-field
- *   line (11).
+ *   line (11), for a right-handed batter: his pull side is left field. A
+ *   left-handed batter's is mirrored, so he pulls to right field.
  * - A pitcher's **location profile** weighs where they aim.
  * - **Fielding ranges** cover the field grid, 12 directions × 8 depths
  *   (depth 0 at the plate, 7 the warning track): how well each fielder
@@ -38,12 +40,9 @@ export const ZONE_PRESETS = {
   even: grid(() => 1),
   "low-ball": grid((r) => [0.8, 0.9, 1, 1.15, 1.2][r] as number),
   "high-ball": grid((r) => [1.2, 1.15, 1, 0.9, 0.8][r] as number),
+  /** Hot over the middle and the inside third, cold away. */
   "middle-in": grid((r, c) =>
-    r >= 1 && r <= 3 && c >= 1 && c <= 3
-      ? r === 2 && c === 2
-        ? 1.25
-        : 1.05
-      : 0.85,
+    !inZone(r, c) ? 0.85 : c === 3 ? 0.95 : r === 2 && c <= 2 ? 1.25 : 1.1,
   ),
 } as const;
 export type ZonePreset = keyof typeof ZONE_PRESETS;
@@ -52,10 +51,13 @@ const spray = (f: (d: number) => number): number[] =>
   Array.from({ length: DIRECTIONS }, (_, d) => f(d));
 
 export const SPRAY_PRESETS = {
-  spray: spray(() => 1),
-  "pull-left": spray((d) => 1.6 - d * 0.1),
-  "pull-right": spray((d) => 0.5 + d * 0.1),
-  "up-the-middle": spray((d) => 1.5 - Math.abs(d - 5.5) * 0.15),
+  /** All fields, leaning a little to his pull side as most hitters do. */
+  spray: spray((d) => 1.15 - d * 0.03),
+  /** To his pull side: left field for a right-handed batter. */
+  pull: spray((d) => 1.6 - d * 0.1),
+  /** The other way. */
+  opposite: spray((d) => 0.5 + d * 0.1),
+  "up-the-middle": spray((d) => 1.6 - Math.abs(d - 5.5) * 0.15 - d * 0.02),
 } as const;
 export type SprayPreset = keyof typeof SPRAY_PRESETS;
 
@@ -131,3 +133,10 @@ export function profileChoices(position: Position): {
     location: [],
   };
 }
+
+/** A grid mirrored left to right, for a left-handed batter or pitcher. */
+export const mirrorGrid = (g: ZoneGrid): number[][] =>
+  g.map((row) => [...row].reverse());
+
+/** Spray weights mirrored, for a left-handed batter. */
+export const mirrorSpray = (w: readonly number[]): number[] => [...w].reverse();

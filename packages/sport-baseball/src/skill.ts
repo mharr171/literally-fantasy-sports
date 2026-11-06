@@ -20,7 +20,7 @@ import {
   rankedColors,
 } from "@lfs/core";
 import { COLOR_COUNT } from "./generation";
-import type { BaseballPlayer } from "./player";
+import { type BaseballPlayer, battingSide } from "./player";
 import type { BatterPosition, Position } from "./positions";
 
 export type PositionFit = "primary" | "secondary" | "other";
@@ -38,6 +38,11 @@ export interface SkillTuning {
   playerMatchup: number;
   /** The 4 colors in ring order: each beats the next (D211). */
   colorRing: readonly number[];
+  /**
+   * The platoon edge (D224): the batter's skill edge when he hits from the
+   * side opposite the pitcher's arm; the pitcher's when they're the same.
+   */
+  platoonEdge: number;
 }
 
 export const BASEBALL_COLOR_RING: readonly number[] = [0, 1, 2, 3];
@@ -50,6 +55,7 @@ export const DEFAULT_SKILL_TUNING: SkillTuning = {
   teamMatchupSecond: 0,
   playerMatchup: 0,
   colorRing: BASEBALL_COLOR_RING,
+  platoonEdge: 0.08,
 };
 
 /** Soccer's matchup strengths (D150), for the harness's matchups run. */
@@ -159,4 +165,21 @@ export function atBatEdges(
     batter: edge(batterColor, pitcherColor),
     pitcher: edge(pitcherColor, batterColor),
   };
+}
+
+/**
+ * The platoon edge for one at-bat (D224): to the batter when he hits from
+ * the side opposite the pitcher's arm (a switch hitter always does), to the
+ * pitcher otherwise.
+ */
+export function platoonEdges(
+  batter: Pick<BaseballPlayer, "bats">,
+  pitcher: Pick<BaseballPlayer, "throws">,
+  tuning: SkillTuning = DEFAULT_SKILL_TUNING,
+): { batter: number; pitcher: number } {
+  const opposite =
+    battingSide(batter.bats, pitcher.throws) !== (pitcher.throws ?? "R");
+  return opposite
+    ? { batter: tuning.platoonEdge, pitcher: 0 }
+    : { batter: 0, pitcher: tuning.platoonEdge };
 }

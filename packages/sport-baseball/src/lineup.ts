@@ -150,7 +150,15 @@ export function autoPickSquad(
     const p = pool.shift();
     if (p) bench.push({ player: p, role });
   };
-  takeBest((p) => battingRating(p.attributes, weights), "pinchHitter");
+  // The pinch hitter leans to the hand the lineup is short of (D224).
+  const lefties = placed.filter((b) => b.player.bats === "L").length;
+  const shortOf = lefties * 2 < placed.length ? "L" : "R";
+  takeBest(
+    (p) =>
+      battingRating(p.attributes, weights) +
+      (p.bats === shortOf || p.bats === "S" ? 3 : 0),
+    "pinchHitter",
+  );
   takeBest((p) => p.attributes.speed, "pinchRunner");
   takeBest(
     (p) =>

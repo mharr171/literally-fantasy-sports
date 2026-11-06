@@ -13,7 +13,12 @@
 import { battingRating, fieldingRating, overallAt } from "./overall";
 import type { BaseballPlayer } from "./player";
 import type { BatterPosition } from "./positions";
-import { DEFAULT_SKILL_TUNING, positionFit } from "./skill";
+import {
+  DEFAULT_SKILL_TUNING,
+  platoonEdges,
+  positionFit,
+  type SkillTuning,
+} from "./skill";
 
 export type BenchRole = "pinchHitter" | "pinchRunner" | "defense" | "injury";
 
@@ -82,17 +87,24 @@ export function choosePinchHitter(input: {
   inning: number;
   /** The batting side is behind or level. */
   needRuns: boolean;
+  /** The pitcher on the mound: the platoon counts (D224). */
+  pitcher?: Pick<BaseballPlayer, "throws">;
   tuning?: BenchTuning;
+  skill?: SkillTuning;
 }): BenchPlayer | null {
   const t = input.tuning ?? DEFAULT_BENCH_TUNING;
   if (input.inning < t.pinchHitFrom || !input.needRuns) return null;
-  const bar = battingRating(input.batter.attributes) + t.pinchHitMargin;
+  // Bat against this pitcher: with the platoon edge, or less without it.
+  const against = (p: BaseballPlayer) => {
+    const bat = battingRating(p.attributes);
+    if (!input.pitcher) return bat;
+    const edge = platoonEdges(p, input.pitcher, input.skill);
+    return bat * (1 + edge.batter - edge.pitcher);
+  };
+  const bar = against(input.batter) + t.pinchHitMargin;
   const best = free(input.bench, input.used, "pinchHitter", input.batter.id)
-    .filter((b) => battingRating(b.player.attributes) >= bar)
-    .sort(
-      (a, b) =>
-        battingRating(b.player.attributes) - battingRating(a.player.attributes),
-    )[0];
+    .filter((b) => against(b.player) >= bar)
+    .sort((a, b) => against(b.player) - against(a.player))[0];
   return best ?? null;
 }
 
