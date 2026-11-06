@@ -512,6 +512,20 @@
       "when": 1793940794392,
       "tag": "0072_condition_in_days_sync",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1793942648002,
+      "tag": "0073_sport_toggles",
+      "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1793942648984,
+      "tag": "0074_sport_toggles_grants",
+      "breakpoints": true
     }
   ]
 }

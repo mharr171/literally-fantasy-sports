@@ -695,6 +695,13 @@ export const sportSettings = pgTable(
     benchMax: integer().notNull().default(11),
     /** Clubs in a season's league, the manager's included (ADR 0007 §4). */
     leagueSize: integer().notNull().default(12),
+    /**
+     * Whether players see the sport (D207): its pages, home card, top-bar
+     * icon and club creation. Admins always see every sport.
+     */
+    public: boolean().notNull().default(true),
+    /** Whether the scheduled AI runs play this sport's AI clubs (D207). */
+    aiEnabled: boolean().notNull().default(true),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
