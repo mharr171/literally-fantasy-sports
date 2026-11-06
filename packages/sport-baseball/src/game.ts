@@ -116,7 +116,9 @@ export interface PitchTuning {
   fieldingEffect: number;
   /** Chance an out becomes an error, for an average fielder. */
   errorRate: number;
-  /** Extra-base chance on a hit, on speed against arm (per point). */
+  /** A runner's chance to take an extra base on a hit when speed equals arm. */
+  extraBase: number;
+  /** How much speed against arm moves it (per point). */
   runnerEffect: number;
   /** Steals: tried when the runner's speed is at least this, and how often. */
   stealSpeed: number;
@@ -124,24 +126,25 @@ export interface PitchTuning {
 }
 
 export const DEFAULT_PITCH_TUNING: PitchTuning = {
-  missAtZero: 0.6,
-  missAtHundred: 0.15,
+  missAtZero: 0.8,
+  missAtHundred: 0.32,
   swingInZone: 0.66,
   swingOutOfZone: 0.3,
-  eyeEffect: 0.004,
+  eyeEffect: 0.003,
   contactInZone: 0.82,
   contactOutOfZone: 0.62,
-  contactEffect: 0.004,
+  contactEffect: 0.0018,
   foulShare: 0.45,
-  powerEffect: 0.012,
+  powerEffect: 0.0055,
   hitSpread: 0.25,
-  homeRunAt: 0.88,
-  outChance: { ground: 0.78, line: 0.36, fly: 0.82, popup: 0.97 },
-  fieldingEffect: 0.003,
-  errorRate: 0.02,
+  homeRunAt: 0.86,
+  outChance: { ground: 0.81, line: 0.38, fly: 0.83, popup: 0.97 },
+  fieldingEffect: 0.002,
+  errorRate: 0.045,
+  extraBase: 0.68,
   runnerEffect: 0.006,
   stealSpeed: 62,
-  stealTry: 0.09,
+  stealTry: 0.035,
 };
 
 export interface BaseballConfig {
@@ -783,7 +786,9 @@ export function simulateGame(
         : 50;
       const extra = (id: string) =>
         rng.running.chance(
-          clamp01(0.35 + (speedOf(id) * bm - fielderArm) * t.runnerEffect),
+          clamp01(
+            t.extraBase + (speedOf(id) * bm - fielderArm) * t.runnerEffect,
+          ),
         );
       const advance = (n: number, forced: boolean) => {
         // Runners from third down, so nobody passes anyone.

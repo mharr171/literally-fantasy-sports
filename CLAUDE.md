@@ -40,6 +40,8 @@ pnpm + Turborepo monorepo.
   tests pin exact values. Give new random rolls their own `rng.fork("label")`.
 - After any change to the soccer sim or its tuning, run the harness and put its
   report in the PR. Targets: 2.5–2.8 goals per match, ~25% draws for even teams.
+  The same for baseball's sim (ADR 0008 §10): about 9 runs a game, home sides
+  winning 52–55%, 7–10% extra innings; rebuild the win probability table too.
 - Matches are simulated on the server only. Row-level security on every table.
 
 ## Next.js
@@ -63,6 +65,8 @@ pnpm db:generate   # after editing packages/db/src/schema.ts: write a new migrat
 pnpm test:db       # database tests (needs DATABASE_URL, see below)
 pnpm --filter @lfs/sport-soccer harness 10000   # play 10,000 matches, print goal/draw stats
 pnpm --filter @lfs/sport-soccer pack-spread 10  # 10 AI seasons: strength gap with flat vs Elo packs
+pnpm --filter @lfs/sport-baseball harness 10000  # play 10,000 baseball games, print each ADR 0008 target
+pnpm --filter @lfs/sport-baseball win-probability  # rebuild the win probability table after tuning
 ```
 
 Run `pnpm lint && pnpm typecheck && pnpm test && pnpm build` before pushing; CI runs
