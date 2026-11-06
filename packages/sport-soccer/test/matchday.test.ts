@@ -13,7 +13,9 @@ import {
   type MatchdaySquad,
   type PickablePlayer,
   slotRating,
+  squadFromGroups,
   squadProblems,
+  squadToGroups,
   squadToTeam,
 } from "../src/matchday";
 import { packContents } from "../src/roster";
@@ -376,5 +378,27 @@ describe("a short bench (D182)", () => {
       "short-bench",
     );
     expect(out.result.score.home).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe("squads as named groups (ADR 0007 §3)", () => {
+  it("round-trips a squad through its stored groups", () => {
+    const squad: MatchdaySquad = {
+      ...autoPickSquad(players),
+      subPlan: [{ minute: 60, outId: "a", inId: "b" }],
+    };
+    const groups = squadToGroups(squad);
+    expect(groups.starters).toEqual(squad.lineup);
+    expect(squadFromGroups(groups)).toEqual(squad);
+    // Groups another sport might add are ignored; stray values are dropped.
+    expect(
+      squadFromGroups({ ...groups, bullpen: ["x"], bench: ["c", 3] })?.bench,
+    ).toEqual(["c"]);
+  });
+
+  it("returns null for anything that isn't a soccer squad", () => {
+    expect(squadFromGroups({})).toBeNull();
+    expect(squadFromGroups(null)).toBeNull();
+    expect(squadFromGroups({ formation: "4-4-2" })).toBeNull();
   });
 });
