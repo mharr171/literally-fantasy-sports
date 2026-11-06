@@ -8,22 +8,22 @@ export function ConditionBadge({
   condition: PlayerCondition;
   compact?: boolean;
 }) {
-  if (condition.injuredWeeks > 0)
+  if (condition.injuredDays > 0)
     return (
       <span
         className="rounded bg-red-100 px-1 text-xs text-red-800 dark:bg-red-950 dark:text-red-300"
-        title={`Injured for ${condition.injuredWeeks} more week${condition.injuredWeeks === 1 ? "" : "s"}`}
+        title={`Injured for ${condition.injuredDays} more week${condition.injuredDays === 1 ? "" : "s"}`}
       >
-        ✚ {condition.injuredWeeks}w
+        ✚ {condition.injuredDays}w
       </span>
     );
-  if (condition.suspendedWeeks > 0)
+  if (condition.suspendedGames > 0)
     return (
       <span
         className="rounded bg-amber-100 px-1 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-300"
-        title={`Suspended for ${condition.suspendedWeeks} more match${condition.suspendedWeeks === 1 ? "" : "es"}`}
+        title={`Suspended for ${condition.suspendedGames} more match${condition.suspendedGames === 1 ? "" : "es"}`}
       >
-        ⛔ {condition.suspendedWeeks}
+        ⛔ {condition.suspendedGames}
       </span>
     );
   const tone =

@@ -250,7 +250,7 @@ describe("matchday and pace (D110, D114)", () => {
     const roster = starterRoster("squad", "builder").map((p, i) => ({
       ...p,
       form: 0,
-      condition: i === 0 ? { ...FRESH, injuredWeeks: 2 } : FRESH,
+      condition: i === 0 ? { ...FRESH, injuredDays: 2 } : FRESH,
     }));
     const squad = aiSquad(roster, {
       personality: "builder",

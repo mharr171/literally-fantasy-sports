@@ -177,7 +177,7 @@ async function SeasonContent() {
             {out
               .map(
                 (p) =>
-                  `${p.displayName} (${p.condition.injuredWeeks > 0 ? `injured ${p.condition.injuredWeeks}w` : "suspended"})`,
+                  `${p.displayName} (${p.condition.injuredDays > 0 ? `injured ${p.condition.injuredDays}w` : "suspended"})`,
               )
               .join(", ")}
           </p>
