@@ -1,4 +1,8 @@
-import type { GeneratedPlayer } from "@lfs/sport-soccer";
+import { createServiceClient } from "./db";
+import { ensureFormations } from "./formations";
+import { sortPacks } from "./scouting";
+import { SOCCER } from "./sports";
+import type { GeneratedPlayer } from "./sports/soccer";
 import {
   type Attributes,
   type GenerationSettings,
@@ -9,12 +13,9 @@ import {
   type PlayerStats,
   type Position,
   packContents,
-} from "@lfs/sport-soccer";
-import { createServiceClient } from "./db";
-import { ensureFormations } from "./formations";
-import { sortPacks } from "./scouting";
+} from "./sports/soccer";
 
-export const SOCCER = "soccer";
+export { SOCCER };
 
 export interface MyTeam {
   id: string;

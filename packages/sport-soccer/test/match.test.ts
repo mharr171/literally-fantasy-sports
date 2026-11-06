@@ -211,7 +211,9 @@ describe("soccer sport", () => {
     expect(soccer.id).toBe("soccer");
     expect(soccer.grid).toEqual(SOCCER_GRID);
     expect(soccer.playersOnField).toBe(11);
-    expect(soccer.allowsDraws).toBe(true);
+    expect(soccer.results.allowsDraws).toBe(true);
+    expect(soccer.results.points).toEqual({ win: 3, draw: 1, loss: 0 });
+    expect(soccer.stats.map((s) => s.key)).toContain("goals");
     const out = soccer.simulate(
       { home: teamA, away: teamB, mode: "league", config },
       7,

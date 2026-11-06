@@ -1,15 +1,17 @@
 "use server";
 
+import type { SportId } from "@lfs/core";
 import { rosterLimitsError } from "@lfs/sport-soccer";
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { getCurrentProfile } from "@/lib/auth";
+import { SPORTS } from "@/lib/sport-settings";
 import { createClient } from "@/lib/supabase/server";
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 
 const energySchema = z.object({
-  sport: z.enum(["soccer"]),
+  sport: z.enum(SPORTS as [SportId, ...SportId[]]),
   enabled: z.boolean(),
   refillMinutes: z.number().int().min(1).max(1440),
   max: z.number().int().min(1).max(20),
@@ -55,7 +57,7 @@ export async function saveEnergySettings(
 }
 
 const rosterSchema = z.object({
-  sport: z.enum(["soccer"]),
+  sport: z.enum(SPORTS as [SportId, ...SportId[]]),
   min: z.number().int(),
   max: z.number().int(),
   benchMax: z.number().int(),

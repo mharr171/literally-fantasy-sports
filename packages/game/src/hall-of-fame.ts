@@ -5,7 +5,7 @@
  */
 import { createServiceClient } from "./db";
 
-const SOCCER = "soccer";
+import { SOCCER } from "./sports";
 export const HALL_SIZE = 25;
 
 export interface HallClub {

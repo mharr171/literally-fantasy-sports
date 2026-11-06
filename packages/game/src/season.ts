@@ -1,3 +1,5 @@
+import { createServiceClient } from "./db";
+import { ensureFormations } from "./formations";
 import {
   type BalanceSettings,
   balanceFromValues,
@@ -20,9 +22,7 @@ import {
   type Stage,
   snapshotTeam,
   soccerConfigFromValues,
-} from "@lfs/sport-soccer";
-import { createServiceClient } from "./db";
-import { ensureFormations } from "./formations";
+} from "./sports/soccer";
 import { SOCCER } from "./team";
 
 /** What season end did (stored on the season, shown to the manager). */

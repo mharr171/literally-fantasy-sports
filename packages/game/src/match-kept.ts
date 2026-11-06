@@ -1,4 +1,4 @@
-import type { MatchSummary } from "@lfs/sport-soccer";
+import type { MatchSummary } from "./sports/soccer";
 
 /**
  * What's kept of a match the manager wasn't in (D120): its score (stored

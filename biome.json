@@ -35,5 +35,24 @@
         "organizeImports": "on"
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["packages/game/src/**", "!packages/game/src/sports/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "@lfs/sport-soccer": "Import soccer through ./sports/soccer or ask the registry in ./sports (ADR 0007 \u00a71)."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }
