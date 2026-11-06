@@ -83,3 +83,4 @@ export * from "./generation";
 export * from "./overall";
 export * from "./player";
 export * from "./positions";
+export * from "./skill";
