@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.6.0](https://github.com/mharr171/literally-fantasy-sports/compare/v1.5.0...v1.6.0) (2026-11-06)
+
+
+### Features
+
+* every position can build form, and form moves with minutes played ([#129](https://github.com/mharr171/literally-fantasy-sports/issues/129)) ([0ee1c16](https://github.com/mharr171/literally-fantasy-sports/commit/0ee1c16dec3f9db6d70eeb53891839d4f0aa7445))
+* keep 11 to 33 players, with a bench of up to 11 ([#127](https://github.com/mharr171/literally-fantasy-sports/issues/127)) ([11e6cc0](https://github.com/mharr171/literally-fantasy-sports/commit/11e6cc0a8f4ffec518b1a723f4300082ab717a60))
+* packs that keep up with your club's Elo, and leaving out colors ([#130](https://github.com/mharr171/literally-fantasy-sports/issues/130)) ([5452449](https://github.com/mharr171/literally-fantasy-sports/commit/54524495c2845c43b0c708e133154e804f55b9d5))
+* Prospect, Veteran and Wildcard packs, and reward packs for the playoffs ([#131](https://github.com/mharr171/literally-fantasy-sports/issues/131)) ([3c3818c](https://github.com/mharr171/literally-fantasy-sports/commit/3c3818c757de4a730a4eae396fa7087cb8e5a0d4))
+* short-handed clubs play a man down, and forfeit 3–0 below 7 ([#128](https://github.com/mharr171/literally-fantasy-sports/issues/128)) ([7f19d0a](https://github.com/mharr171/literally-fantasy-sports/commit/7f19d0a3b0cc033ba43f5cb61b1d77b755510957))
+* the season page and History draw the playoff bracket ([#126](https://github.com/mharr171/literally-fantasy-sports/issues/126)) ([faca294](https://github.com/mharr171/literally-fantasy-sports/commit/faca294f24cf399083dcec67db192ff5e81440ca))
+
+
+### Bug Fixes
+
+* AI clubs keep their pace when scheduled runs are late or missed ([#123](https://github.com/mharr171/literally-fantasy-sports/issues/123)) ([86477ab](https://github.com/mharr171/literally-fantasy-sports/commit/86477abb967df179dfcc177e74151a20f018e75c))
+* auto-pick rests players below 50% fitness when anyone fitter can play ([#134](https://github.com/mharr171/literally-fantasy-sports/issues/134)) ([5adf20e](https://github.com/mharr171/literally-fantasy-sports/commit/5adf20e3fd21e082241972635027678156e3d90b))
+
+
+### Documentation
+
+* Gary's fourth round of notes and the new M15 Packs, rosters and playoffs ([#124](https://github.com/mharr171/literally-fantasy-sports/issues/124)) ([705ccf2](https://github.com/mharr171/literally-fantasy-sports/commit/705ccf213eb8ff758544cf054f2b6476aa270078))
+* M12, M13 and M14 shipped together in v1.5.0 ([#121](https://github.com/mharr171/literally-fantasy-sports/issues/121)) ([d9c6919](https://github.com/mharr171/literally-fantasy-sports/commit/d9c69190215f64ed0870e59c6893a2962ab4dee3))
+* plan packs, rosters and playoffs (ADR 0006) ([#125](https://github.com/mharr171/literally-fantasy-sports/issues/125)) ([4b76b8c](https://github.com/mharr171/literally-fantasy-sports/commit/4b76b8c28fea86b0c592ec3017a50b57b6623087))
+* tick M15 packs, rosters and playoffs ([#133](https://github.com/mharr171/literally-fantasy-sports/issues/133)) ([b125d6e](https://github.com/mharr171/literally-fantasy-sports/commit/b125d6eedfa9885d0c9665114c9dbc4ba573d5d8))
+
 ## [1.5.0](https://github.com/mharr171/literally-fantasy-sports/compare/v1.4.0...v1.5.0) (2026-11-05)
 
 
