@@ -82,6 +82,7 @@ export * from "./attributes";
 export * from "./game";
 export * from "./generation";
 export * from "./overall";
+export * from "./pitching";
 export * from "./player";
 export * from "./positions";
 export * from "./profiles";
