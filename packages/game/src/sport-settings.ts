@@ -43,3 +43,16 @@ export async function loadRosterLimits(
     benchMax: data.bench_max as number,
   };
 }
+
+/** A sport's league size (ADR 0007 §4), the manager's club included. */
+export async function loadLeagueSize(
+  sport: SportKey = SOCCER,
+): Promise<number> {
+  const { data, error } = await createServiceClient()
+    .from("sport_settings")
+    .select("league_size")
+    .eq("sport", sport)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data?.league_size as number | undefined) ?? 12;
+}

@@ -289,6 +289,10 @@ export function aiTeam(
 
 export interface SeasonFixture extends NewFixture {
   id: string;
+  /** The season's event (ADR 0007 §4); soccer has one, `main`. */
+  event?: string;
+  /** Game number within a series; soccer plays single games (1). */
+  gameNo?: number;
   homeScore: number | null;
   awayScore: number | null;
   /** Knockout winner, when the match is played. */

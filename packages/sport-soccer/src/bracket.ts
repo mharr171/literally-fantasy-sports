@@ -6,6 +6,12 @@
  * seasons from before have semi-finals and a final (D30).
  */
 import {
+  type BracketRoundDef,
+  type Bracket as CoreBracket,
+  type BracketMatch as CoreBracketMatch,
+  drawBracket,
+} from "@lfs/core";
+import {
   hasBracket,
   type LeagueSlot,
   type SeasonFixture,
@@ -13,138 +19,97 @@ import {
   table,
 } from "./season-play";
 
-export interface BracketSide {
-  /** The club's league slot, or null while it isn't known yet. */
-  slot: number | null;
-  /** Its final (or current) league place, 1 = top. */
-  seed: number | null;
-  /** What fills the place until it's known, e.g. "Winner of the play-in". */
-  placeholder: string;
-}
+export type { BracketSide } from "@lfs/core";
 
-export interface BracketMatch {
-  stage: Exclude<Stage, "league">;
-  home: BracketSide;
-  away: BracketSide;
-  /** The fixture once it exists, with its score and winner. */
-  fixture: SeasonFixture | null;
-  /** The winning slot once played. */
-  winner: number | null;
-}
+/** A playoff stage: every soccer stage but the league. */
+export type PlayoffStage = Exclude<Stage, "league">;
 
-export interface Bracket {
-  /** False while the league is still being played: places can change. */
-  final: boolean;
-  rounds: { stage: Exclude<Stage, "league">; matches: BracketMatch[] }[];
-}
+export type BracketMatch = CoreBracketMatch<SeasonFixture, PlayoffStage>;
+export type Bracket = CoreBracket<SeasonFixture, PlayoffStage>;
 
-const winnerOf = (f: SeasonFixture | null): number | null => {
-  if (!f || f.homeScore === null || f.awayScore === null) return null;
-  if (f.winner) return f.winner === "home" ? f.homeSlot : f.awaySlot;
-  if (f.homeScore === f.awayScore) return null;
-  return f.homeScore > f.awayScore ? f.homeSlot : f.awaySlot;
-};
+const place = (n: number, label: string) => ({ place: n, label });
+const winnerOf = (id: string, label: string) => ({ winnerOf: id, label });
 
+/** The 8-club seasons from before D117: semi-finals and a final (D30). */
+export const EIGHT_CLUB_ROUNDS: readonly BracketRoundDef<PlayoffStage>[] = [
+  {
+    stage: "semi",
+    matches: [
+      { id: "sf1", home: place(1, "1st"), away: place(4, "4th") },
+      { id: "sf2", home: place(2, "2nd"), away: place(3, "3rd") },
+    ],
+  },
+  {
+    stage: "final",
+    matches: [
+      {
+        id: "f",
+        home: winnerOf("sf1", "Winner of 1st v 4th"),
+        away: winnerOf("sf2", "Winner of 2nd v 3rd"),
+      },
+    ],
+  },
+];
+
+/** A 12-club season (D117): play-in, quarter-finals, semi-finals, final. */
+export const TWELVE_CLUB_ROUNDS: readonly BracketRoundDef<PlayoffStage>[] = [
+  {
+    stage: "play_in",
+    matches: [{ id: "pi", home: place(8, "8th"), away: place(9, "9th") }],
+  },
+  {
+    stage: "quarter",
+    matches: [
+      {
+        id: "qf1",
+        home: place(1, "1st"),
+        away: winnerOf("pi", "Winner of the play-in"),
+      },
+      { id: "qf2", home: place(2, "2nd"), away: place(7, "7th") },
+      { id: "qf3", home: place(3, "3rd"), away: place(6, "6th") },
+      { id: "qf4", home: place(4, "4th"), away: place(5, "5th") },
+    ],
+  },
+  {
+    stage: "semi",
+    matches: [
+      {
+        id: "sf1",
+        home: winnerOf("qf1", "Winner of quarter-final 1"),
+        away: winnerOf("qf4", "Winner of quarter-final 4"),
+      },
+      {
+        id: "sf2",
+        home: winnerOf("qf2", "Winner of quarter-final 2"),
+        away: winnerOf("qf3", "Winner of quarter-final 3"),
+      },
+    ],
+  },
+  {
+    stage: "final",
+    matches: [
+      {
+        id: "f",
+        home: winnerOf("sf1", "Winner of semi-final 1"),
+        away: winnerOf("sf2", "Winner of semi-final 2"),
+      },
+    ],
+  },
+];
+
+/** Soccer's playoff bracket, drawn by core's bracket (ADR 0007 §4). */
 export function playoffBracket(
   slots: readonly LeagueSlot[],
   fixtures: readonly SeasonFixture[],
 ): Bracket {
-  const standings = table(slots, fixtures);
-  const seedOf = new Map(standings.map((s, i) => [Number(s.team), i + 1]));
-  const atPlace = (place: number) => {
-    const s = standings[place - 1];
-    return s ? Number(s.team) : null;
-  };
+  const places = table(slots, fixtures).map((s) => Number(s.team));
   const leagueLeft = fixtures.some(
     (f) => f.stage === "league" && f.homeScore === null,
   );
-  const side = (slot: number | null, placeholder: string): BracketSide => ({
-    slot,
-    seed: slot === null ? null : (seedOf.get(slot) ?? null),
-    placeholder,
-  });
-  // A round's fixture between these clubs, if it has been drawn.
-  const find = (stage: Stage, a: number | null, b: number | null) =>
-    fixtures.find(
-      (f) =>
-        f.stage === stage &&
-        (a === null || f.homeSlot === a || f.awaySlot === a) &&
-        (b === null || f.homeSlot === b || f.awaySlot === b),
-    ) ?? null;
-  const match = (
-    stage: Exclude<Stage, "league">,
-    home: BracketSide,
-    away: BracketSide,
-  ): BracketMatch => {
-    const fixture =
-      home.slot !== null || away.slot !== null
-        ? find(stage, home.slot, away.slot)
-        : null;
-    // The drawn fixture decides who's at home.
-    const h = fixture ? side(fixture.homeSlot, home.placeholder) : home;
-    const a = fixture ? side(fixture.awaySlot, away.placeholder) : away;
-    return { stage, home: h, away: a, fixture, winner: winnerOf(fixture) };
-  };
-  const w = (m: BracketMatch, label: string) => side(m.winner, label);
-
-  if (!hasBracket(slots)) {
-    const semis = [
-      match("semi", side(atPlace(1), "1st"), side(atPlace(4), "4th")),
-      match("semi", side(atPlace(2), "2nd"), side(atPlace(3), "3rd")),
-    ];
-    const final = match(
-      "final",
-      w(semis[0] as BracketMatch, "Winner of 1st v 4th"),
-      w(semis[1] as BracketMatch, "Winner of 2nd v 3rd"),
-    );
-    return {
-      final: !leagueLeft,
-      rounds: [
-        { stage: "semi", matches: semis },
-        { stage: "final", matches: [final] },
-      ],
-    };
-  }
-
-  const playIn = match(
-    "play_in",
-    side(atPlace(8), "8th"),
-    side(atPlace(9), "9th"),
+  return drawBracket(
+    hasBracket(slots) ? TWELVE_CLUB_ROUNDS : EIGHT_CLUB_ROUNDS,
+    places,
+    fixtures,
+    !leagueLeft,
   );
-  const quarters = [
-    match(
-      "quarter",
-      side(atPlace(1), "1st"),
-      w(playIn, "Winner of the play-in"),
-    ),
-    match("quarter", side(atPlace(2), "2nd"), side(atPlace(7), "7th")),
-    match("quarter", side(atPlace(3), "3rd"), side(atPlace(6), "6th")),
-    match("quarter", side(atPlace(4), "4th"), side(atPlace(5), "5th")),
-  ] as const;
-  const semis = [
-    match(
-      "semi",
-      w(quarters[0], "Winner of quarter-final 1"),
-      w(quarters[3], "Winner of quarter-final 4"),
-    ),
-    match(
-      "semi",
-      w(quarters[1], "Winner of quarter-final 2"),
-      w(quarters[2], "Winner of quarter-final 3"),
-    ),
-  ] as const;
-  const final = match(
-    "final",
-    w(semis[0], "Winner of semi-final 1"),
-    w(semis[1], "Winner of semi-final 2"),
-  );
-  return {
-    final: !leagueLeft,
-    rounds: [
-      { stage: "play_in", matches: [playIn] },
-      { stage: "quarter", matches: [...quarters] },
-      { stage: "semi", matches: [...semis] },
-      { stage: "final", matches: [final] },
-    ],
-  };
 }

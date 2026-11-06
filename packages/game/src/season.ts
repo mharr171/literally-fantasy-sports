@@ -93,7 +93,7 @@ async function loadSeasonNumbered(
     db
       .from("fixtures")
       .select(
-        "id, week, stage, home_slot, away_slot, home_score, away_score, winner, summary",
+        "id, week, event, stage, game_no, home_slot, away_slot, home_score, away_score, winner, summary",
       )
       .eq("season_id", season.id)
       .order("week")
@@ -123,7 +123,9 @@ async function loadSeasonNumbered(
     fixtures: (fixtures.data ?? []).map((f) => ({
       id: f.id,
       week: f.week,
+      event: f.event as string,
       stage: f.stage as Stage,
+      gameNo: f.game_no as number,
       homeSlot: f.home_slot,
       awaySlot: f.away_slot,
       homeScore: f.home_score,
