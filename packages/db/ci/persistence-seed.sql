@@ -17,8 +17,8 @@ INSERT INTO public.players (team_id, sport, first_name, last_name, display_name,
 SELECT t.id, 'soccer', 'P', 'One', 'P One', 'ENG', 24, 'ST', '{}', 60, 70, 65, 75, 2000, 1
 FROM public.teams t WHERE t.name IN ('Persist Rovers', 'Persist Athletic');
 
-INSERT INTO public.matchday_squads (team_id, formation, lineup, bench, sub_plan)
-SELECT t.id, '4-4-2', '[]', '[]', '[]' FROM public.teams t
+INSERT INTO public.matchday_squads (team_id, lineup_data)
+SELECT t.id, '{"formation":"4-4-2","starters":[],"bench":[],"subPlan":[]}' FROM public.teams t
 WHERE t.name IN ('Persist Rovers', 'Persist Athletic');
 
 INSERT INTO public.seasons (id, team_id, sport, number, status, seed, start_elo, config_version, closed_at)
