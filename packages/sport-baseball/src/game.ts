@@ -30,6 +30,16 @@ import {
   type Side,
 } from "@lfs/core";
 import type { Attribute } from "./attributes";
+import {
+  type BullpenPlan,
+  bullpenDecision,
+  type ChangeReason,
+  DEFAULT_FATIGUE,
+  defaultBullpenPlan,
+  type FatigueTuning,
+  fatigueFactor,
+  pitchBudget,
+} from "./pitching";
 import type { BaseballPlayer } from "./player";
 import type { BatterPosition, FieldPosition } from "./positions";
 import {
@@ -58,6 +68,12 @@ export interface BaseballTeam {
   batters: readonly { player: BaseballPlayer; slot: BatterPosition }[];
   /** The starting pitcher. */
   pitcher: BaseballPlayer;
+  /** Relievers, up to 8 (D196). */
+  bullpen?: readonly BaseballPlayer[];
+  /** When relievers come in; a default plan when left out. */
+  plan?: BullpenPlan;
+  /** Relievers who still need rest (D213): they're skipped. */
+  unavailable?: readonly string[];
 }
 
 /** The pitch-by-pitch tuning. Starting values; the harness tunes them (step 8). */
@@ -119,6 +135,7 @@ export const DEFAULT_PITCH_TUNING: PitchTuning = {
 export interface BaseballConfig {
   skill: SkillTuning;
   pitch: PitchTuning;
+  fatigue: FatigueTuning;
   fielding: Record<FieldPosition | "P", FieldRange>;
 }
 
@@ -126,6 +143,7 @@ export function defaultBaseballConfig(): BaseballConfig {
   return {
     skill: DEFAULT_SKILL_TUNING,
     pitch: DEFAULT_PITCH_TUNING,
+    fatigue: DEFAULT_FATIGUE,
     fielding: DEFAULT_FIELDING_RANGES,
   };
 }
@@ -186,6 +204,14 @@ export type BaseballEvent =
       rbi: number;
     })
   | (Situation & {
+      type: "pitchingChange";
+      /** The fielding side. */
+      side: Side;
+      out: string;
+      in: string;
+      reason: ChangeReason;
+    })
+  | (Situation & {
       type: "steal";
       /** The batter at the plate when the runner went. */
       batter: string;
@@ -217,15 +243,36 @@ interface SideState {
   gameSide: GameSide;
   mult: SideMultipliers;
   next: number;
+  /** The pitcher on the mound, and everyone who has pitched. */
+  pitcher: BaseballPlayer;
+  used: Set<string>;
+  plan: BullpenPlan;
+  unavailable: ReadonlySet<string>;
 }
 
 const clamp01 = (p: number) => Math.min(1, Math.max(0, p));
+
+/** Each location preset's aim weights, flat, and more into the zone when behind. */
+const AIM = Object.fromEntries(
+  Object.entries(LOCATION_PRESETS).map(([name, grid]) => [
+    name,
+    {
+      normal: grid.flat(),
+      behind: grid.flatMap((r, i) =>
+        r.map((w, j) => (inZone(i, j) ? w * 1.4 : w)),
+      ),
+    },
+  ]),
+) as Record<
+  keyof typeof LOCATION_PRESETS,
+  { normal: number[]; behind: number[] }
+>;
 
 export function simulateGame(
   input: MatchInput<BaseballTeam, BaseballConfig>,
   seed: Seed,
 ): BaseballOutput {
-  const { skill, pitch: t, fielding } = input.config;
+  const { skill, pitch: t, fielding, fatigue } = input.config;
   const root = createRng(seed);
   const rng = {
     location: root.fork("location"),
@@ -244,21 +291,34 @@ export function simulateGame(
   });
   const homeSide = gameSide(input.home, true);
   const awaySide = gameSide(input.away, false);
+  const state = (
+    side: Side,
+    team: BaseballTeam,
+    own: GameSide,
+    other: GameSide,
+  ): SideState => ({
+    side,
+    team,
+    gameSide: own,
+    mult: sideMultipliers(own, other, skill),
+    next: 0,
+    pitcher: team.pitcher,
+    used: new Set([team.pitcher.id]),
+    plan: team.plan ?? defaultBullpenPlan(team.bullpen ?? []),
+    unavailable: new Set(team.unavailable ?? []),
+  });
   const states: Record<Side, SideState> = {
-    home: {
-      side: "home",
-      team: input.home,
-      gameSide: homeSide,
-      mult: sideMultipliers(homeSide, awaySide, skill),
-      next: 0,
-    },
-    away: {
-      side: "away",
-      team: input.away,
-      gameSide: awaySide,
-      mult: sideMultipliers(awaySide, homeSide, skill),
-      next: 0,
-    },
+    home: state("home", input.home, homeSide, awaySide),
+    away: state("away", input.away, awaySide, homeSide),
+  };
+  const budgets = new Map<string, number>();
+  const budgetOf = (p: BaseballPlayer) => {
+    let b = budgets.get(p.id);
+    if (b === undefined) {
+      b = pitchBudget(p, fatigue);
+      budgets.set(p.id, b);
+    }
+    return b;
   };
   const score: Record<Side, number> = { home: 0, away: 0 };
   const hits: Record<Side, number> = { home: 0, away: 0 };
@@ -271,17 +331,21 @@ export function simulateGame(
   const half = (inning: number, batting: Side) => {
     const off = states[batting];
     const def = states[batting === "home" ? "away" : "home"];
-    const pitcher = def.team.pitcher;
     const fielders = new Map<
       FieldPosition | "P",
       { p: BaseballPlayer; m: number }
     >();
-    fielders.set("P", { p: pitcher, m: def.mult.pitcher });
-    def.team.batters.forEach((b, i) => {
-      if (b.slot !== "DH")
-        fielders.set(b.slot, { p: b.player, m: def.mult.batters[i] as number });
-    });
-    const catcher = fielders.get("C");
+    const placeFielders = () => {
+      fielders.set("P", { p: def.pitcher, m: def.mult.pitcher });
+      def.team.batters.forEach((b, i) => {
+        if (b.slot !== "DH")
+          fielders.set(b.slot, {
+            p: b.player,
+            m: def.mult.batters[i] as number,
+          });
+      });
+    };
+    placeFielders();
     let outs = 0;
     const bases: Bases = [null, null, null];
     // Extra innings start with the batter before the leadoff man on second.
@@ -311,6 +375,38 @@ export function simulateGame(
       outs < 3 && !walkOff() && faced < MAX_BATTERS_PER_HALF;
       faced++
     ) {
+      // The bullpen plan, at the start of each at-bat.
+      const change = bullpenDecision({
+        plan: def.plan,
+        current: def.pitcher,
+        starter: def.pitcher.id === def.team.pitcher.id,
+        thrown: pitches[def.pitcher.id] ?? 0,
+        budget: budgetOf(def.pitcher),
+        inning,
+        lead: score[def.side] - score[batting],
+        bullpen: def.team.bullpen ?? [],
+        used: def.used,
+        unavailable: def.unavailable,
+        fatigue,
+      });
+      if (change) {
+        events.push({
+          ...situation(),
+          type: "pitchingChange",
+          side: def.side,
+          out: def.pitcher.id,
+          in: change.pitcher.id,
+          reason: change.reason,
+        });
+        def.pitcher = change.pitcher;
+        def.used.add(change.pitcher.id);
+        // Chemistry and the team matchup count the pitcher on both sides.
+        def.gameSide = { ...def.gameSide, pitcher: change.pitcher };
+        def.mult = sideMultipliers(def.gameSide, off.gameSide, skill);
+        off.mult = sideMultipliers(off.gameSide, def.gameSide, skill);
+        placeFielders();
+      }
+      const pitcher = def.pitcher;
       const index = off.next % 9;
       off.next++;
       const slot = off.team.batters[index];
@@ -324,10 +420,15 @@ export function simulateGame(
       const bm = (off.mult.batters[index] as number) + edges.batter;
       const pm = def.mult.pitcher + edges.pitcher;
       const bat = (a: Attribute) => batter.attributes[a] * bm;
-      const arm = (a: Attribute) => pitcher.attributes[a] * pm;
+      // Velocity, control and movement fade once past the pitch budget.
+      const budget = budgetOf(pitcher);
+      // Fatigue: worked out once per pitch, as the pitch is thrown.
+      let tired = 1;
+      const arm = (a: Attribute) =>
+        pitcher.attributes[a] * pm * (a === "stamina" ? 1 : tired);
       const zone = ZONE_PRESETS[batter.zoneProfile ?? "even"];
       const sprayWeights = SPRAY_PRESETS[batter.sprayProfile ?? "spray"];
-      const aim = LOCATION_PRESETS[pitcher.locationProfile ?? "attacks"];
+      const aim = AIM[pitcher.locationProfile ?? "attacks"];
       let balls = 0;
       let strikes = 0;
       let result: PlayResult | null = null;
@@ -346,6 +447,7 @@ export function simulateGame(
           const runner = bases[stealFrom] as string;
           const speed = speedOf(runner);
           if (speed >= t.stealSpeed && rng.steals.chance(t.stealTry)) {
+            const catcher = fielders.get("C");
             const catcherArm =
               (catcher?.p.attributes.arm ?? 50) * (catcher?.m ?? 1);
             const before = situation();
@@ -368,12 +470,12 @@ export function simulateGame(
         }
         // 1. Location: aim by profile, scatter by control.
         pitches[pitcher.id] = (pitches[pitcher.id] ?? 0) + 1;
+        tired = fatigueFactor(pitches[pitcher.id] ?? 0, budget, fatigue);
         // Behind in the count, the pitcher comes into the zone.
         const behind = balls === 3 || balls - strikes >= 2;
-        const cells = aim.flatMap((r, i) =>
-          r.map((w, j) => (behind && inZone(i, j) ? w * 1.4 : w)),
+        const target = rng.location.weightedIndex(
+          behind ? aim.behind : aim.normal,
         );
-        const target = rng.location.weightedIndex(cells);
         let row = Math.floor(target / ZONE_SIZE);
         let col = target % ZONE_SIZE;
         const control = Math.min(100, arm("control"));
