@@ -14,7 +14,7 @@ import {
   loadLatestSeason,
 } from "./season";
 import { endSeasonFor, startSeasonFor, takeYouthFor } from "./season-steps";
-import { loadRosterLimits } from "./sport-settings";
+import { loadRosterLimits, loadSportSwitches } from "./sport-settings";
 import { sportModule } from "./sports";
 import {
   type AiPlayerView,
@@ -480,6 +480,9 @@ export async function runAiWorld({
   const started = Date.now();
   const settings = await loadAiSettings();
   if (!settings.enabled) return { status: "disabled" };
+  // The sport's AI world switch in Admin → Sports (D207).
+  const switches = (await loadSportSwitches()).find((s) => s.sport === SOCCER);
+  if (!switches?.aiEnabled) return { status: "disabled" };
   const db = createServiceClient();
   const { data: row, error } = await db
     .from("ai_runs")

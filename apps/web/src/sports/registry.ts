@@ -17,6 +17,13 @@ export interface SportUi {
 
 export const SPORT_UI: Partial<Record<SportId, SportUi>> = {
   soccer: { id: "soccer", name: "Soccer", basePath: "/soccer", icon: "⚽" },
+  // A stand-in until M17 (ADR 0007 §12); hidden from players (D207).
+  baseball: {
+    id: "baseball",
+    name: "Baseball",
+    basePath: "/baseball",
+    icon: "⚾",
+  },
 };
 
 /** A sport's UI entry, or undefined for a sport the web app can't show. */

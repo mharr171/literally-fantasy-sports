@@ -22,7 +22,7 @@ pnpm + Turborepo monorepo.
 | `apps/web` | Next.js (App Router) app: UI, server actions, auth, admin |
 | `packages/config` | Shared tsconfig (`@lfs/config/tsconfig.base.json`) |
 | `packages/core` | Sport-agnostic engine: seeded RNG, Elo, influence grids, chemistry, name pools, `Sport` interface (ADR 0001) |
-| `packages/sport-*` | One package per sport. `sport-soccer`: positions (D77), attributes and overall (D78), effective skill, match sim, tuning harness |
+| `packages/sport-*` | One package per sport. `sport-soccer`: positions (D77), attributes and overall (D78), effective skill, match sim, tuning harness. `sport-baseball`: a stand-in until M17 (ADR 0007 §12) |
 | `packages/game` | Server-side game steps shared by the web app and the AI runner (ADR 0002): loading clubs and seasons, playing a week, season and squad steps. Uses the service-role Supabase client; no Next.js code |
 | `packages/db` | Drizzle schema (`src/schema.ts`), SQL migrations (`migrations/`), database tests |
 | `docs/` | Architecture notes, ADRs, legal sources |

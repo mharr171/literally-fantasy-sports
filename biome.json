@@ -46,7 +46,8 @@
               "level": "error",
               "options": {
                 "paths": {
-                  "@lfs/sport-soccer": "Import soccer through ./sports/soccer or ask the registry in ./sports (ADR 0007 \u00a71)."
+                  "@lfs/sport-soccer": "Import soccer through ./sports/soccer or ask the registry in ./sports (ADR 0007 \u00a71).",
+                  "@lfs/sport-baseball": "Import baseball through ./sports/baseball or ask the registry in ./sports (ADR 0007 \u00a71)."
                 }
               }
             }

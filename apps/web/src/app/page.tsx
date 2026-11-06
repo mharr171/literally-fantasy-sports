@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { ContinueLink } from "@/components/getting-started";
-import { SPORT_UI, type SportUi } from "@/sports/registry";
+import { visibleSports } from "@/lib/visible-sports";
 
 export default function Home() {
   return (
@@ -14,22 +14,10 @@ export default function Home() {
         against AI teams and the ghosts of other managers&apos; finished
         seasons. Soccer comes first.
       </p>
-      {/* Pick a sport (D191): one card per sport the site shows. */}
-      <ul aria-label="Sports" className="grid gap-3 sm:grid-cols-2">
-        {(Object.values(SPORT_UI) as SportUi[]).map((s) => (
-          <li key={s.id}>
-            <Link
-              href={`${s.basePath}/team`}
-              className="flex items-center gap-3 rounded-lg border border-zinc-200 p-4 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900"
-            >
-              <span aria-hidden="true" className="text-3xl">
-                {s.icon}
-              </span>
-              <span className="font-semibold">{s.name}</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      {/* Pick a sport (D191): one card per sport this viewer may see. */}
+      <Suspense fallback={null}>
+        <SportCards />
+      </Suspense>
       <div className="flex flex-wrap gap-3">
         <Suspense fallback={<BuildLink />}>
           <MainAction />
@@ -58,5 +46,26 @@ function BuildLink() {
     >
       Build your team
     </Link>
+  );
+}
+
+async function SportCards() {
+  const sports = await visibleSports();
+  return (
+    <ul aria-label="Sports" className="grid gap-3 sm:grid-cols-2">
+      {sports.map((s) => (
+        <li key={s.id}>
+          <Link
+            href={`${s.basePath}/team`}
+            className="flex items-center gap-3 rounded-lg border border-zinc-200 p-4 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900"
+          >
+            <span aria-hidden="true" className="text-3xl">
+              {s.icon}
+            </span>
+            <span className="font-semibold">{s.name}</span>
+          </Link>
+        </li>
+      ))}
+    </ul>
   );
 }

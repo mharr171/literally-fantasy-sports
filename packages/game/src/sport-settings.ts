@@ -56,3 +56,40 @@ export async function loadLeagueSize(
   if (error) throw new Error(error.message);
   return (data?.league_size as number | undefined) ?? 12;
 }
+
+/** A sport's two switches (D207): seen by players, and its AI world on. */
+export interface SportSwitches {
+  sport: SportKey;
+  public: boolean;
+  aiEnabled: boolean;
+}
+
+/** Every registered sport's switches; a sport with no row is hidden and off. */
+export async function loadSportSwitches(): Promise<SportSwitches[]> {
+  const { data, error } = await createServiceClient()
+    .from("sport_settings")
+    .select("sport, public, ai_enabled");
+  if (error) throw new Error(error.message);
+  const rows = new Map((data ?? []).map((r) => [r.sport as string, r]));
+  return SPORTS.map((sport) => {
+    const r = rows.get(sport);
+    return {
+      sport,
+      public: r?.public === true,
+      aiEnabled: r?.ai_enabled === true,
+    };
+  });
+}
+
+/** Sets a sport's two switches (D207); admins only, checked by the caller. */
+export async function saveSportSwitches(s: SportSwitches): Promise<void> {
+  const { error } = await createServiceClient()
+    .from("sport_settings")
+    .update({
+      public: s.public,
+      ai_enabled: s.aiEnabled,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("sport", s.sport);
+  if (error) throw new Error(error.message);
+}
