@@ -45,12 +45,11 @@ const failed = (e: unknown): AiResult => ({
 });
 
 const settingsSchema = z.object({
-  enabled: z.boolean(),
   poolSize: z.number().int().min(0).max(1000),
   runsPerDay: z.number().int().min(1).max(48),
 });
 
-/** Saves the AI world's switches (D113, D114). */
+/** Saves the AI world's pool size and runs a day (D113, D114). */
 export async function saveSettings(
   input: z.input<typeof settingsSchema>,
 ): Promise<AiResult> {
