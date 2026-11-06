@@ -19,7 +19,8 @@ export default function FormationsPage() {
 async function squadsByFormation(): Promise<Record<string, number>> {
   const { data, error } = await createServiceClient()
     .from("matchday_squads")
-    .select("formation");
+    // The formation group of each saved squad (ADR 0007 §3).
+    .select("formation:lineup_data->>formation");
   if (error) throw new Error(error.message);
   const out: Record<string, number> = {};
   for (const r of data ?? [])

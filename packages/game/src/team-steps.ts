@@ -19,6 +19,7 @@ import {
   packPrice,
   removalError,
   squadProblems,
+  squadToGroups,
   starterPackPlan,
   starterSelectionError,
 } from "./sports/soccer";
@@ -267,15 +268,20 @@ export async function saveSquadFor(
     benchMax,
   );
   if (problems.length > 0) throw new Error(problems.join(" "));
-  const { error } = await createServiceClient().from("matchday_squads").upsert({
-    team_id: team.id,
-    formation: squad.formation,
-    lineup: squad.lineup,
-    bench: squad.bench,
-    sub_plan: squad.subPlan,
-    moved_from: null,
-    updated_at: new Date().toISOString(),
-  });
+  const { error } = await createServiceClient()
+    .from("matchday_squads")
+    .upsert({
+      team_id: team.id,
+      formation: squad.formation,
+      lineup: squad.lineup,
+      bench: squad.bench,
+      sub_plan: squad.subPlan,
+      // The same squad as named groups (ADR 0007 §3); the database trigger
+      // also keeps this in step until M17 drops the columns.
+      lineup_data: squadToGroups(squad),
+      moved_from: null,
+      updated_at: new Date().toISOString(),
+    });
   if (error) throw new Error(error.message);
 }
 

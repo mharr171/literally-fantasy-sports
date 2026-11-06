@@ -257,6 +257,45 @@ export interface MatchdaySquad {
 }
 
 /**
+ * A saved squad as named groups (ADR 0007 §3), the shape stored in
+ * `matchday_squads.lineup_data`: formation, starters, bench and sub plan.
+ */
+export interface SoccerLineupGroups {
+  formation: string;
+  starters: string[];
+  bench: string[];
+  subPlan: PlannedSub[];
+}
+
+/** A squad as stored groups (ADR 0007 §3). */
+export function squadToGroups(squad: MatchdaySquad): SoccerLineupGroups {
+  return {
+    formation: squad.formation,
+    starters: [...squad.lineup],
+    bench: [...squad.bench],
+    subPlan: [...squad.subPlan],
+  };
+}
+
+/**
+ * A squad from stored groups, or null when they aren't a soccer squad (e.g.
+ * a row saved before the groups were filled in). Unknown groups are ignored.
+ */
+export function squadFromGroups(stored: unknown): MatchdaySquad | null {
+  const g = stored as Partial<Record<keyof SoccerLineupGroups, unknown>> | null;
+  if (!g || typeof g.formation !== "string" || !Array.isArray(g.starters))
+    return null;
+  const ids = (v: unknown) =>
+    Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+  return {
+    formation: g.formation,
+    lineup: ids(g.starters),
+    bench: ids(g.bench),
+    subPlan: Array.isArray(g.subPlan) ? (g.subPlan as PlannedSub[]) : [],
+  };
+}
+
+/**
  * A player's rating in a slot: overall there plus the position-fit bonus, no
  * chemistry. `outOfPosition` is the season's penalty for anywhere other than
  * the player's two positions (D135), 0 when it isn't on.

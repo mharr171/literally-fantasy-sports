@@ -20,6 +20,7 @@ import {
   type Position,
   registerFormations,
   type SoccerPlayer,
+  squadToGroups,
 } from "./sports/soccer";
 
 export interface FormationRow {
@@ -196,6 +197,7 @@ export async function moveOffTurnedOff(
     .update({
       formation: moved.formation,
       lineup: moved.lineup,
+      lineup_data: squadToGroups(moved),
       moved_from: squad.formation,
       updated_at: new Date().toISOString(),
     })

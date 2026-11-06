@@ -13,6 +13,7 @@ import {
   type PlayerStats,
   type Position,
   packContents,
+  squadFromGroups,
 } from "./sports/soccer";
 
 export { SOCCER };
@@ -291,18 +292,16 @@ export async function loadRoster(teamId: string): Promise<RosterPlayer[]> {
 export async function loadSquad(teamId: string): Promise<MatchdaySquad | null> {
   const { data, error } = await createServiceClient()
     .from("matchday_squads")
-    .select("formation, lineup, bench, sub_plan")
+    .select("lineup_data")
     .eq("team_id", teamId)
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) return null;
-  await ensureFormations([data.formation as string]);
-  return {
-    formation: data.formation,
-    lineup: data.lineup as string[],
-    bench: data.bench as string[],
-    subPlan: data.sub_plan as MatchdaySquad["subPlan"],
-  };
+  // The squad as its sport's named groups (ADR 0007 §3).
+  const squad = squadFromGroups(data.lineup_data);
+  if (!squad) throw new Error("This club's saved squad can't be read.");
+  await ensureFormations([squad.formation]);
+  return squad;
 }
 
 /**
