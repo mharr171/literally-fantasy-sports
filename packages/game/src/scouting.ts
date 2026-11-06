@@ -10,7 +10,7 @@ import {
   type PackFocus,
   POSITION_LINE,
   type Position,
-} from "@lfs/sport-soccer";
+} from "./sports/soccer";
 
 export interface ScoutedPlayer {
   displayName: string;

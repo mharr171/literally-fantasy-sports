@@ -1,5 +1,6 @@
 "use client";
 
+import type { SportId } from "@lfs/core";
 import { ROSTER_LIMIT_BOUNDS, type RosterLimits } from "@lfs/sport-soccer";
 import { useState, useTransition } from "react";
 import { saveRosterLimits } from "./actions";
@@ -9,7 +10,7 @@ export function RosterForm({
   sport,
   initial,
 }: {
-  sport: "soccer";
+  sport: SportId;
   initial: RosterLimits;
 }) {
   const [limits, setLimits] = useState(initial);

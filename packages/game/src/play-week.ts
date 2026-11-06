@@ -1,4 +1,16 @@
 import { currentEnergy, spendEnergy } from "@lfs/core";
+import { createServiceClient } from "./db";
+import { moveOffTurnedOff } from "./formations";
+import { scoreOnly } from "./match-kept";
+import {
+  configFor,
+  loadGhostTeams,
+  loadLatestSeason,
+  playedIds,
+  type StoredManagerTeam,
+} from "./season";
+import { loadEnergySettings, loadRosterLimits } from "./sport-settings";
+import { SOCCER } from "./sports";
 import {
   availableSquad,
   FRESH,
@@ -14,18 +26,7 @@ import {
   type SoccerTeam,
   squadProblems,
   squadToTeam,
-} from "@lfs/sport-soccer";
-import { createServiceClient } from "./db";
-import { moveOffTurnedOff } from "./formations";
-import { scoreOnly } from "./match-kept";
-import {
-  configFor,
-  loadGhostTeams,
-  loadLatestSeason,
-  playedIds,
-  type StoredManagerTeam,
-} from "./season";
-import { loadEnergySettings, loadRosterLimits } from "./sport-settings";
+} from "./sports/soccer";
 import { loadRoster, loadSquad, loadStarterPacks, type MyTeam } from "./team";
 
 /**
@@ -74,7 +75,7 @@ export async function playOneWeek(
   // A week without the club's own match is free: the play-in for clubs
   // already in the quarter-finals, and the rounds after it's knocked out (D117).
   const hasMatch = hasOwnMatch(season);
-  const energySettings = await loadEnergySettings("soccer");
+  const energySettings = await loadEnergySettings(SOCCER);
   const now = new Date();
   const stored = {
     energy: team.energy,

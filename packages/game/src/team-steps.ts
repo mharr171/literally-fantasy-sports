@@ -5,6 +5,11 @@
  * (and the shape of the input) first; these check the game rules.
  */
 import { clubColorsError, resalePrice, teamNameError } from "@lfs/core";
+import { createServiceClient } from "./db";
+import { loadFormations } from "./formations";
+import { playerRow } from "./scouting";
+import { liveGenerationSettings, liveSoccerConfig } from "./season";
+import { loadRosterLimits } from "./sport-settings";
 import {
   excludedColorsError,
   type MatchdaySquad,
@@ -16,12 +21,7 @@ import {
   squadProblems,
   starterPackPlan,
   starterSelectionError,
-} from "@lfs/sport-soccer";
-import { createServiceClient } from "./db";
-import { loadFormations } from "./formations";
-import { playerRow } from "./scouting";
-import { liveGenerationSettings, liveSoccerConfig } from "./season";
-import { loadRosterLimits } from "./sport-settings";
+} from "./sports/soccer";
 import {
   loadOpenBoughtPack,
   loadRoster,

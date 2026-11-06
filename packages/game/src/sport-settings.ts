@@ -1,9 +1,12 @@
+import type { SportId } from "@lfs/core";
 import { DEFAULT_ENERGY_SETTINGS, type EnergySettings } from "@lfs/core";
-import { DEFAULT_ROSTER_LIMITS, type RosterLimits } from "@lfs/sport-soccer";
 import { createServiceClient } from "./db";
+import { SOCCER, SPORTS } from "./sports";
+import { DEFAULT_ROSTER_LIMITS, type RosterLimits } from "./sports/soccer";
 
-export const SPORTS = ["soccer"] as const;
-export type SportKey = (typeof SPORTS)[number];
+/** The sports with settings to show: every sport in the registry. */
+export { SPORTS };
+export type SportKey = SportId;
 
 /** A sport's live energy switches (D93), or the defaults if none are stored. */
 export async function loadEnergySettings(
@@ -25,7 +28,7 @@ export async function loadEnergySettings(
 
 /** A sport's roster limits (D182), or soccer's defaults if none are stored. */
 export async function loadRosterLimits(
-  sport: SportKey = "soccer",
+  sport: SportKey = SOCCER,
 ): Promise<RosterLimits> {
   const { data, error } = await createServiceClient()
     .from("sport_settings")

@@ -1,6 +1,6 @@
 "use client";
 
-import type { EnergySettings } from "@lfs/core";
+import type { EnergySettings, SportId } from "@lfs/core";
 import { useState, useTransition } from "react";
 import { saveEnergySettings } from "./actions";
 
@@ -9,7 +9,7 @@ export function EnergyForm({
   sport,
   initial,
 }: {
-  sport: "soccer";
+  sport: SportId;
   initial: EnergySettings;
 }) {
   const [enabled, setEnabled] = useState(initial.enabled);

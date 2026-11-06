@@ -4,6 +4,9 @@
  * database and can't change once made, so the engine's lookup learns them
  * here before any squad that may use one is read.
  */
+
+import { createServiceClient } from "./db";
+import { SOCCER } from "./sports";
 import {
   closestFormation,
   FORMATIONS,
@@ -17,10 +20,7 @@ import {
   type Position,
   registerFormations,
   type SoccerPlayer,
-} from "@lfs/sport-soccer";
-import { createServiceClient } from "./db";
-
-const SOCCER = "soccer";
+} from "./sports/soccer";
 
 export interface FormationRow {
   id: string;

@@ -4,6 +4,16 @@
  * Callers check who is acting first; these check the game rules.
  */
 import { playerWorth } from "@lfs/core";
+import { createServiceClient } from "./db";
+import { readyToPlay } from "./play-week";
+import { playerRow } from "./scouting";
+import {
+  configFor,
+  liveGenerationSettings,
+  liveSoccerConfig,
+  loadLatestSeason,
+  loadLeagueCandidates,
+} from "./season";
 import {
   endOfSeason,
   FRESH,
@@ -15,17 +25,7 @@ import {
   seasonStats,
   snapshotTeam,
   youthIntake,
-} from "@lfs/sport-soccer";
-import { createServiceClient } from "./db";
-import { readyToPlay } from "./play-week";
-import { playerRow } from "./scouting";
-import {
-  configFor,
-  liveGenerationSettings,
-  liveSoccerConfig,
-  loadLatestSeason,
-  loadLeagueCandidates,
-} from "./season";
+} from "./sports/soccer";
 import { loadAgingPlayers, loadRoster, loadSquad, type MyTeam } from "./team";
 
 /** Starts the club's next season: a league of the clubs nearest its Elo (D115). */

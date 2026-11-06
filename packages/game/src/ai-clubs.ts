@@ -5,6 +5,16 @@
  * decides what to do. Decisions only ever see what a manager sees.
  */
 import { createRng } from "@lfs/core";
+import { createServiceClient } from "./db";
+import { enabledFormations, formationToUse } from "./formations";
+import { playOneWeek } from "./play-week";
+import {
+  liveGenerationSettings,
+  liveSoccerConfig,
+  loadLatestSeason,
+} from "./season";
+import { endSeasonFor, startSeasonFor, takeYouthFor } from "./season-steps";
+import { loadRosterLimits } from "./sport-settings";
 import {
   type AiPlayerView,
   type AiProfile,
@@ -22,17 +32,7 @@ import {
   starterPackPlan,
   weeksThisRun,
   youthIntake,
-} from "@lfs/sport-soccer";
-import { createServiceClient } from "./db";
-import { enabledFormations, formationToUse } from "./formations";
-import { playOneWeek } from "./play-week";
-import {
-  liveGenerationSettings,
-  liveSoccerConfig,
-  loadLatestSeason,
-} from "./season";
-import { endSeasonFor, startSeasonFor, takeYouthFor } from "./season-steps";
-import { loadRosterLimits } from "./sport-settings";
+} from "./sports/soccer";
 import {
   loadOpenBoughtPack,
   loadRewardPacks,

@@ -2,9 +2,10 @@
  * Season history (D121, ADR 0005): every season a club has played, from its
  * permanent one-line records (D120), and what a past season's page shows.
  */
-import { MANAGER_SLOT } from "@lfs/sport-soccer";
+
 import { createServiceClient } from "./db";
 import type { LoadedSeason } from "./season";
+import { MANAGER_SLOT } from "./sports/soccer";
 
 export type Playoffs = "champion" | "final" | "semi" | "quarter" | "none";
 
