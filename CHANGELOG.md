@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.7.0](https://github.com/mharr171/literally-fantasy-sports/compare/v1.6.0...v1.7.0) (2026-11-06)
+
+
+### Features
+
+* admin page showing each manager's seasons, titles and best Elo ([#156](https://github.com/mharr171/literally-fantasy-sports/issues/156)) ([bdb7a37](https://github.com/mharr171/literally-fantasy-sports/commit/bdb7a370991b9c01d5e36b19f68f09ecf874c0a5))
+* admins can show or hide each sport, and baseball arrives for admins ([#151](https://github.com/mharr171/literally-fantasy-sports/issues/151)) ([895a520](https://github.com/mharr171/literally-fantasy-sports/commit/895a520cd7915c4b693dcc8f4bc69a98c4e562d7))
+* one AI world switch per sport, in Admin → Sports ([#153](https://github.com/mharr171/literally-fantasy-sports/issues/153)) ([cfadc53](https://github.com/mharr171/literally-fantasy-sports/commit/cfadc53f8ec3b0996ae8c3a03435a2c010a7e164))
+* player stats are stored by key, ready for every sport ([#140](https://github.com/mharr171/literally-fantasy-sports/issues/140)) ([cc0d18b](https://github.com/mharr171/literally-fantasy-sports/commit/cc0d18be531ef820b27d611b9efca1d6fef7fb32))
+* record each manager's seasons, titles, finals and best Elo ([#154](https://github.com/mharr171/literally-fantasy-sports/issues/154)) ([4f6cbb8](https://github.com/mharr171/literally-fantasy-sports/commit/4f6cbb8d6853d409b3840c6e0fcf059a38f1e7e5))
+* record managers' season milestones at every season close ([#155](https://github.com/mharr171/literally-fantasy-sports/issues/155)) ([c32f4b7](https://github.com/mharr171/literally-fantasy-sports/commit/c32f4b7efdc1beeadcd1a286ea117d1cb800cd3a))
+* soccer moves to /soccer, with a sport picker and sport icons in the top bar ([#149](https://github.com/mharr171/literally-fantasy-sports/issues/149)) ([4c820c2](https://github.com/mharr171/literally-fantasy-sports/commit/4c820c2d9967458a8bee2cbc9dd748e74d5492e6))
+* start a club in each sport, copying your soccer club's name and colors ([#152](https://github.com/mharr171/literally-fantasy-sports/issues/152)) ([18d62c5](https://github.com/mharr171/literally-fantasy-sports/commit/18d62c5c8aead8399df360ad262fefff0373a5fe))
+
+
+### Documentation
+
+* plan baseball as three milestones, M16 to M18 ([#135](https://github.com/mharr171/literally-fantasy-sports/issues/135)) ([c27314a](https://github.com/mharr171/literally-fantasy-sports/commit/c27314ade715de9fc5205ea3893e8a23e6cba372))
+* plan the framework for every sport (ADR 0007) ([#137](https://github.com/mharr171/literally-fantasy-sports/issues/137)) ([f26b2d3](https://github.com/mharr171/literally-fantasy-sports/commit/f26b2d33d3aecd3cd2ddab180472d1ef71786633))
+* tick M16 sport-agnostic framework (D209) ([#157](https://github.com/mharr171/literally-fantasy-sports/issues/157)) ([0a53f00](https://github.com/mharr171/literally-fantasy-sports/commit/0a53f00a45b5259ebca43b7d2360279d176d1f30))
+
 ## [1.6.0](https://github.com/mharr171/literally-fantasy-sports/compare/v1.5.0...v1.6.0) (2026-11-06)
 
 
