@@ -196,9 +196,9 @@ describe("the bullpen plan (D197)", () => {
 
 describe("rest and the rotation (D213)", () => {
   it("rests starters by pitches thrown", () => {
-    expect([30, 50, 74, 75, 99, 100, 120].map(starterRestDays)).toEqual([
-      1, 3, 3, 4, 4, 5, 5,
-    ]);
+    expect(
+      [30, 50, 74, 75, 99, 100, 120].map((p) => starterRestDays(p)),
+    ).toEqual([1, 3, 3, 4, 4, 5, 5]);
   });
 
   it("rests relievers after 25+ pitches or two days running", () => {
