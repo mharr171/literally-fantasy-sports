@@ -1,70 +1,30 @@
 /**
  * A club's season steps (ADR 0002): start a season, end it, take youth.
  * The same code runs for a manager pressing a button and for an AI club.
- * Callers check who is acting first; these check the game rules.
+ * Callers check who is acting first; these check the rules every sport
+ * shares and ask the club's sport for the rest (ADR 0009 §1).
  */
-import { playerWorth } from "@lfs/core";
 import { createServiceClient } from "./db";
-import { readyToPlay } from "./play-week";
-import { playerRow } from "./scouting";
-import {
-  configFor,
-  liveGenerationSettings,
-  liveSoccerConfig,
-  loadLatestSeason,
-  loadLeagueCandidates,
-} from "./season";
-import { loadLeagueSize } from "./sport-settings";
-import {
-  endOfSeason,
-  FRESH,
-  MANAGER_SLOT,
-  nearestLeague,
-  type PlayerCondition,
-  packEloShift,
-  seasonReset,
-  seasonStats,
-  snapshotTeam,
-  youthIntake,
-} from "./sports/soccer";
-import { loadAgingPlayers, loadRoster, loadSquad, type MyTeam } from "./team";
+import { readyToPlay, seasonOf } from "./play-week";
+import { loadLatestSeason } from "./season";
+import type { MyTeam } from "./team";
 
 /** Starts the club's next season: a league of the clubs nearest its Elo (D115). */
-export async function startSeasonFor(teamIn: MyTeam): Promise<void> {
-  const { team } = await readyToPlay(teamIn);
+export async function startSeasonFor(team: MyTeam): Promise<void> {
+  await readyToPlay(team);
   const latest = await loadLatestSeason(team.id);
   if (latest && latest.status !== "finished")
     throw new Error("Your season is already under way.");
   if (latest && !(latest.closed && latest.intakeResolved))
     throw new Error("Wrap up last season first: season end and youth intake.");
   const seed = crypto.randomUUID();
-  const { label } = await liveSoccerConfig();
-  // The 11 clubs nearest its Elo (D115).
-  // The clubs nearest its Elo (D115), as many as the sport's league holds.
-  const league = nearestLeague(
-    seed,
-    { name: team.name, elo: team.elo, teamId: team.id },
-    await loadLeagueCandidates(team.elo, team.id),
-    await loadLeagueSize(),
-  );
+  const league = await seasonOf(team).newSeason(team, seed);
   const { error } = await createServiceClient().rpc("start_season", {
     p_team: team.id,
     p_seed: seed,
-    p_config_version: label,
-    p_slots: league.slots.map((s) => ({
-      slot: s.slot,
-      kind: s.kind,
-      name: s.name,
-      start_rating: s.startRating,
-      // start_season copies these clubs as they are now (D115).
-      source_team_id: s.ghostId ?? null,
-    })),
-    p_fixtures: league.fixtures.map((f) => ({
-      week: f.week,
-      stage: f.stage,
-      home_slot: f.homeSlot,
-      away_slot: f.awaySlot,
-    })),
+    p_config_version: league.configVersion,
+    p_slots: league.slots,
+    p_fixtures: league.fixtures,
   });
   if (error) {
     if (error.message.includes("already in progress"))
@@ -87,96 +47,11 @@ export async function endSeasonFor(team: MyTeam): Promise<void> {
   if (!season || season.status !== "finished")
     throw new Error("Finish the season first.");
   if (season.closed) throw new Error("This season is already wrapped up.");
-  const [players, roster, squad] = await Promise.all([
-    loadAgingPlayers(team.id),
-    loadRoster(team.id),
-    loadSquad(team.id),
-  ]);
-  // The team as it finished the season: its ghost, if it's its best (D116).
-  const ghost = snapshotTeam(
-    roster.map((p) => ({
-      id: p.id,
-      displayName: p.displayName,
-      attributes: p.attributes,
-      primaryPosition: p.primaryPosition,
-      secondaryPosition: p.secondaryPosition,
-      chemistryColor: p.chemistryColor,
-      overall: p.overall,
-      templateVariant: p.templateVariant,
-      secondaryTemplateVariant: p.secondaryTemplateVariant,
-    })),
-    squad,
-  );
-  const snapshot = {
-    players: ghost.players,
-    squad: ghost.squad,
-    stats: seasonStats(season.slots, season.fixtures),
-    game_version: process.env.GAME_VERSION ?? "unknown",
-  };
-  // Young players grow with their minutes, if the season's settings say so (D154).
-  const { balance } = await configFor(season.configVersion);
-  const ownMatches = season.fixtures.filter(
-    (f) =>
-      f.homeScore !== null &&
-      (f.homeSlot === MANAGER_SLOT || f.awaySlot === MANAGER_SLOT),
-  ).length;
-  const result = endOfSeason(season.seed, players, undefined, undefined, {
-    weight: balance.condition.playingTimeGrowth,
-    clubMinutes: ownMatches * 90,
-  });
-  const byId = new Map(players.map((p) => [p.id, p]));
-  const updates = result.aged.map((a) => {
-    const p = byId.get(a.id) as (typeof players)[number];
-    return {
-      id: a.id,
-      age: a.age,
-      attributes: a.attributes,
-      overall: a.overall,
-      worth: playerWorth({
-        overall: a.overall,
-        age: a.age,
-        potentialRange: p.potentialRange,
-      }),
-      ...conditionRow(
-        seasonReset(roster.find((r) => r.id === a.id)?.condition ?? FRESH),
-      ),
-    };
-  });
-  const review = {
-    retired: result.retired.map((id) => {
-      const p = byId.get(id) as (typeof players)[number];
-      return {
-        name: p.displayName,
-        position: p.primaryPosition,
-        age: p.age + 1,
-        overall: p.overall,
-      };
-    }),
-    changes: result.aged
-      .map((a) => {
-        const p = byId.get(a.id) as (typeof players)[number];
-        return {
-          name: p.displayName,
-          position: p.primaryPosition,
-          age: a.age,
-          from: p.overall,
-          to: a.overall,
-        };
-      })
-      .filter((c) => c.from !== c.to)
-      .sort((x, y) => y.to - y.from - (x.to - x.from)),
-  };
-  // The playoff finish earns a free pack (D181), at the club's Elo now.
-  const { balance: live } = await liveSoccerConfig();
   const { error } = await createServiceClient().rpc(
     "close_season_with_reward",
     {
       p_season: season.id,
-      p_updates: updates,
-      p_retired: result.retired,
-      p_review: review,
-      p_snapshot: snapshot,
-      p_elo_shift: packEloShift(team.elo, live.packs),
+      ...(await seasonOf(team).closeSeason(team, season)),
     },
   );
   if (error) {
@@ -196,15 +71,11 @@ export async function takeYouthFor(
   const season = await loadLatestSeason(team.id);
   if (!season?.closed || season.intakeResolved)
     throw new Error("The youth intake isn't open.");
-  const prospects = youthIntake(
-    season.seed,
-    undefined,
-    await liveGenerationSettings(),
-  );
+  const prospects = await seasonOf(team).youthRows(season.seed);
   const rows = picks.map((i) => {
     const p = prospects[i];
     if (!p) throw new Error("That pick isn't valid.");
-    return playerRow(p);
+    return p;
   });
   const { error } = await createServiceClient().rpc("resolve_youth_intake", {
     p_season: season.id,
@@ -216,13 +87,4 @@ export async function takeYouthFor(
       throw new Error("The youth intake isn't open.");
     throw new Error(error.message);
   }
-}
-
-function conditionRow(c: PlayerCondition) {
-  return {
-    fitness: c.fitness,
-    injured_days: c.injuredDays,
-    suspended_games: c.suspendedGames,
-    yellow_cards: c.yellowCards,
-  };
 }

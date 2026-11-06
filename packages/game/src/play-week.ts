@@ -1,60 +1,24 @@
 import { currentEnergy, spendEnergy } from "@lfs/core";
 import { createServiceClient } from "./db";
-import { moveOffTurnedOff } from "./formations";
-import { scoreOnly } from "./match-kept";
-import {
-  configFor,
-  loadGhostTeams,
-  loadLatestSeason,
-  playedIds,
-  type StoredManagerTeam,
-} from "./season";
-import { loadEnergySettings, loadRosterLimits } from "./sport-settings";
-import { SOCCER } from "./sports";
-import {
-  availableSquad,
-  FRESH,
-  formModifier,
-  isAvailable,
-  MANAGER_SLOT,
-  matchStats,
-  nextCondition,
-  nextForm,
-  nextMorale,
-  playWeek,
-  rosterWarning,
-  type SoccerTeam,
-  squadProblems,
-  squadToTeam,
-} from "./sports/soccer";
-import { loadRoster, loadSquad, loadStarterPacks, type MyTeam } from "./team";
+import { loadLatestSeason } from "./season";
+import { MANAGER_SLOT, type SeasonModule } from "./season-module";
+import { loadEnergySettings } from "./sport-settings";
+import { sportModule } from "./sports";
+import type { MyTeam } from "./team";
+
+/** The club's sport's season part (ADR 0009 §1). */
+export function seasonOf(team: MyTeam): SeasonModule {
+  const season = sportModule(team.sport).season;
+  if (!season) throw new Error("Seasons for this sport aren't open yet.");
+  return season;
+}
 
 /**
- * Everything a match needs from a team: a picked starting squad, a roster
- * of 22–30 (D54) and a valid matchday squad (D88).
+ * Checks the club can play: its sport's rules for a picked, valid squad.
+ * Returns what the sport found, for the week it plays.
  */
-export async function readyToPlay(team: MyTeam) {
-  const packs = await loadStarterPacks(team.id);
-  if (packs.some((p) => !p.resolved))
-    throw new Error("Pick your starting squad first.");
-  const [roster, saved, limits] = await Promise.all([
-    loadRoster(team.id),
-    loadSquad(team.id),
-    loadRosterLimits(),
-  ]);
-  const warning = rosterWarning(roster.length, limits);
-  if (warning) throw new Error(warning);
-  if (!saved) throw new Error("Save a matchday squad first.");
-  const squad = await moveOffTurnedOff(team.id, saved, roster);
-  const problems = squadProblems(
-    squad,
-    new Set(roster.map((p) => p.id)),
-    undefined,
-    limits.benchMax,
-  );
-  if (problems.length > 0)
-    throw new Error(`Fix your matchday squad first: ${problems.join(" ")}`);
-  return { team, roster, squad };
+export function readyToPlay(team: MyTeam): Promise<unknown> {
+  return seasonOf(team).readyToPlay(team);
 }
 
 /**
@@ -64,10 +28,10 @@ export async function readyToPlay(team: MyTeam) {
  * Returns the season's status afterwards.
  */
 export async function playOneWeek(
-  teamIn: MyTeam,
+  team: MyTeam,
   { useEnergy }: { useEnergy: boolean },
 ): Promise<"regular" | "playoffs" | "finished"> {
-  const { team, roster, squad } = await readyToPlay(teamIn);
+  const ready = await readyToPlay(team);
   const season = await loadLatestSeason(team.id);
   if (!season || season.status === "finished")
     throw new Error("Start a season first.");
@@ -75,7 +39,7 @@ export async function playOneWeek(
   // A week without the club's own match is free: the play-in for clubs
   // already in the quarter-finals, and the rounds after it's knocked out (D117).
   const hasMatch = hasOwnMatch(season);
-  const energySettings = await loadEnergySettings(SOCCER);
+  const energySettings = await loadEnergySettings(team.sport);
   const now = new Date();
   const stored = {
     energy: team.energy,
@@ -97,117 +61,20 @@ export async function playOneWeek(
     }
     energyAfter = spendEnergy(stored, now, energySettings);
   }
-  // The season plays and pays by the settings version it started with.
-  const { config, balance } = await configFor(season.configVersion);
-  // Injured and suspended players sit out; the best fit players step in.
-  const condition = new Map(roster.map((p) => [p.id, p.condition]));
-  const { squad: playing } = availableSquad(squad, roster, (id) =>
-    isAvailable(condition.get(id) ?? FRESH),
-  );
-  const elo = Object.fromEntries(season.slots.map((s) => [s.slot, s.elo]));
-  elo[MANAGER_SLOT] = team.elo;
-  const managerTeam: SoccerTeam = {
-    ...squadToTeam(team.id, playing, new Map(roster.map((p) => [p.id, p]))),
-    fitness: Object.fromEntries(roster.map((p) => [p.id, p.condition.fitness])),
-    // Form and morale nudge skill a little (M4).
-    modifiers: Object.fromEntries(
-      roster.map((p) => [
-        p.id,
-        formModifier(p.form, team.morale, balance.form),
-      ]),
-    ),
-  };
-  const managerNames = new Map(roster.map((p) => [p.id, p.displayName]));
-  const outcome = playWeek(
-    {
-      seed: season.seed,
-      status: season.status,
-      week: season.week,
-      slots: season.slots,
-      elo,
-      fixtures: season.fixtures,
-    },
-    {
-      team: managerTeam,
-      names: managerNames,
-      ghosts: await loadGhostTeams(season.id),
-    },
-    config,
-    balance.payouts,
-  );
-  // Kept with the manager's result so the match can be replayed (M5).
-  const keptTeam: StoredManagerTeam = {
-    team: managerTeam,
-    names: Object.fromEntries(
-      playedIds(managerTeam).map((id) => [id, managerNames.get(id) ?? "?"]),
-    ),
-  };
-  const isMine = (id: string) => {
-    const f = season.fixtures.find((x) => x.id === id);
-    return f?.homeSlot === MANAGER_SLOT || f?.awaySlot === MANAGER_SLOT;
-  };
+  const week = await seasonOf(team).playWeek(team, ready, season);
   const { error } = await createServiceClient().rpc("record_week", {
     p_season: season.id,
     p_week: season.week,
-    p_results: outcome.played.map((p) => ({
-      id: p.id,
-      home_score: p.homeScore,
-      away_score: p.awayScore,
-      winner: p.winner,
-      // Other clubs' matches keep only their score (D120).
-      summary: isMine(p.id) ? p.summary : scoreOnly(p.summary),
-      // AI clubs never keep replay details (ADR 0002).
-      manager_team: isMine(p.id) && team.kind === "human" ? keptTeam : null,
-    })),
-    p_elo: Object.fromEntries(
-      Object.entries(outcome.elo).map(([slot, rating]) => [slot, rating]),
-    ),
-    p_funds: outcome.managerFunds,
-    p_new_fixtures: outcome.newFixtures.map((f) => ({
-      week: f.week,
-      stage: f.stage,
-      home_slot: f.homeSlot,
-      away_slot: f.awaySlot,
-    })),
-    p_status: outcome.status,
-    p_next_week: outcome.week,
+    ...week.args,
     p_energy: energyAfter?.energy ?? null,
     p_energy_updated_at: energyAfter?.updatedAt.toISOString() ?? null,
-    p_morale: nextMorale(team.morale, outcome.managerResult, balance.form),
-    p_players: roster.map((p) => {
-      const next = nextCondition(
-        p.condition,
-        outcome.managerReports[p.id],
-        balance.condition,
-      );
-      return {
-        id: p.id,
-        fitness: next.fitness,
-        injured_days: next.injuredDays,
-        suspended_games: next.suspendedGames,
-        yellow_cards: next.yellowCards,
-        form: nextForm(
-          p.form,
-          outcome.managerReports[p.id],
-          outcome.managerResult,
-          balance.form,
-          { position: p.primaryPosition, conceded: outcome.managerConceded },
-        ),
-        // Career totals for the retirement record (D120, D143). Only the
-        // club's own match counts, never its copies in other leagues.
-        appeared: (outcome.managerReports[p.id]?.minutes ?? 0) > 0,
-        // Playing time this season, for growth at season end (D154).
-        minutes: Math.round(outcome.managerReports[p.id]?.minutes ?? 0),
-        ...matchStats(outcome.managerReports[p.id], outcome.managerResult),
-      };
-    }),
   });
   if (error) {
     if (error.message.includes("already played"))
       throw new Error("That week has already been played.");
     throw new Error(error.message);
   }
-  return outcome.status;
+  return week.status;
 }
 
 /** Whether the club has its own match in the season's current week. */

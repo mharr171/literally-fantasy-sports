@@ -1,3 +1,4 @@
+import type { SportId } from "@lfs/core";
 import { createServiceClient } from "./db";
 import { ensureFormations } from "./formations";
 import { sortPacks } from "./scouting";
@@ -33,6 +34,8 @@ export interface MyTeam {
   kind: "human" | "ai";
   /** Weeks without the club's own match play by themselves (D134). */
   skipIdleWeeks: boolean;
+  /** The club's sport (D192): its season steps ask that sport's module. */
+  sport: SportId;
 }
 
 /**
@@ -50,6 +53,7 @@ const toTeam = (data: {
   colors: string[] | null;
   kind: string;
   skip_idle_weeks: boolean;
+  sport: string;
 }): MyTeam => ({
   id: data.id,
   name: data.name,
@@ -61,6 +65,7 @@ const toTeam = (data: {
   colors: data.colors ?? [],
   kind: data.kind === "ai" ? "ai" : "human",
   skipIdleWeeks: data.skip_idle_weeks,
+  sport: data.sport as SportId,
 });
 
 /** Any team, by id (admin tools). */
@@ -68,7 +73,7 @@ export async function loadTeamById(teamId: string): Promise<MyTeam | null> {
   const { data, error } = await createServiceClient()
     .from("teams")
     .select(
-      "id, name, elo, funds, energy, energy_updated_at, morale, colors, kind, skip_idle_weeks",
+      "id, name, elo, funds, energy, energy_updated_at, morale, colors, kind, skip_idle_weeks, sport",
     )
     .eq("id", teamId)
     .eq("sport", SOCCER)
@@ -98,7 +103,7 @@ export async function loadMyTeam(
   const { data, error } = await createServiceClient()
     .from("teams")
     .select(
-      "id, name, elo, funds, energy, energy_updated_at, morale, colors, kind, skip_idle_weeks",
+      "id, name, elo, funds, energy, energy_updated_at, morale, colors, kind, skip_idle_weeks, sport",
     )
     .eq("owner_id", ownerId)
     .eq("sport", sport)
