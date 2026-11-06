@@ -582,6 +582,13 @@
       "when": 1793958607309,
       "tag": "0082_baseball_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 83,
+      "version": "7",
+      "when": 1793959169195,
+      "tag": "0083_baseball_writers",
+      "breakpoints": true
     }
   ]
 }
