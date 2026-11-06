@@ -12,6 +12,7 @@ import {
   type Sport,
   type StatDef,
 } from "@lfs/core";
+import { PLAYERS_ON_FIELD } from "./generation";
 
 /** A stand-in club: a name and nine players (one lineup group). */
 export interface StandInTeam {
@@ -66,7 +67,7 @@ export const baseball: Sport<
 > = {
   id: "baseball",
   name: "Baseball",
-  playersOnField: 9,
+  playersOnField: PLAYERS_ON_FIELD,
   results: {
     allowsDraws: false,
     points: { win: 1, draw: 0, loss: 0 },
@@ -76,3 +77,9 @@ export const baseball: Sport<
   stats: BASEBALL_STATS,
   simulate: simulateStandIn,
 };
+
+export * from "./attributes";
+export * from "./generation";
+export * from "./overall";
+export * from "./player";
+export * from "./positions";
