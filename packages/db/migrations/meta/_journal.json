@@ -575,6 +575,13 @@
       "when": 1793949913642,
       "tag": "0081_drop_old_soccer_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1793958607309,
+      "tag": "0082_baseball_columns",
+      "breakpoints": true
     }
   ]
 }

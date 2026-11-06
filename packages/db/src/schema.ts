@@ -270,6 +270,17 @@ export const players = pgTable(
     yellowCards: integer().notNull().default(0),
     /** Recent form, −1 to 1 (M4). */
     form: doublePrecision().notNull().default(0),
+    /**
+     * Days a pitcher still rests before he can pitch again (ADR 0009 §3);
+     * 0 for everyone else.
+     */
+    restDays: integer().notNull().default(0),
+    /**
+     * A sport's extra traits (ADR 0009 §4): baseball's pitcher role, zone,
+     * spray and location presets, and how the player bats and throws.
+     * Empty for soccer.
+     */
+    traits: jsonb().notNull().default({}),
     /** Career totals for the retirement record (D120). */
     appearances: integer().notNull().default(0),
     goals: integer().notNull().default(0),
@@ -298,6 +309,8 @@ export const players = pgTable(
       sql`${t.potentialLow} <= ${t.potentialHigh} and ${t.potentialHigh} <= 99`,
     ),
     check("players_age_range", sql`${t.age} between 14 and 50`),
+    check("players_rest_days", sql`${t.restDays} between 0 and 30`),
+    check("players_traits", sql`jsonb_typeof(${t.traits}) = 'object'`),
     check("players_worth_nonnegative", sql`${t.worth} >= 0`),
     check(
       "players_condition",
@@ -345,9 +358,10 @@ export const packs = pgTable(
       "packs_choice",
       sql`${t.eloShift} between -10 and 15 and cardinality(${t.excludedColors}) <= 3`,
     ),
+    // Each sport's focuses (D196, D221).
     check(
       "packs_focus",
-      sql`${t.focus} in ('attack', 'midfield', 'defence', 'goal', 'any')`,
+      sql`(${t.sport} = 'soccer' and ${t.focus} in ('attack', 'midfield', 'defence', 'goal', 'any')) or (${t.sport} = 'baseball' and ${t.focus} in ('starters', 'relievers', 'infield', 'outfield', 'any'))`,
     ),
     check(
       "packs_resolved_after_opened",
@@ -482,7 +496,7 @@ export const seasonRecords = pgTable(
     check("season_records_sport", sql`${t.sport} ${SPORT_CHECK}`),
     check(
       "season_records_playoffs",
-      sql`${t.playoffs} in ('none', 'quarter', 'semi', 'final', 'champion')`,
+      sql`${t.playoffs} in ('none', 'wildcard', 'quarter', 'semi', 'final', 'champion')`,
     ),
   ],
 ).enableRLS();
@@ -612,6 +626,11 @@ export const fixtures = pgTable(
      * replayed from its seed (M5). Null for matches the manager wasn't in.
      */
     managerTeam: jsonb(),
+    /**
+     * A game a best-of series didn't need (ADR 0009 §2): drawn with the
+     * series, never played.
+     */
+    skipped: boolean().notNull().default(false),
     playedAt: timestamp({ withTimezone: true }),
   },
   (t) => [
@@ -625,6 +644,10 @@ export const fixtures = pgTable(
       sql`${t.winner} is null or ${t.winner} in ('home', 'away')`,
     ),
     check("fixtures_two_teams", sql`${t.homeSlot} <> ${t.awaySlot}`),
+    check(
+      "fixtures_skipped_unplayed",
+      sql`not ${t.skipped} or ${t.homeScore} is null`,
+    ),
     pgPolicy("fixtures_select_own", {
       for: "select",
       to: authenticatedRole,
