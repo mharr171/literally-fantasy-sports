@@ -13,7 +13,11 @@ import {
   type Rng,
 } from "@lfs/core";
 import { aiTeamName } from "./ai-team";
-import { isAvailable, type PlayerCondition } from "./condition";
+import {
+  DEFAULT_CONDITION_SETTINGS,
+  isAvailable,
+  type PlayerCondition,
+} from "./condition";
 import type { PackFocus } from "./generation";
 import {
   autoPickSquad,
@@ -360,9 +364,12 @@ const ROTATION: Record<Personality, number> = {
 export function aiSquad(
   roster: readonly AiSquadPlayer[],
   profile: AiProfile,
+  /** Fitness below which a player is rested if anyone fitter can play (D188). */
+  restBelowFitness = DEFAULT_CONDITION_SETTINGS.restBelowFitness,
 ): MatchdaySquad {
   const byId = new Map(roster.map((p) => [p.id, p]));
   return autoPickSquad(roster, profile.formation, {
+    rested: (id) => (byId.get(id)?.condition.fitness ?? 100) < restBelowFitness,
     available: (id) => {
       const p = byId.get(id);
       return p ? isAvailable(p.condition) : false;

@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { aiSquad } from "../src/ai-manager";
+import { DEFAULT_CONDITION_SETTINGS, FRESH } from "../src/condition";
 import { STARTER_PACKS } from "../src/generation";
 import { defaultSoccerConfig, simulateMatch } from "../src/match";
 import {
@@ -285,6 +287,59 @@ describe("autoPickSquad with injuries, bans, fitness and form (M4)", () => {
     });
     const changed = squad.lineup.filter((id) => !base.lineup.includes(id));
     expect(changed.length).toBeGreaterThan(0);
+  });
+});
+
+describe("resting tired players (D188)", () => {
+  const base = autoPickSquad(players);
+  const starters = base.lineup.slice(1) as string[];
+
+  it("rests a tired starter for a fitter player, even out of position", () => {
+    // Every starter's position-mates on the bench are tired too, so only an
+    // out-of-position fresh player can replace the first starter.
+    const tiredOne = starters[0] as string;
+    const pos = byId.get(tiredOne)?.primaryPosition;
+    const tired = new Set(
+      players
+        .filter((p) => p.primaryPosition === pos && p.id !== base.lineup[0])
+        .map((p) => p.id),
+    );
+    const without = autoPickSquad(players, DEFAULT_FORMATION);
+    expect(without.lineup).toContain(tiredOne);
+    const squad = autoPickSquad(players, DEFAULT_FORMATION, {
+      rested: (id) => tired.has(id),
+    });
+    expect(squad.lineup).not.toContain(tiredOne);
+    expect(squad.lineup.some((id) => tired.has(id))).toBe(false);
+    expect(squadProblems(squad, ids)).toEqual([]);
+  });
+
+  it("still starts tired players when nobody fitter is left", () => {
+    const few = players.slice(0, 13);
+    const all = new Set(few.map((p) => p.id));
+    const squad = autoPickSquad(few, DEFAULT_FORMATION, {
+      rested: (id) => all.has(id),
+    });
+    expect(squad.lineup.filter(Boolean)).toHaveLength(11);
+  });
+
+  it("AI clubs rest players below the cutoff, and 0 turns it off", () => {
+    const tiredOne = starters[0] as string;
+    const roster = players.map((p) => ({
+      ...p,
+      condition: { ...FRESH, fitness: p.id === tiredOne ? 20 : 100 },
+      form: 0,
+    }));
+    const profile = {
+      personality: "spender" as const,
+      pace: "normal" as const,
+      formation: DEFAULT_FORMATION,
+    };
+    expect(aiSquad(roster, profile).lineup).not.toContain(tiredOne);
+    expect(DEFAULT_CONDITION_SETTINGS.restBelowFitness).toBe(50);
+    expect(aiSquad(roster, profile, 10).lineup).toEqual(
+      aiSquad(roster, profile, 0).lineup,
+    );
   });
 });
 

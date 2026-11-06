@@ -190,6 +190,9 @@ async function Guide() {
         <p>
           Fitness, form and morale matter too: tired players are weaker, so
           rotate your squad over a season.
+          {balance.condition.restBelowFitness > 0
+            ? ` Auto-pick leaves players below ${balance.condition.restBelowFitness}% fitness out of the starting 11 whenever someone fitter can play, even out of position.`
+            : ""}
         </p>
       </Section>
 

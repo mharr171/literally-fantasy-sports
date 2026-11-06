@@ -380,6 +380,11 @@ export interface PickOptions {
   weight?: (id: string) => number;
   /** Substitutes to pick, up to the sport's bench size (D182); 11 by default. */
   benchSize?: number;
+  /**
+   * True for players too tired to start (D188): they're picked only when
+   * nobody fitter can fill the slot, even out of position.
+   */
+  rested?: (id: string) => boolean;
 }
 
 /**
@@ -398,10 +403,14 @@ export function autoPickSquad(
     formation(formationId) ?? (formation(DEFAULT_FORMATION) as Formation);
   const available = options.available ?? (() => true);
   const weight = options.weight ?? (() => 1);
-  // Available players always outrank unavailable ones, then players in their
-  // own positions (D135), then by weighted rating.
+  const rested = options.rested ?? (() => false);
+  // Available players always outrank unavailable ones, then players fit
+  // enough to start (D188), then players in their own positions (D135),
+  // then by weighted rating.
   const score = (p: PickablePlayer, rating: number) =>
-    (available(p.id) ? 1_000_000 : 0) + rating * weight(p.id);
+    (available(p.id) ? 1_000_000 : 0) +
+    (rested(p.id) ? 0 : 10_000) +
+    rating * weight(p.id);
   const slotScore = (p: PickablePlayer, position: Position) =>
     score(p, slotRating(p, position)) +
     (playsPosition(p, position) ? 1_000 : 0);

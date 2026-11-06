@@ -9,7 +9,7 @@ import { WithTemplates } from "@/components/player/with-templates";
 import { getCurrentUser } from "@/lib/auth";
 import { loadFormations } from "@/lib/formations";
 import { pickOptions } from "@/lib/pick-options";
-import { currentOutOfPosition } from "@/lib/season";
+import { currentOutOfPosition, liveSoccerConfig } from "@/lib/season";
 import { loadRosterLimits } from "@/lib/sport-settings";
 import {
   loadMovedFrom,
@@ -42,7 +42,7 @@ async function SquadContent() {
   if (!user) redirect("/sign-in");
   const team = await loadMyTeam(user.id);
   if (!team) redirect("/team");
-  const [packs, roster, saved, outOfPosition, all, movedFrom, limits] =
+  const [packs, roster, saved, outOfPosition, all, movedFrom, limits, live] =
     await Promise.all([
       loadStarterPacks(team.id),
       loadRoster(team.id),
@@ -51,7 +51,9 @@ async function SquadContent() {
       loadFormations(),
       loadMovedFrom(team.id),
       loadRosterLimits(),
+      liveSoccerConfig(),
     ]);
+  const restBelowFitness = live.balance.condition.restBelowFitness;
   // The ones that are on, and the saved one even if it's off (D140).
   const formations = all
     .filter((f) => f.enabled || f.id === saved?.formation)
@@ -81,10 +83,11 @@ async function SquadContent() {
         roster={roster}
         formations={formations}
         benchMax={limits.benchMax}
+        restBelowFitness={restBelowFitness}
         initial={
           saved ??
           autoPickSquad(roster, formations.find((f) => f.enabled)?.id, {
-            ...pickOptions(roster),
+            ...pickOptions(roster, { restBelowFitness }),
             benchSize: limits.benchMax,
           })
         }
