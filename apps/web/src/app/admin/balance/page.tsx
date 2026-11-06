@@ -8,6 +8,7 @@ import {
   liveVersion,
   loadVersionValues,
 } from "@/lib/soccer-templates";
+import { SOCCER, sportModule } from "@/lib/sports";
 import { BalanceEditor } from "./balance-editor";
 
 export const metadata: Metadata = { title: "Balance" };
@@ -97,6 +98,7 @@ async function Editor({
         settings={balanceFromValues(values)}
         live={live ? balanceFromValues(liveValues) : DEFAULT_BALANCE}
         defaults={DEFAULT_BALANCE}
+        groups={sportModule(SOCCER).settings}
       />
     </div>
   );

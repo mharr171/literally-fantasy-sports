@@ -1,26 +1,13 @@
 "use client";
 
-import type { PayoutSettings } from "@lfs/core";
+import { getPath, type SettingGroup, withPaths } from "@lfs/core";
 import {
   AVERAGE_STAMINA,
   type BalanceSettings,
-  BOUGHT_TIERS,
   balanceErrors,
-  CONDITION_LIMITS,
-  type ConditionSettings,
-  DEFAULT_PACK_PRICES,
-  FOCUS_SURCHARGE_LIMIT,
-  FORM_LIMITS,
-  type FormSettings,
   fatiguePerMatch,
   type Limit,
-  type MatchTuning,
-  PACK_EXTRA_LIMITS,
-  PACK_PRICE_LIMIT,
-  PAYOUT_LIMITS,
   SOCCER_COLOR_CYCLE,
-  TUNING_LIMITS,
-  type TuningNumberKey,
 } from "@lfs/sport-soccer";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
@@ -31,87 +18,34 @@ import type { TestResult } from "../templates/actions";
 import { TestTable } from "../templates/template-editor";
 import { publishBalance, saveBalance, testBalance } from "./actions";
 
-const TUNING_GROUPS: [string, TuningNumberKey[]][] = [
-  [
-    "Match flow",
-    [
-      "phases",
-      "extraTimePhases",
-      "possessionSharpness",
-      "chanceRate",
-      "chanceSharpness",
-      "shotRate",
-      "goalRate",
-      "penaltyRate",
-      "thirdRows",
-    ],
-  ],
-  [
-    "Tiredness and substitutions",
-    [
-      "fatiguePerPhase",
-      "keeperFatigueFactor",
-      "fatiguePenalty",
-      "autoSubEnergy",
-      "autoSubFromMinute",
-      "maxSubs",
-      "maxSubWindows",
-      "groupedSubs",
-    ],
-  ],
-  ["Cards and injuries", ["injuryRate", "yellowRate", "redRate"]],
-  ["Positions", ["outOfPosition"]],
-  ["Color matchups", ["teamMatchup", "teamMatchupSecond", "playerMatchup"]],
-];
-
-const PACK_EXTRA_KEYS = Object.keys(PACK_EXTRA_LIMITS) as Array<
-  keyof typeof PACK_EXTRA_LIMITS
->;
-
 /** Every field as a path, e.g. "tuning.phases" or "packs.tiers.basic". */
 type Fields = Record<string, string>;
 
-function toFields(s: BalanceSettings): Fields {
+/** The settings' numbers as text boxes, by path (ADR 0007 §7). */
+function toFields(s: BalanceSettings, groups: readonly SettingGroup[]): Fields {
   const f: Fields = {};
-  for (const [k, v] of Object.entries(s.tuning))
-    if (typeof v === "number") f[`tuning.${k}`] = String(v);
-  for (const [k, v] of Object.entries(s.payouts)) f[`payouts.${k}`] = String(v);
-  for (const t of BOUGHT_TIERS)
-    f[`packs.tiers.${t.id}`] = String(s.packs.tiers[t.id] ?? t.price);
-  f["packs.focusSurcharge"] = String(s.packs.focusSurcharge);
-  // Elo-scaled packs and color exclusion (D179, D180).
-  for (const k of PACK_EXTRA_KEYS)
-    f[`packs.${k}`] = String(s.packs[k] ?? DEFAULT_PACK_PRICES[k] ?? 0);
-  for (const [k, v] of Object.entries(s.condition))
-    f[`condition.${k}`] = String(v);
-  for (const [k, v] of Object.entries(s.form)) f[`form.${k}`] = String(v);
+  for (const g of groups)
+    for (const { path } of g.fields) {
+      const v = getPath(s, path);
+      f[path] = typeof v === "number" ? String(v) : "";
+    }
   return f;
 }
 
-function fromFields(f: Fields, cycle: readonly number[]): BalanceSettings {
-  const n = (path: string) =>
-    f[path]?.trim() === "" ? Number.NaN : Number(f[path]);
-  const pick = <T,>(prefix: string, keys: string[]) =>
-    Object.fromEntries(keys.map((k) => [k, n(`${prefix}.${k}`)])) as T;
-  return {
-    tuning: {
-      ...pick<MatchTuning>("tuning", Object.keys(TUNING_LIMITS)),
-      colorCycle: [...cycle],
-    },
-    payouts: pick<PayoutSettings>("payouts", Object.keys(PAYOUT_LIMITS)),
-    packs: {
-      tiers: Object.fromEntries(
-        BOUGHT_TIERS.map((t) => [t.id, n(`packs.tiers.${t.id}`)]),
-      ),
-      focusSurcharge: n("packs.focusSurcharge"),
-      ...Object.fromEntries(PACK_EXTRA_KEYS.map((k) => [k, n(`packs.${k}`)])),
-    },
-    condition: pick<ConditionSettings>(
-      "condition",
-      Object.keys(CONDITION_LIMITS),
-    ),
-    form: pick<FormSettings>("form", Object.keys(FORM_LIMITS)),
-  };
+/** The settings with every box's number put back, and the color cycle. */
+function fromFields(
+  base: BalanceSettings,
+  f: Fields,
+  cycle: readonly number[],
+): BalanceSettings {
+  const numbers = Object.fromEntries(
+    Object.entries(f).map(([path, v]) => [
+      path,
+      v.trim() === "" ? Number.NaN : Number(v),
+    ]),
+  );
+  const s = withPaths(base, numbers);
+  return { ...s, tuning: { ...s.tuning, colorCycle: [...cycle] } };
 }
 
 export function BalanceEditor(props: {
@@ -121,9 +55,12 @@ export function BalanceEditor(props: {
   settings: BalanceSettings;
   live: BalanceSettings;
   defaults: BalanceSettings;
+  /** The sport's setting groups, in order (ADR 0007 §7). */
+  groups: readonly SettingGroup[];
 }) {
+  const { groups } = props;
   const router = useRouter();
-  const [fields, setFields] = useState(() => toFields(props.settings));
+  const [fields, setFields] = useState(() => toFields(props.settings, groups));
   const [note, setNote] = useState(props.note);
   const [cycle, setCycle] = useState<readonly number[]>(
     () => props.settings.tuning.colorCycle ?? SOCCER_COLOR_CYCLE,
@@ -136,13 +73,16 @@ export function BalanceEditor(props: {
     text: string;
   } | null>(null);
   const [test, setTest] = useState<TestResult | null>(null);
-  const liveFields = useMemo(() => toFields(props.live), [props.live]);
+  const liveFields = useMemo(
+    () => toFields(props.live, groups),
+    [props.live, groups],
+  );
   const defaultFields = useMemo(
-    () => toFields(props.defaults),
-    [props.defaults],
+    () => toFields(props.defaults, groups),
+    [props.defaults, groups],
   );
 
-  const settings = fromFields(fields, cycle);
+  const settings = fromFields(props.settings, fields, cycle);
   const errors = balanceErrors(settings);
   const input = () => ({ baseVersion: props.version, note, settings });
   const set = (path: string, value: string) => {
@@ -225,14 +165,17 @@ export function BalanceEditor(props: {
         differ from the live version are highlighted.
       </p>
 
-      {TUNING_GROUPS.map(([title, keys]) => (
-        <fieldset key={title} className="flex flex-col gap-3">
-          <legend className="mb-2 text-lg font-semibold">{title}</legend>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {keys.map((k) => field(`tuning.${k}`, TUNING_LIMITS[k]))}
+      {groups.map((g) => (
+        <fieldset key={g.id} className="flex flex-col gap-3">
+          <legend className="mb-2 text-lg font-semibold">{g.title}</legend>
+          <div
+            className={`grid gap-3 sm:grid-cols-2 ${g.columns === 4 ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}
+          >
+            {g.fields.map((f) => field(f.path, f.limit))}
           </div>
-          {keys.includes("fatiguePerPhase") && <FatigueSummary {...settings} />}
-          {keys.includes("teamMatchup") && (
+          {/* Soccer's extra pieces with its groups. */}
+          {g.id === "tiredness" && <FatigueSummary {...settings} />}
+          {g.id === "matchups" && (
             <CycleEditor
               cycle={cycle}
               live={liveCycle}
@@ -242,66 +185,18 @@ export function BalanceEditor(props: {
               }}
             />
           )}
+          {g.id === "payouts" && errors.length === 0 && (
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              A middling 22-match season (about 8 wins and 6 draws) pays{" "}
+              <strong className="tabular-nums">
+                {typicalSeason.toLocaleString("en-US")}
+              </strong>
+              , before playoff bonuses.
+            </p>
+          )}
+          {g.note && <p className="text-xs text-zinc-500">{g.note}</p>}
         </fieldset>
       ))}
-
-      <fieldset className="flex flex-col gap-3">
-        <legend className="mb-2 text-lg font-semibold">
-          Recovery, bans and growth
-        </legend>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {(Object.keys(CONDITION_LIMITS) as (keyof ConditionSettings)[]).map(
-            (k) => field(`condition.${k}`, CONDITION_LIMITS[k]),
-          )}
-        </div>
-      </fieldset>
-
-      <fieldset className="flex flex-col gap-3">
-        <legend className="mb-2 text-lg font-semibold">Form and morale</legend>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {(Object.keys(FORM_LIMITS) as (keyof FormSettings)[]).map((k) =>
-            field(`form.${k}`, FORM_LIMITS[k]),
-          )}
-        </div>
-      </fieldset>
-
-      <fieldset className="flex flex-col gap-3">
-        <legend className="mb-2 text-lg font-semibold">Season payouts</legend>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {(Object.keys(PAYOUT_LIMITS) as (keyof PayoutSettings)[]).map((k) =>
-            field(`payouts.${k}`, PAYOUT_LIMITS[k]),
-          )}
-        </div>
-        {errors.length === 0 && (
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            A middling 22-match season (about 8 wins and 6 draws) pays{" "}
-            <strong className="tabular-nums">
-              {typicalSeason.toLocaleString("en-US")}
-            </strong>
-            , before playoff bonuses.
-          </p>
-        )}
-      </fieldset>
-
-      <fieldset className="flex flex-col gap-3">
-        <legend className="mb-2 text-lg font-semibold">Pack prices</legend>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {BOUGHT_TIERS.map((t) =>
-            field(`packs.tiers.${t.id}`, {
-              ...PACK_PRICE_LIMIT,
-              label: `${t.name} pack`,
-            }),
-          )}
-          {field("packs.focusSurcharge", FOCUS_SURCHARGE_LIMIT)}
-          {PACK_EXTRA_KEYS.map((k) =>
-            field(`packs.${k}`, PACK_EXTRA_LIMITS[k]),
-          )}
-        </div>
-        <p className="text-xs text-zinc-500">
-          The shop publishes the odds for each club&apos;s Elo. Color surcharges
-          add to the position-focus surcharge.
-        </p>
-      </fieldset>
 
       <div className="sticky bottom-0 flex flex-col gap-2 border-t border-zinc-200 bg-white py-3 text-sm dark:border-zinc-800 dark:bg-zinc-950">
         {errors.length > 0 && (

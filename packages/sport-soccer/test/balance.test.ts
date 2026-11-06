@@ -1,18 +1,23 @@
-import { DEFAULT_PAYOUTS } from "@lfs/core";
+import { DEFAULT_PAYOUTS, getPath, withPaths } from "@lfs/core";
 import { describe, expect, it } from "vitest";
 import {
   type BalanceSettings,
   balanceErrors,
   balanceFromValues,
   balanceToRows,
+  CONDITION_LIMITS,
   DEFAULT_BALANCE,
+  FORM_LIMITS,
   fatiguePerMatch,
+  PACK_EXTRA_LIMITS,
+  PAYOUT_LIMITS,
+  SOCCER_SETTING_GROUPS,
   TUNING_LIMITS,
 } from "../src/balance";
 import { DEFAULT_CONDITION_SETTINGS } from "../src/condition";
 import { DEFAULT_FORM_SETTINGS } from "../src/form";
 import { DEFAULT_MATCH_TUNING } from "../src/match";
-import { DEFAULT_PACK_PRICES, packPrice } from "../src/roster";
+import { BOUGHT_TIERS, DEFAULT_PACK_PRICES, packPrice } from "../src/roster";
 import { soccerConfigFromValues } from "../src/stored-config";
 
 const withChange = (change: (s: BalanceSettings) => void): BalanceSettings => {
@@ -175,5 +180,39 @@ describe("recovery, bans and form in admin (D157, D158)", () => {
     expect(loss.outfield).toBeCloseTo(27);
     expect(loss.keeper).toBeCloseTo(27 * 0.3);
     expect(fatiguePerMatch(DEFAULT_MATCH_TUNING, 100).outfield).toBeCloseTo(15);
+  });
+});
+
+describe("soccer's setting groups (ADR 0007 §7)", () => {
+  it("list every balance number exactly once, each a number in the defaults", () => {
+    const paths = SOCCER_SETTING_GROUPS.flatMap((g) =>
+      g.fields.map((f) => f.path),
+    );
+    expect(new Set(paths).size).toBe(paths.length);
+    const expected = [
+      ...Object.keys(TUNING_LIMITS).map((k) => `tuning.${k}`),
+      ...Object.keys(PAYOUT_LIMITS).map((k) => `payouts.${k}`),
+      ...Object.keys(CONDITION_LIMITS).map((k) => `condition.${k}`),
+      ...Object.keys(FORM_LIMITS).map((k) => `form.${k}`),
+      ...BOUGHT_TIERS.map((t) => `packs.tiers.${t.id}`),
+      "packs.focusSurcharge",
+      ...Object.keys(PACK_EXTRA_LIMITS).map((k) => `packs.${k}`),
+    ];
+    expect([...paths].sort()).toEqual([...expected].sort());
+    for (const p of paths)
+      expect(typeof getPath(DEFAULT_BALANCE, p), p).toBe("number");
+  });
+
+  it("rebuild the same settings from their fields", () => {
+    const fields = Object.fromEntries(
+      SOCCER_SETTING_GROUPS.flatMap((g) => g.fields).map((f) => [
+        f.path,
+        getPath(DEFAULT_BALANCE, f.path),
+      ]),
+    );
+    expect(withPaths(DEFAULT_BALANCE, fields)).toEqual(DEFAULT_BALANCE);
+    const changed = withPaths(DEFAULT_BALANCE, { "packs.tiers.gold": 31_000 });
+    expect(changed.packs.tiers.gold).toBe(31_000);
+    expect(DEFAULT_BALANCE.packs.tiers.gold).toBe(30_000);
   });
 });
