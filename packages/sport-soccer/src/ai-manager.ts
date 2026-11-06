@@ -23,8 +23,8 @@ import {
 } from "./matchday";
 import { type Line, POSITION_LINE, type Position } from "./positions";
 import {
-  BOUGHT_TIERS,
   DEFAULT_PACK_PRICES,
+  LADDER_TIERS,
   type PackPrices,
   packPrice,
   ROSTER_MAX,
@@ -238,10 +238,10 @@ export function choosePack(
     personality === "builder" ? "any" : LINE_FOCUS[weakest.line];
   const tiers =
     personality === "spender"
-      ? [...BOUGHT_TIERS].reverse()
+      ? [...LADDER_TIERS].reverse()
       : personality === "steady"
-        ? BOUGHT_TIERS.filter((t) => t.id !== "gold").reverse()
-        : BOUGHT_TIERS.filter((t) => t.id === "basic");
+        ? LADDER_TIERS.filter((t) => t.id !== "gold").reverse()
+        : LADDER_TIERS.filter((t) => t.id === "basic");
   for (const t of tiers)
     if (packPrice(t.id, focus, prices, { eloShift }) <= spend)
       return { tier: t.id, focus };

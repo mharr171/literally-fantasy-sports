@@ -10,6 +10,7 @@ import {
   buyPackFor,
   confirmStarterSquadFor,
   createClub,
+  openRewardPackFor,
   openStarterPacks,
   removePlayerFor,
   resolvePackFor,
@@ -126,6 +127,18 @@ export async function buyPack(input: {
     const { tier, focus, excluded } = buySchema.parse(input);
     await buyPackFor(await requireTeam(), tier, focus, excluded);
   }, "That pack isn't for sale.");
+}
+
+const rewardSchema = z.object({ packId: z.uuid() });
+
+/** Opens one of the club's reward packs from the playoffs (D181). */
+export async function openRewardPack(input: {
+  packId: string;
+}): Promise<ActionResult> {
+  return run(async () => {
+    const { packId } = rewardSchema.parse(input);
+    await openRewardPackFor(await requireTeam(), packId);
+  }, "That reward pack can't be opened.");
 }
 
 const resolveSchema = z.object({

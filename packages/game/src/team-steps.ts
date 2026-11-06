@@ -172,6 +172,24 @@ export async function buyPackFor(
   if (error) throw new Error(friendly(error.message));
 }
 
+/** Opens one of the club's reward packs (D181), once any open pack is sorted. */
+export async function openRewardPackFor(
+  team: MyTeam,
+  packId: string,
+): Promise<void> {
+  const { error } = await createServiceClient().rpc("open_reward_pack", {
+    p_team: team.id,
+    p_pack: packId,
+  });
+  if (error) {
+    if (error.message.includes("finish your open pack"))
+      throw new Error("Keep or sell the players in your open pack first.");
+    if (error.message.includes("not waiting"))
+      throw new Error("That reward pack is already open.");
+    throw new Error(error.message);
+  }
+}
+
 /**
  * Keeps the chosen players from the open pack and bulk-resells the rest
  * (D49). Players and prices are worked out here from the pack's seed.

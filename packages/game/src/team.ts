@@ -152,6 +152,8 @@ export function openedContents(
 
 export interface OpenPack {
   id: string;
+  /** A bought pack, or a reward for a playoff finish (D181). */
+  kind: "bought" | "reward";
   focus: PackFocus;
   tier: string;
   seed: string;
@@ -159,15 +161,19 @@ export interface OpenPack {
   excludedColors: number[];
 }
 
-/** The team's bought pack waiting for keep-or-sell choices, if any. */
+/**
+ * The team's open pack waiting for keep-or-sell choices, if any: a bought
+ * pack, or a reward pack it has opened (D181).
+ */
 export async function loadOpenBoughtPack(
   teamId: string,
 ): Promise<OpenPack | null> {
   const { data, error } = await createServiceClient()
     .from("packs")
-    .select("id, focus, tier, seed, elo_shift, excluded_colors")
+    .select("id, kind, focus, tier, seed, elo_shift, excluded_colors")
     .eq("team_id", teamId)
-    .eq("kind", "bought")
+    .in("kind", ["bought", "reward"])
+    .not("opened_at", "is", null)
     .is("resolved_at", null)
     .maybeSingle();
   if (error) throw new Error(error.message);
@@ -176,12 +182,32 @@ export async function loadOpenBoughtPack(
     throw new Error(`Bad pack focus: ${data.focus}`);
   return {
     id: data.id,
+    kind: data.kind === "reward" ? "reward" : "bought",
     focus: data.focus,
     tier: data.tier,
     seed: data.seed,
     eloShift: (data.elo_shift as number | null) ?? 0,
     excludedColors: (data.excluded_colors as number[] | null) ?? [],
   };
+}
+
+/** A reward pack waiting to be opened (D181). */
+export interface RewardPack {
+  id: string;
+  tier: string;
+}
+
+/** The team's unopened reward packs, oldest first (D181). */
+export async function loadRewardPacks(teamId: string): Promise<RewardPack[]> {
+  const { data, error } = await createServiceClient()
+    .from("packs")
+    .select("id, tier")
+    .eq("team_id", teamId)
+    .eq("kind", "reward")
+    .is("opened_at", null)
+    .order("created_at");
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((p) => ({ id: p.id, tier: p.tier }));
 }
 
 export interface RosterPlayer {

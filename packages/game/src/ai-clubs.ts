@@ -35,6 +35,7 @@ import { endSeasonFor, startSeasonFor, takeYouthFor } from "./season-steps";
 import { loadRosterLimits } from "./sport-settings";
 import {
   loadOpenBoughtPack,
+  loadRewardPacks,
   loadRoster,
   loadStarterPacks,
   loadTeamById,
@@ -45,6 +46,7 @@ import {
 import {
   buyPackFor,
   confirmStarterSquadFor,
+  openRewardPackFor,
   openStarterPacks,
   removePlayerFor,
   resolvePackFor,
@@ -240,6 +242,12 @@ async function sortOpenPack(team: MyTeam, profile: AiProfile) {
 
 /** Between seasons: buy and sort a few packs, then trim the roster. */
 async function rebuild(team: MyTeam, profile: AiProfile, notes: string[]) {
+  // Reward packs from the playoffs first (D181): they're free.
+  for (const reward of await loadRewardPacks(team.id)) {
+    await openRewardPackFor(team, reward.id);
+    await sortOpenPack(team, profile);
+    notes.push(`opened a ${reward.tier} reward pack`);
+  }
   const { packs: prices } = (await liveSoccerConfig()).balance;
   for (let i = 0; i < 3; i++) {
     const fresh = (await loadTeamById(team.id)) as MyTeam;

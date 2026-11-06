@@ -61,7 +61,12 @@ describe("balance settings (M5)", () => {
           (s) =>
             (s.packs = {
               ...s.packs,
-              tiers: { basic: 5000, silver: 5000, gold: 30000 },
+              tiers: {
+                ...s.packs.tiers,
+                basic: 5000,
+                silver: 5000,
+                gold: 30000,
+              },
             }),
         ),
       ),
@@ -81,7 +86,12 @@ describe("balance settings (M5)", () => {
       x.payouts = { ...x.payouts, champion: 9000 };
       x.packs = {
         ...DEFAULT_PACK_PRICES,
-        tiers: { basic: 6000, silver: 13000, gold: 31000 },
+        tiers: {
+          ...DEFAULT_PACK_PRICES.tiers,
+          basic: 6000,
+          silver: 13000,
+          gold: 31000,
+        },
         focusSurcharge: 0.25,
         eloPerOverall: 40,
       };

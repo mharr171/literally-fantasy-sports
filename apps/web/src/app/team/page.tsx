@@ -21,6 +21,7 @@ import { loadRosterLimits } from "@/lib/sport-settings";
 import {
   loadMyTeam,
   loadOpenBoughtPack,
+  loadRewardPacks,
   loadRoster,
   loadSquad,
   loadStarterPacks,
@@ -31,6 +32,7 @@ import {
 import { ClubColorsEditor } from "./club-colors-editor";
 import { CreateTeamForm } from "./create-team-form";
 import { OpenPack } from "./open-pack";
+import { RewardPacks } from "./reward-packs";
 import { RosterTable, type SquadRole } from "./roster-table";
 import { Scouting } from "./scouting";
 import { Shop } from "./shop";
@@ -81,16 +83,21 @@ async function TeamContent() {
     );
   }
 
-  const [roster, openPack, squad, live] = await Promise.all([
+  const [roster, openPack, squad, live, rewards] = await Promise.all([
     loadRoster(team.id),
     loadOpenBoughtPack(team.id),
     loadSquad(team.id),
     liveSoccerConfig(),
+    loadRewardPacks(team.id),
   ]);
   const squadReady =
     squad !== null &&
     squadProblems(squad, new Set(roster.map((p) => p.id))).length === 0;
   const tierName = (id: string) => id.charAt(0).toUpperCase() + id.slice(1);
+  const packTitle = (p: NonNullable<typeof openPack>) =>
+    p.kind === "reward"
+      ? `${tierName(p.tier)} reward pack`
+      : `${tierName(p.tier)} pack · ${FOCUS_LABELS[p.focus]}`;
   return (
     <>
       <TeamHeading team={team} />
@@ -121,11 +128,12 @@ async function TeamContent() {
           {squad ? "Edit squad" : "Pick your matchday 22"}
         </Link>
       </div>
+      <RewardPacks packs={rewards} hasOpenPack={openPack !== null} />
       {openPack && (
         <OpenPack
           key={openPack.id}
           packId={openPack.id}
-          title={`${tierName(openPack.tier)} pack · ${FOCUS_LABELS[openPack.focus]}`}
+          title={packTitle(openPack)}
           players={openedContents(openPack, generation).map(scoutPlayer)}
           rosterSize={roster.length}
           rosterMax={limits.max}
