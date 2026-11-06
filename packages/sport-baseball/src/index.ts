@@ -49,6 +49,7 @@ export * from "./profiles";
 export * from "./season-end";
 export * from "./settings";
 export * from "./skill";
+export * from "./squad";
 export * from "./stats";
 export * from "./win-probability";
 export * from "./win-probability-table";

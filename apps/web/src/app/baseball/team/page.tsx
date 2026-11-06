@@ -6,6 +6,7 @@ import {
   simulateGame,
 } from "@lfs/sport-baseball";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
@@ -159,10 +160,18 @@ function Roster({ players }: { players: BaseballRosterPlayer[] }) {
   );
   return (
     <div className="flex flex-col gap-3">
-      <h2 className="text-xl font-semibold">Your squad</h2>
+      <div className="flex items-baseline justify-between gap-4">
+        <h2 className="text-xl font-semibold">Your squad</h2>
+        <Link
+          href="/baseball/team/squad"
+          className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+        >
+          Game-day squad
+        </Link>
+      </div>
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
-        {players.length} players. The squad builder (batting order, rotation,
-        bullpen and bench) comes next.
+        {players.length} players. Set your batting order, rotation, bullpen and
+        bench under Game-day squad.
       </p>
       {table("Pitchers", pitchers)}
       {table("Batters", batters)}

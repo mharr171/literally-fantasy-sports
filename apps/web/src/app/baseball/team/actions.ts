@@ -8,6 +8,7 @@ import { getCurrentUser } from "@/lib/auth";
 import {
   confirmBaseballStarterSquadFor,
   giveBaseballStarterPacksFor,
+  saveBaseballSquadFor,
 } from "@/lib/baseball-squad";
 import { loadMyTeam } from "@/lib/team";
 import { createClub, openStarterPacks } from "@/lib/team-steps";
@@ -105,4 +106,46 @@ export async function confirmBaseballStarters(
       selection.parse(chosen),
     ),
   );
+}
+
+const id = z.uuid();
+const squadSchema = z.object({
+  style: z.enum(["balanced", "batFirst", "gloveFirst"]),
+  order: z
+    .array(
+      z.object({
+        id,
+        slot: z.enum(["C", "1B", "2B", "3B", "SS", "LF", "CF", "RF", "DH"]),
+      }),
+    )
+    .max(9),
+  rotation: z.array(id).max(5),
+  bullpen: z.array(id).max(8),
+  closer: id.nullable(),
+  setup: id.nullable(),
+  starterPitchLimit: z.number().int(),
+  bench: z
+    .array(
+      z.object({
+        id,
+        role: z.enum(["pinchHitter", "pinchRunner", "defense", "injury"]),
+        replaces: id.optional(),
+      }),
+    )
+    .max(11),
+});
+
+/** Saves the game-day squad; the server checks every rule again. */
+export async function saveBaseballSquad(squad: unknown): Promise<ActionResult> {
+  return run(async () => {
+    const parsed = squadSchema.parse(squad);
+    await saveBaseballSquadFor(await requireBaseballTeam(), {
+      ...parsed,
+      bench: parsed.bench.map((b) =>
+        b.replaces
+          ? { id: b.id, role: b.role, replaces: b.replaces }
+          : { id: b.id, role: b.role },
+      ),
+    });
+  });
 }

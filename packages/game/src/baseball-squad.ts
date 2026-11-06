@@ -8,16 +8,27 @@ import { type StarterPackState, starterSelectionError } from "@lfs/core";
 import { createServiceClient } from "./db";
 import { loadRosterLimits } from "./sport-settings";
 import {
+  type Attributes,
   type BaseballConfig,
+  type BaseballPlayer,
+  type BaseballSquad,
+  type BatterPosition,
   baseballConfigFromValues,
   type GeneratedPlayer,
   generationSettings,
   isPackFocus,
+  type LocationPreset,
   PACK_FOCUSES,
   type PackFocus,
+  type PitcherRole,
+  type Position,
   packContents,
+  type SprayPreset,
+  squadFromData,
+  squadProblems,
   starterMixError,
   starterPackPlan,
+  type ZonePreset,
 } from "./sports/baseball";
 import {
   type BaseballTraits,
@@ -246,4 +257,85 @@ export async function loadBaseballRoster(
     restDays: p.rest_days,
     injuredDays: p.injured_days,
   }));
+}
+
+/**
+ * A rostered player as the squad builder and the engine need him: no true
+ * potential, but the attributes, which managers may see (as soccer's).
+ */
+export interface BaseballSquadPlayer extends BaseballPlayer {
+  displayName: string;
+  overall: number;
+  injuredDays: number;
+  restDays: number;
+}
+
+export async function loadBaseballSquadPlayers(
+  teamId: string,
+): Promise<BaseballSquadPlayer[]> {
+  const { data, error } = await createServiceClient()
+    .from("players")
+    .select(
+      "id, display_name, primary_position, secondary_position, attributes, overall, chemistry_color, traits, injured_days, rest_days",
+    )
+    .eq("team_id", teamId)
+    .order("overall", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((p) => {
+    const t = (p.traits ?? {}) as Partial<BaseballTraits>;
+    return {
+      id: p.id,
+      displayName: p.display_name,
+      attributes: p.attributes as Attributes,
+      primaryPosition: p.primary_position as Position,
+      secondaryPosition: p.secondary_position as BatterPosition | null,
+      pitcherRole:
+        p.primary_position === "P"
+          ? ((t.role ?? "starter") as PitcherRole)
+          : null,
+      chemistryColor: p.chemistry_color,
+      bats: t.bats ?? "R",
+      throws: t.throws ?? "R",
+      zoneProfile: (t.zone ?? null) as ZonePreset | null,
+      sprayProfile: (t.spray ?? null) as SprayPreset | null,
+      locationProfile: (t.location ?? null) as LocationPreset | null,
+      overall: p.overall,
+      injuredDays: p.injured_days,
+      restDays: p.rest_days,
+    };
+  });
+}
+
+/** The club's saved game-day squad, or null before one is saved. */
+export async function loadBaseballSquad(
+  teamId: string,
+): Promise<BaseballSquad | null> {
+  const { data, error } = await createServiceClient()
+    .from("matchday_squads")
+    .select("lineup_data")
+    .eq("team_id", teamId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data ? squadFromData(data.lineup_data) : null;
+}
+
+/** Saves the game-day squad after the engine checks it (D196, D212). */
+export async function saveBaseballSquadFor(
+  team: MyTeam,
+  squad: BaseballSquad,
+): Promise<void> {
+  if (team.sport !== BASEBALL) throw new Error("That isn't a baseball club.");
+  const [players, limits] = await Promise.all([
+    loadBaseballSquadPlayers(team.id),
+    loadRosterLimits(BASEBALL),
+  ]);
+  const problems = squadProblems(squad, players, limits.benchMax);
+  if (problems.length > 0) throw new Error(problems.join(" "));
+  const { error } = await createServiceClient().from("matchday_squads").upsert({
+    team_id: team.id,
+    lineup_data: squad,
+    moved_from: null,
+    updated_at: new Date().toISOString(),
+  });
+  if (error) throw new Error(error.message);
 }
