@@ -10,7 +10,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run --coverage",
-    "harness": "tsx scripts/harness.ts"
+    "harness": "tsx scripts/harness.ts",
+    "pack-spread": "tsx scripts/pack-spread.ts"
   },
   "devDependencies": {
     "@lfs/config": "workspace:*",

@@ -62,6 +62,7 @@ pnpm build         # production build
 pnpm db:generate   # after editing packages/db/src/schema.ts: write a new migration
 pnpm test:db       # database tests (needs DATABASE_URL, see below)
 pnpm --filter @lfs/sport-soccer harness 10000   # play 10,000 matches, print goal/draw stats
+pnpm --filter @lfs/sport-soccer pack-spread 10  # 10 AI seasons: strength gap with flat vs Elo packs
 ```
 
 Run `pnpm lint && pnpm typecheck && pnpm test && pnpm build` before pushing; CI runs

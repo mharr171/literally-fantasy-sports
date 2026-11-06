@@ -130,6 +130,21 @@ clubs. Each season they buy packs at their Elo, age and play. The
 spread of squad overall between the top and bottom clubs must not grow
 season on season.
 
+**Result (Nov 6, 2026):** `pnpm --filter @lfs/sport-soccer pack-spread`
+plays 24 AI clubs (Elo 1200–1800) through a round robin each season, then
+ages them, takes youth and buys up to 3 packs at their Elo. Gap between
+the top and bottom quarter's starting-XI overall:
+
+| Seed | Start | Season 5 | Season 10 | Season 15 | Flat packs, season 10 |
+| --- | --- | --- | --- | --- | --- |
+| pack-spread | 23.9 | 15.1 | 15.2 | – | 13.4 |
+| alpha | 23.4 | 16.3 | 16.7 | 13.0 | 13.3 |
+| beta | 21.8 | 15.7 | 14.3 | 14.3 | 13.5 |
+
+The gap shrinks and then holds steady with packs at 40 Elo per point: it
+doesn't grow season on season. It settles 1–3 points wider than with flat
+packs, so strong clubs keep an edge without running away.
+
 ### 5. Color exclusion (D180)
 
 A bought pack can leave out 1, 2 or 3 of the five chemistry colors.
