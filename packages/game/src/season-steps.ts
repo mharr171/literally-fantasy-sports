@@ -14,6 +14,7 @@ import {
   loadLatestSeason,
   loadLeagueCandidates,
 } from "./season";
+import { loadLeagueSize } from "./sport-settings";
 import {
   endOfSeason,
   FRESH,
@@ -39,10 +40,12 @@ export async function startSeasonFor(teamIn: MyTeam): Promise<void> {
   const seed = crypto.randomUUID();
   const { label } = await liveSoccerConfig();
   // The 11 clubs nearest its Elo (D115).
+  // The clubs nearest its Elo (D115), as many as the sport's league holds.
   const league = nearestLeague(
     seed,
     { name: team.name, elo: team.elo, teamId: team.id },
     await loadLeagueCandidates(team.elo, team.id),
+    await loadLeagueSize(),
   );
   const { error } = await createServiceClient().rpc("start_season", {
     p_team: team.id,
