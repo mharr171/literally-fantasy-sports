@@ -34,6 +34,24 @@ describe.runIf(sql)("sport settings: energy switches (D93)", () => {
     ]);
   });
 
+  it("lets admins switch a sport's Public and AI world toggles, but not players (D207)", async () => {
+    const changed = await asUser(
+      db,
+      admin,
+      (tx) =>
+        tx`update sport_settings set public = true, ai_enabled = true where sport = 'baseball' returning public, ai_enabled`,
+    );
+    expect(changed).toEqual([{ public: true, ai_enabled: true }]);
+    expect(
+      await asUser(
+        db,
+        player,
+        (tx) =>
+          tx`update sport_settings set public = true where sport = 'baseball' returning sport`,
+      ),
+    ).toEqual([]);
+  });
+
   it("lets admins switch energy off, but not players or visitors", async () => {
     const changed = await asUser(
       db,
