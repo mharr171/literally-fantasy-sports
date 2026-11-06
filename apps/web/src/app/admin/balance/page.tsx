@@ -10,6 +10,7 @@ import {
 } from "@/lib/soccer-templates";
 import { SOCCER, sportModule } from "@/lib/sports";
 import { BalanceEditor } from "./balance-editor";
+import { SportTabs } from "./sport-tabs";
 
 export const metadata: Metadata = { title: "Balance" };
 
@@ -21,6 +22,7 @@ export default function BalancePage({
 }: PageProps<"/admin/balance">) {
   return (
     <section className="flex flex-col gap-4">
+      <SportTabs current="soccer" />
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
           Soccer balance
