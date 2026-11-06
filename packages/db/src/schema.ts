@@ -263,14 +263,7 @@ export const players = pgTable(
     fromStarterPack: boolean().notNull().default(false),
     /** Match fitness at the next kickoff, 0–100 (D45, M4). */
     fitness: integer().notNull().default(100),
-    /** Game weeks still out injured. */
-    injuredWeeks: integer().notNull().default(0),
-    /** Matches still to sit out. */
-    suspendedWeeks: integer().notNull().default(0),
-    /**
-     * Days still out injured and games still banned (ADR 0007 §5). The two
-     * week columns above are no longer written (M17) and are dropped next.
-     */
+    /** Days still out injured and games still banned (ADR 0007 §5). */
     injuredDays: integer().notNull().default(0),
     suspendedGames: integer().notNull().default(0),
     /** Yellow cards this season (every 5th earns a ban). */
@@ -280,24 +273,13 @@ export const players = pgTable(
     /** Career totals for the retirement record (D120). */
     appearances: integer().notNull().default(0),
     goals: integer().notNull().default(0),
-    /** More career totals (D143), counted from the club's own matches. */
-    /** Games and goals counted from when player stats started (D147), so
-     * they agree with the wins, draws and losses on the card. */
     /** Minutes in the club's own matches this season, reset at season end (D154). */
     seasonMinutes: integer().notNull().default(0),
-    statGames: integer().notNull().default(0),
-    statGoals: integer().notNull().default(0),
-    wins: integer().notNull().default(0),
-    draws: integer().notNull().default(0),
-    losses: integer().notNull().default(0),
-    assists: integer().notNull().default(0),
-    tackles: integer().notNull().default(0),
     /**
-     * Career stats by key (ADR 0007 §2), e.g. {"goals": 12}. Soccer's old
-     * stat columns are no longer written (M17) and are dropped next.
+     * Career stats by key (ADR 0007 §2), e.g. {"goals": 12}, counted from
+     * the club's own matches (D143, D147).
      */
     stats: jsonb().notNull().default({}),
-    saves: integer().notNull().default(0),
     /** Season ends the player has been through. */
     seasons: integer().notNull().default(0),
     /** Highest overall so far (null until the first season end). */
@@ -306,12 +288,6 @@ export const players = pgTable(
   },
   (t) => [
     index("players_team").on(t.teamId),
-    // The hall of fame's all-time lists (ADR 0005).
-    index("players_stat_games").on(t.sport, t.statGames.desc()),
-    index("players_stat_goals").on(t.sport, t.statGoals.desc()),
-    index("players_assists").on(t.sport, t.assists.desc()),
-    index("players_tackles").on(t.sport, t.tackles.desc()),
-    index("players_saves").on(t.sport, t.saves.desc()),
     check("players_sport", sql`${t.sport} ${SPORT_CHECK}`),
     check(
       "players_overall_range",
@@ -325,7 +301,7 @@ export const players = pgTable(
     check("players_worth_nonnegative", sql`${t.worth} >= 0`),
     check(
       "players_condition",
-      sql`${t.fitness} between 0 and 100 and ${t.injuredWeeks} >= 0 and ${t.suspendedWeeks} >= 0 and ${t.injuredDays} >= 0 and ${t.suspendedGames} >= 0 and ${t.yellowCards} >= 0 and ${t.form} between -1 and 1`,
+      sql`${t.fitness} between 0 and 100 and ${t.injuredDays} >= 0 and ${t.suspendedGames} >= 0 and ${t.yellowCards} >= 0 and ${t.form} between -1 and 1`,
     ),
     pgPolicy("players_select_own", {
       for: "select",
@@ -397,11 +373,6 @@ export const matchdaySquads = pgTable(
     teamId: uuid()
       .primaryKey()
       .references(() => teams.id, { onDelete: "cascade" }),
-    /** Soccer's old squad columns: no longer written (M17), dropped next. */
-    formation: text(),
-    lineup: jsonb(),
-    bench: jsonb(),
-    subPlan: jsonb().default([]),
     /**
      * The formation this squad was moved off because an admin turned it off
      * (D140), until the manager saves the squad again.
@@ -534,17 +505,8 @@ export const playerCareers = pgTable(
     seasons: integer().notNull(),
     appearances: integer().notNull(),
     goals: integer().notNull(),
-    /** Totals added by D143; zero for careers that ended before. */
-    statGames: integer().notNull().default(0),
-    statGoals: integer().notNull().default(0),
-    wins: integer().notNull().default(0),
-    draws: integer().notNull().default(0),
-    losses: integer().notNull().default(0),
-    assists: integer().notNull().default(0),
-    tackles: integer().notNull().default(0),
     /** Career stats by key (ADR 0007 §2), as on `players`. */
     stats: jsonb().notNull().default({}),
-    saves: integer().notNull().default(0),
     bestOverall: integer().notNull(),
     /** Clubs played for, as named when the player retired. */
     clubs: text().array().notNull(),
@@ -553,12 +515,6 @@ export const playerCareers = pgTable(
   },
   (t) => [
     index("player_careers_team").on(t.teamId),
-    // The hall of fame's all-time lists (ADR 0005).
-    index("player_careers_stat_games").on(t.sport, t.statGames.desc()),
-    index("player_careers_stat_goals").on(t.sport, t.statGoals.desc()),
-    index("player_careers_assists").on(t.sport, t.assists.desc()),
-    index("player_careers_tackles").on(t.sport, t.tackles.desc()),
-    index("player_careers_saves").on(t.sport, t.saves.desc()),
     check("player_careers_sport", sql`${t.sport} ${SPORT_CHECK}`),
   ],
 ).enableRLS();

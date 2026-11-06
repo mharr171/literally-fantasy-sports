@@ -102,8 +102,8 @@ describe.runIf(sql)("secondary-position heatmaps (D136)", () => {
           template_variant, secondary_template_variant)
         values (${ai}, 'soccer', 'Al', 'Y', 'Al Y', 'ENG', 24, 'ST', 'LW', '{}', 66, 80,
           70, 82, 2000, 1, 'poacher', 'inside')`;
-      await tx`insert into matchday_squads (team_id, formation, lineup, bench, sub_plan)
-        values (${ai}, '4-4-2', '[]', '[]', '[]')`;
+      await tx`insert into matchday_squads (team_id, lineup_data)
+        values (${ai}, ${tx.json({ formation: "4-4-2", starters: [], bench: [], subPlan: [] })})`;
       const [s] = await tx<{ id: string }[]>`
         select public.start_season(${team}, 'seed', 'defaults',
           ${tx.json([
