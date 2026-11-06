@@ -5,7 +5,7 @@
  */
 import type { MatchResult, SettingGroup, Sport, SportId } from "@lfs/core";
 import type { AiManager, AiTypes } from "./ai-manager";
-import { baseball } from "./sports/baseball";
+import { BASEBALL_SETTING_GROUPS, baseball } from "./sports/baseball";
 import { SOCCER_SETTING_GROUPS, soccer } from "./sports/soccer";
 import { type SoccerAiTypes, soccerAi } from "./sports/soccer-ai";
 
@@ -14,8 +14,8 @@ export interface SportModule<TAi extends AiTypes = AiTypes> {
   // biome-ignore lint/suspicious/noExplicitAny: each sport has its own team, config and event types
   engine: Sport<any, any, any, MatchResult>;
   /**
-   * How the sport's AI clubs decide (ADR 0007 §8). Baseball's stand-in has
-   * none yet: its AI world stays off until M18.
+   * How the sport's AI clubs decide (ADR 0007 §8). Baseball has none yet:
+   * its AI world comes in M18.
    */
   ai?: AiManager<TAi>;
   /** Its balance settings as the admin editor draws them (ADR 0007 §7). */
@@ -25,13 +25,13 @@ export interface SportModule<TAi extends AiTypes = AiTypes> {
 /** Each registered sport's module, with its own types. */
 interface Modules {
   soccer: SportModule<SoccerAiTypes> & { ai: AiManager<SoccerAiTypes> };
-  /** A stand-in until M17 (ADR 0007 §12): hidden from players. */
+  /** The real engine (ADR 0008); hidden from players until M18. */
   baseball: SportModule;
 }
 
 const MODULES: Modules = {
   soccer: { engine: soccer, ai: soccerAi, settings: SOCCER_SETTING_GROUPS },
-  baseball: { engine: baseball, settings: [] },
+  baseball: { engine: baseball, settings: BASEBALL_SETTING_GROUPS },
 };
 
 /** Soccer's id, for the code that is still soccer-only until M16 moves it. */

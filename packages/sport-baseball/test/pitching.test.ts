@@ -143,6 +143,26 @@ describe("the bullpen plan (D197)", () => {
     ).toBeNull();
   });
 
+  it("keeps a starter throwing a no-hitter in, until well past his budget", () => {
+    const nh = { ...base, noHitter: true };
+    expect(bullpenDecision({ ...nh, thrown: 110 })).toBeNull();
+    expect(bullpenDecision({ ...nh, inning: 9, lead: 2 })).toBeNull();
+    expect(bullpenDecision({ ...nh, thrown: 119 })).toBeNull();
+    expect(bullpenDecision({ ...nh, thrown: 120 })).toMatchObject({
+      reason: "tired",
+    });
+    // A reliever with a no-hitter going isn't kept in by it.
+    expect(
+      bullpenDecision({
+        ...nh,
+        current: bullpen[3] as BaseballPlayer,
+        starter: false,
+        inning: 9,
+        lead: 2,
+      }),
+    ).toMatchObject({ reason: "closer" });
+  });
+
   it("skips pitchers who already pitched or need rest, and runs out gracefully", () => {
     expect(
       bullpenDecision({ ...base, thrown: 100, used: new Set(["sp", "mid"]) }),

@@ -12,7 +12,7 @@ import {
 } from "../src/sports/soccer";
 
 describe("the sport registry (ADR 0007 §1)", () => {
-  it("knows soccer and baseball's stand-in, and refuses sports it can't run yet", () => {
+  it("knows soccer and baseball, and refuses sports it can't run yet", () => {
     expect(SPORTS).toEqual(["soccer", "baseball"]);
     expect(isRegisteredSport("soccer")).toBe(true);
     expect(isRegisteredSport("hockey")).toBe(false);
