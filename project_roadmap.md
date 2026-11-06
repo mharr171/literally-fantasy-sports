@@ -1,6 +1,6 @@
 # LiterallyFantasySports — Project Roadmap
 
-Nov 2, 2026 · @Gary · Last updated: Nov 6, 2026 (D209)
+Nov 2, 2026 · @Gary · Last updated: Nov 6, 2026 (D214)
 
 ## Review progress
 
@@ -230,6 +230,11 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D207 | Nov 6, 2026 | Sport toggles (Gary, ADR 0007): Admin → Sports has two toggles per sport: **Public** shows or hides the sport to players (home card, top-bar icon, club creation, its pages, leaderboard and hall of fame), and **AI world** turns its scheduled AI runs on or off. Admins always see every sport. Soccer starts with both on and baseball with both off; until M17 baseball has a stand-in engine (random scores) so the toggles can be tried end to end. Replaces D190's single "Baseball enabled" switch. ADR 0007's other points OK'd: soccer's week counts as one day, sport pages under `/soccer/...`, old columns dropped in M17's first PR, account progress as a log of season-end milestones | M16 |
 | D208 | Nov 6, 2026 | One AI switch per sport (Gary): Admin → Sports' AI world switch (D207) is the only on/off switch for a sport's AI world; Admin → AI clubs keeps the pool size and runs a day and shows whether the AI world is on, with a link. The old switch's value was carried across (off stays off) | M16 |
 | D209 | Nov 6, 2026 | M16 done (Gary checked it on `lfs-dev`): soccer plays as before, old links redirect to `/soccer/...`, baseball (stand-in engine) is hidden from players and shown to admins until its Public switch is on, the per-sport Public and AI world switches work, and Admin → Progress lists each manager's seasons, titles, finals and best Elo, recorded at every season close (D206.9). The old soccer columns (stats, lineup, condition) are dropped in M17's first PR | M16 |
+| D210 | Nov 6, 2026 | Baseball simulated pitch by pitch (Gary, ADR 0008): every at-bat plays each pitch (location, swing or take, contact, ball in play, fielding, running), so pitch counts, the count on screen and strike zone charts are real, and walks and strikeouts come from control and eye. A prototype took 0.074 ms a game; the budget is under 1 ms. Harness targets: 8.5–9.5 runs a game, home teams win 52–55% of even games, 7–10% of games go to extra innings, plus strikeouts, walks, home runs and batting average near MLB's | M17 |
+| D211 | Nov 6, 2026 | Baseball colors and templates (Gary, ADR 0008): on the 4-color ring each color beats the next, loses to the one before and is neutral against the opposite one; the player matchup is the pitcher's color against the batter's. Baseball's templates are fielding ranges over a field grid (who fields each ball) and per-player presets for batters' strike zone and spray profiles and pitchers' locations, like soccer's variants | M17 |
+| D212 | Nov 6, 2026 | Baseball bench and lineups (Gary, ADR 0008): each bench player gets a role the engine uses automatically: pinch hitter (from the 7th when behind or level), pinch runner (from the 8th in a close game), defensive replacement (from the 8th with a lead) and injury cover; a player taken out can't return. The squad builder shows each player's Bat and Field ratings beside the overall, and auto-pick takes a lineup style (Balanced, Bat first, Glove first) and sets the batting order | M17 |
+| D213 | Nov 6, 2026 | Baseball injuries, steals and rest (Gary, ADR 0008): injuries are counted in days, with no cards or suspensions; stolen bases are tried automatically on speed against the catcher's arm. Starters rest 5 days after 100+ pitches, 4 after 75–99, 3 after 50–74 and 1 after fewer; relievers rest a day after 25+ pitches or 2 days running | M17 |
+| D214 | Nov 6, 2026 | Baseball earned runs (Gary, ADR 0008): MLB's two main rules: a runner who reached on an error scores unearned, and once the outs there would have been without errors reach three, every later run in the inning is unearned | M17 |
 
 ## 1. Vision & goals
 
