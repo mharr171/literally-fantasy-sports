@@ -3,9 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { FormationMoved } from "@/components/formation-moved";
 import { GettingStarted } from "@/components/getting-started";
-import { WithTemplates } from "@/components/player/with-templates";
 import { getCurrentUser } from "@/lib/auth";
 import { loadFormations } from "@/lib/formations";
 import { pickOptions } from "@/lib/pick-options";
@@ -18,6 +16,8 @@ import {
   loadSquad,
   loadStarterPacks,
 } from "@/lib/team";
+import { FormationMoved } from "@/sports/soccer/components/formation-moved";
+import { WithTemplates } from "@/sports/soccer/components/player/with-templates";
 import { SquadBuilder } from "./squad-builder";
 
 export const metadata: Metadata = { title: "Matchday squad" };

@@ -11,9 +11,9 @@ import {
 } from "@lfs/sport-soccer";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
-import { ColorRing } from "@/components/color-ring";
-import { ChemistryDot } from "@/components/player/player-card";
 import { CHEMISTRY_COLORS } from "@/lib/chemistry-colors";
+import { ColorRing } from "@/sports/soccer/components/color-ring";
+import { ChemistryDot } from "@/sports/soccer/components/player/player-card";
 import type { TestResult } from "../templates/actions";
 import { TestTable } from "../templates/template-editor";
 import { publishBalance, saveBalance, testBalance } from "./actions";

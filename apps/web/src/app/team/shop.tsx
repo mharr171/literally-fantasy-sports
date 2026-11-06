@@ -9,9 +9,9 @@ import {
   shiftedTier,
 } from "@lfs/sport-soccer";
 import { useState } from "react";
-import { ChemistryDot } from "@/components/player/player-card";
 import { CHEMISTRY_COLORS } from "@/lib/chemistry-colors";
 import { FOCUS_LABELS } from "@/lib/scouting";
+import { ChemistryDot } from "@/sports/soccer/components/player/player-card";
 import { buyPack } from "./actions";
 import { useAction } from "./use-action";
 

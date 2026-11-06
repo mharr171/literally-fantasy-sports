@@ -6,10 +6,10 @@ import {
   squadScore,
 } from "@lfs/sport-soccer";
 import { ADMIN_TEXT, AdminNote } from "@/components/admin-note";
-import { ChemistryShares } from "@/components/chemistry-shares";
 import { ClubBadge } from "@/components/club-badge";
-import { ChemistryDot } from "@/components/player/player-card";
 import type { ClubAdmin, ClubPlayer, ClubView } from "@/lib/club-view";
+import { ChemistryShares } from "@/sports/soccer/components/chemistry-shares";
+import { ChemistryDot } from "@/sports/soccer/components/player/player-card";
 
 const KIND = {
   manager: "Your club",

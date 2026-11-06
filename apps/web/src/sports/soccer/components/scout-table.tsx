@@ -2,12 +2,15 @@
 
 import { POSITIONS, type Position } from "@lfs/sport-soccer";
 import { type ReactNode, useState } from "react";
-import { ChemistryDot, PlayerCard } from "@/components/player/player-card";
 import { SortHeader } from "@/components/sort-header";
 import { CHEMISTRY_COLORS } from "@/lib/chemistry-colors";
 import { matchesFilter, NO_FILTER, type ScoutFilter } from "@/lib/scout-filter";
 import type { ScoutedPlayer } from "@/lib/scouting";
 import { nextSort, type SortState, sortRows } from "@/lib/table-sort";
+import {
+  ChemistryDot,
+  PlayerCard,
+} from "@/sports/soccer/components/player/player-card";
 
 export interface ScoutRow {
   /** Unique per row, e.g. "<pack id>:<index>". */
