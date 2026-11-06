@@ -12,8 +12,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { ClubBadge } from "@/components/club-badge";
+import { CreateClubForm } from "@/components/create-club-form";
 import { GettingStarted } from "@/components/getting-started";
 import { getCurrentUser } from "@/lib/auth";
+import { otherClub } from "@/lib/other-club";
 import { FOCUS_LABELS, scoutPlayer } from "@/lib/scouting";
 import { liveGenerationSettings, liveSoccerConfig } from "@/lib/season";
 import { loadRosterLimits } from "@/lib/sport-settings";
@@ -29,8 +31,8 @@ import {
   type RosterPlayer,
 } from "@/lib/team";
 import { WithTemplates } from "@/sports/soccer/components/player/with-templates";
+import { createTeam } from "./actions";
 import { ClubColorsEditor } from "./club-colors-editor";
-import { CreateTeamForm } from "./create-team-form";
 import { OpenPack } from "./open-pack";
 import { RewardPacks } from "./reward-packs";
 import { RosterTable, type SquadRole } from "./roster-table";
@@ -58,7 +60,15 @@ async function TeamContent() {
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
   const team = await loadMyTeam(user.id);
-  if (!team) return <CreateTeamForm />;
+  if (!team)
+    return (
+      <CreateClubForm
+        action={createTeam}
+        intro="Name your soccer team and pick its colors. You'll get 22 free starter packs of 5 players each: open them all, then keep the 11 to 33 players you want. Everyone else is released."
+        submitLabel="Create team and get 22 packs"
+        copyFrom={await otherClub(user.id, "soccer")}
+      />
+    );
 
   const [packs, generation, limits] = await Promise.all([
     loadStarterPacks(team.id),

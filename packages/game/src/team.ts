@@ -90,17 +90,42 @@ export async function listTeams(): Promise<
   return data ?? [];
 }
 
-export async function loadMyTeam(ownerId: string): Promise<MyTeam | null> {
+export async function loadMyTeam(
+  ownerId: string,
+  /** The sport's club (D192); soccer by default. */
+  sport: string = SOCCER,
+): Promise<MyTeam | null> {
   const { data, error } = await createServiceClient()
     .from("teams")
     .select(
       "id, name, elo, funds, energy, energy_updated_at, morale, colors, kind, skip_idle_weeks",
     )
     .eq("owner_id", ownerId)
-    .eq("sport", SOCCER)
+    .eq("sport", sport)
     .maybeSingle();
   if (error) throw new Error(error.message);
   return data ? toTeam(data) : null;
+}
+
+/** A manager's club in one sport, for copying its name and colors (D192). */
+export interface ClubSummary {
+  sport: string;
+  name: string;
+  colors: string[];
+}
+
+/** Every club the manager has, one per sport (D192). */
+export async function loadMyClubs(ownerId: string): Promise<ClubSummary[]> {
+  const { data, error } = await createServiceClient()
+    .from("teams")
+    .select("sport, name, colors")
+    .eq("owner_id", ownerId);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((t) => ({
+    sport: t.sport as string,
+    name: t.name as string,
+    colors: (t.colors as string[] | null) ?? [],
+  }));
 }
 
 export interface StarterPack {

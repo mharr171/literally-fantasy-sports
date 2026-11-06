@@ -121,4 +121,13 @@ describe.runIf(sql)("account reset (D141, ADR 0004)", () => {
     );
     expect(error).toMatch(/permission denied/);
   });
+  it("resets the soccer club only, leaving a club in another sport (D192)", async () => {
+    const result = await asService(db, async (tx) => {
+      await tx`insert into teams (owner_id, sport, name)
+        values (${other}, 'baseball', ${`${tag} Rovers`})`;
+      await tx`select public.reset_account(${other}, ${`${tag} Rovers`})`;
+      return tx`select sport from teams where owner_id = ${other}`;
+    });
+    expect(result).toEqual([{ sport: "baseball" }]);
+  });
 });

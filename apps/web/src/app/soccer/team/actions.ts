@@ -4,6 +4,7 @@ import { clubColorsError, normalizeTeamName, teamNameError } from "@lfs/core";
 import { BOUGHT_TIERS, PACK_FOCUSES } from "@lfs/sport-soccer";
 import { refresh } from "next/cache";
 import { z } from "zod";
+import type { CreateClubState } from "@/components/create-club-form";
 import { getCurrentUser } from "@/lib/auth";
 import { loadMyTeam } from "@/lib/team";
 import {
@@ -18,9 +19,7 @@ import {
   setClubColorsFor,
 } from "@/lib/team-steps";
 
-export type CreateTeamState =
-  | { status: "idle" }
-  | { status: "error"; name: string; colors: string[]; message: string };
+export type CreateTeamState = CreateClubState;
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 

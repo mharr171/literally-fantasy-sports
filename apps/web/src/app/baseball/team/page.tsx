@@ -1,8 +1,15 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { ClubBadge } from "@/components/club-badge";
+import { CreateClubForm } from "@/components/create-club-form";
+import { getCurrentUser } from "@/lib/auth";
+import { otherClub } from "@/lib/other-club";
 import { loadSportSwitches } from "@/lib/sport-settings";
 import { sportModule } from "@/lib/sports";
+import { loadMyTeam } from "@/lib/team";
+import { createBaseballClub } from "./actions";
 
 export const metadata: Metadata = { title: "Baseball" };
 
@@ -23,6 +30,9 @@ export default function BaseballTeamPage() {
       <Suspense fallback={null}>
         <Status />
       </Suspense>
+      <Suspense fallback={null}>
+        <Club />
+      </Suspense>
       <StandInGame />
     </section>
   );
@@ -37,6 +47,28 @@ async function Status() {
     <p className="rounded-md border border-violet-200 bg-violet-50 px-3 py-2 text-sm text-violet-900 dark:border-violet-900 dark:bg-violet-950 dark:text-violet-200">
       Only admins can see this: baseball&apos;s Public switch is off (Admin →
       Sports).
+    </p>
+  );
+}
+
+/** The manager's baseball club, or the form to start one (D192). */
+async function Club() {
+  const user = await getCurrentUser();
+  if (!user) redirect("/sign-in");
+  const team = await loadMyTeam(user.id, "baseball");
+  if (!team)
+    return (
+      <CreateClubForm
+        action={createBaseballClub}
+        intro="Name your baseball club and pick its colors. Players, squads and seasons come with M17 and M18."
+        submitLabel="Create baseball club"
+        copyFrom={await otherClub(user.id, "baseball")}
+      />
+    );
+  return (
+    <p className="flex items-center gap-2 text-sm">
+      Your club: <ClubBadge name={team.name} colors={team.colors} />
+      <strong>{team.name}</strong>
     </p>
   );
 }
