@@ -477,6 +477,20 @@
       "when": 1793937954852,
       "tag": "0067_stats_by_key_sync",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1793938404058,
+      "tag": "0068_lineup_groups",
+      "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1793938405158,
+      "tag": "0069_lineup_groups_sync",
+      "breakpoints": true
     }
   ]
 }
