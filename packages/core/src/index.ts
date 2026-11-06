@@ -1,3 +1,4 @@
+export * from "./ai-schedule";
 export * from "./chemistry";
 export * from "./club-colors";
 export * from "./elo";

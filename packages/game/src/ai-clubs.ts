@@ -4,7 +4,7 @@
  * (season-steps, team-steps, play-week); the AI manager in the engine
  * decides what to do. Decisions only ever see what a manager sees.
  */
-import { createRng } from "@lfs/core";
+import { createRng, runsOwed, weeksThisRun } from "@lfs/core";
 import { createServiceClient } from "./db";
 import { enabledFormations, formationToUse } from "./formations";
 import { playOneWeek } from "./play-week";
@@ -15,22 +15,14 @@ import {
 } from "./season";
 import { endSeasonFor, startSeasonFor, takeYouthFor } from "./season-steps";
 import { loadRosterLimits } from "./sport-settings";
+import { sportModule } from "./sports";
 import {
   type AiPlayerView,
   type AiProfile,
-  aiSquad,
-  chooseKeeps,
-  choosePack,
-  chooseReleases,
-  chooseYouth,
   type GeneratedPlayer,
   packEloShift,
-  pickStarterKeeps,
-  rollAiIdentity,
   rosterWarning,
-  runsOwed,
   starterPackPlan,
-  weeksThisRun,
   youthIntake,
 } from "./sports/soccer";
 import {
@@ -52,6 +44,9 @@ import {
   resolvePackFor,
   saveSquadFor,
 } from "./team-steps";
+
+/** How soccer's AI clubs decide (ADR 0007 §8); other sports join in M18. */
+const ai = sportModule(SOCCER).ai;
 
 /** The AI world's switches (D113, D114). */
 export interface AiSettings {
@@ -166,7 +161,7 @@ export async function createAiClub(seed: string = crypto.randomUUID()) {
   // New clubs only pick formations that are on (D140).
   const formations = (await enabledFormations()).map((f) => f.id);
   for (let attempt = 0; attempt < 5; attempt++) {
-    const identity = rollAiIdentity(
+    const identity = ai.rollIdentity(
       rng.fork(`club-${attempt}`),
       taken,
       formations,
@@ -203,10 +198,7 @@ async function pickFirstSquad(team: MyTeam, profile: AiProfile) {
   );
   const generation = await liveGenerationSettings();
   const contents = packs.map((p) => openedContents(p, generation));
-  const keeps = pickStarterKeeps(
-    contents.flat().map(view),
-    profile.personality,
-  );
+  const keeps = ai.pickStarters(contents.flat().map(view), profile);
   const chosen: Record<string, number[]> = {};
   for (const i of keeps) {
     const pack = packs[Math.floor(i / 5)] as (typeof packs)[number];
@@ -223,7 +215,11 @@ async function saveSquad(team: MyTeam, profile: AiProfile) {
   ]);
   // Tired players sit out if anyone fitter can play (D188).
   const { balance } = await liveSoccerConfig();
-  const squad = aiSquad(roster, profile, balance.condition.restBelowFitness);
+  const squad = ai.pickSquad(
+    roster,
+    profile,
+    balance.condition.restBelowFitness,
+  );
   // A sport with a shorter bench (D182) keeps the best of the AI's subs.
   await saveSquadFor(team, { ...squad, bench: squad.bench.slice(0, benchMax) });
 }
@@ -237,7 +233,7 @@ async function sortOpenPack(team: MyTeam, profile: AiProfile) {
   await resolvePackFor(
     team,
     pack.id,
-    chooseKeeps(players.map(view), roster, profile.personality),
+    ai.chooseKeeps(players.map(view), roster, profile),
   );
   return true;
 }
@@ -254,10 +250,10 @@ async function rebuild(team: MyTeam, profile: AiProfile, notes: string[]) {
   for (let i = 0; i < 3; i++) {
     const fresh = (await loadTeamById(team.id)) as MyTeam;
     const roster = await loadRoster(team.id);
-    const choice = choosePack(
+    const choice = ai.choosePack(
       fresh.funds,
       roster,
-      profile.personality,
+      profile,
       prices,
       packEloShift(fresh.elo, prices),
     );
@@ -271,7 +267,7 @@ async function rebuild(team: MyTeam, profile: AiProfile, notes: string[]) {
 
 async function trim(team: MyTeam, profile: AiProfile, notes: string[]) {
   const roster = await loadRoster(team.id);
-  for (const r of chooseReleases(roster, profile.personality)) {
+  for (const r of ai.chooseReleases(roster, profile)) {
     await removePlayerFor(team, r.id, r.mode);
     notes.push(`${r.mode === "sell" ? "sold" : "released"} a player`);
   }
@@ -334,10 +330,10 @@ export async function aiClubTurn(
           await liveGenerationSettings(),
         );
         const roster = await loadRoster(teamId);
-        const picks = chooseYouth(
+        const picks = ai.chooseYouth(
           prospects.map(view),
           roster.length,
-          profile.personality,
+          profile,
         );
         await takeYouthFor(team, picks);
         turn.notes.push(`took ${picks.length} youth prospects`);
