@@ -4,7 +4,24 @@
  * offered 22 youth prospects to take for free. Pure and seeded, so the
  * same season always ends the same way.
  */
-import { createRng, type Rng } from "@lfs/core";
+import {
+  type AgingSettings,
+  createRng,
+  DEFAULT_AGING,
+  type PlayingTimeGrowth,
+  retirementChance,
+  yearlyChange,
+} from "@lfs/core";
+
+// Growth, decline and retirement are shared with every sport (core's aging.ts).
+export {
+  type PlayingTimeGrowth,
+  playingTimeFactor,
+  REGULAR_SHARE,
+  retirementChance,
+  yearlyChange,
+} from "@lfs/core";
+
 import {
   ATTRIBUTE_MAX,
   ATTRIBUTE_MIN,
@@ -27,17 +44,7 @@ import {
 import { POSITIONS, type Position } from "./positions";
 
 /** Balance defaults: changed only with Gary's OK. */
-export interface SeasonEndSettings {
-  /** Players younger than this grow toward their potential. */
-  peakAge: number;
-  /** Share of the gap to potential closed in a year: a random value in this range. */
-  growthShare: [number, number];
-  /** From this age players decline. */
-  declineAge: number;
-  /** Overall lost per year by age: the first band whose maxAge fits. */
-  decline: { maxAge: number; min: number; max: number }[];
-  /** Chance of retiring at season end, by age. */
-  retirement: { minAge: number; chance: number }[];
+export interface SeasonEndSettings extends AgingSettings {
   /** Youth intake (D53): 2 × players on the field. */
   intakeSize: number;
   intakeAges: [number, number];
@@ -45,21 +52,7 @@ export interface SeasonEndSettings {
 }
 
 export const DEFAULT_SEASON_END_SETTINGS: SeasonEndSettings = {
-  peakAge: 27,
-  growthShare: [0.25, 0.6],
-  declineAge: 31,
-  decline: [
-    { maxAge: 32, min: 1, max: 3 },
-    { maxAge: 34, min: 2, max: 4 },
-    { maxAge: Number.POSITIVE_INFINITY, min: 3, max: 6 },
-  ],
-  retirement: [
-    { minAge: 37, chance: 0.85 },
-    { minAge: 36, chance: 0.6 },
-    { minAge: 35, chance: 0.4 },
-    { minAge: 34, chance: 0.2 },
-    { minAge: 33, chance: 0.1 },
-  ],
+  ...DEFAULT_AGING,
   intakeSize: 2 * PLAYERS_ON_FIELD,
   intakeAges: [16, 18],
   intakeOverall: { mean: 45, spread: 5, min: 35, max: 58 },
@@ -76,37 +69,6 @@ export interface AgingPlayer {
   potential: number;
   /** Minutes played this season in the club's own matches (D154). */
   seasonMinutes?: number;
-}
-
-/**
- * Growth from playing time (D154). `weight` 0 leaves growth as it was; at 1
- * a player who never played grows almost nothing. A player who played at
- * least `regularShare` of the club's minutes counts as a regular and grows
- * fully.
- */
-export interface PlayingTimeGrowth {
-  weight: number;
-  /** Minutes the club played this season: its own matches × 90. */
-  clubMinutes: number;
-  regularShare?: number;
-}
-
-/** Share of the club's minutes that makes a player a regular (D154). */
-export const REGULAR_SHARE = 0.7;
-
-/**
- * How much of a young player's usual growth he gets for the minutes he
- * played (D154): 1 for a regular, down to 1 − weight for a player who
- * didn't play.
- */
-export function playingTimeFactor(
-  seasonMinutes: number,
-  growth: PlayingTimeGrowth | undefined,
-): number {
-  if (!growth || growth.weight <= 0 || growth.clubMinutes <= 0) return 1;
-  const regular = growth.clubMinutes * (growth.regularShare ?? REGULAR_SHARE);
-  const share = Math.min(1, Math.max(0, seasonMinutes) / regular);
-  return 1 - growth.weight * (1 - share);
 }
 
 export interface AgedPlayer {
@@ -151,38 +113,6 @@ export function shiftToOverall(
     if (!moved) break; // Every counted attribute is pinned at 1 or 99.
   }
   return next;
-}
-
-/** How much a player's overall changes over one year. */
-export function yearlyChange(
-  rng: Rng,
-  player: Pick<AgingPlayer, "age" | "overall" | "potential" | "seasonMinutes">,
-  s: SeasonEndSettings = DEFAULT_SEASON_END_SETTINGS,
-  growth?: PlayingTimeGrowth,
-): number {
-  const nextAge = player.age + 1;
-  if (nextAge <= s.peakAge) {
-    const gap = player.potential - player.overall;
-    if (gap <= 0) return 0;
-    const share = rng.float(s.growthShare[0], s.growthShare[1]);
-    // Regulars grow fully; players who rarely played grow less (D154).
-    const factor = playingTimeFactor(player.seasonMinutes ?? 0, growth);
-    if (factor === 1)
-      return Math.max(1, Math.min(gap, Math.round(gap * share)));
-    return Math.max(0, Math.min(gap, Math.round(gap * share * factor)));
-  }
-  if (nextAge < s.declineAge) return rng.int(-1, 1);
-  const band = s.decline.find((b) => nextAge <= b.maxAge) ?? s.decline.at(-1);
-  /* v8 ignore next */
-  if (!band) return 0;
-  return -rng.int(band.min, band.max);
-}
-
-export function retirementChance(
-  age: number,
-  s: SeasonEndSettings = DEFAULT_SEASON_END_SETTINGS,
-): number {
-  return s.retirement.find((r) => age >= r.minAge)?.chance ?? 0;
 }
 
 export interface SeasonEndResult {

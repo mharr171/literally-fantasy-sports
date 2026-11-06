@@ -12,6 +12,7 @@ import {
   generateName,
   type NationalityCode,
   type NationalityWeights,
+  type PotentialStyle,
   pickNationality,
   type Rng,
   rollChemistryColor,
@@ -185,7 +186,7 @@ const clampAttr = (v: number) =>
   Math.max(ATTRIBUTE_MIN, Math.min(ATTRIBUTE_MAX, Math.round(v)));
 
 /** The attributes that count for a slot, and those that don't count at all. */
-function attributeGroups(slot: RatingSlot): {
+export function attributeGroups(slot: RatingSlot): {
   counted: readonly Attribute[];
   unused: readonly Attribute[];
 } {
@@ -245,7 +246,13 @@ function rollAttributes(
   return attributes;
 }
 
-function rollAge(rng: Rng, s: GenerationSettings): number {
+function rollAge(
+  rng: Rng,
+  s: GenerationSettings,
+  ages?: readonly [number, number],
+): number {
+  // A pack with its own ages (D181) rolls evenly between them.
+  if (ages) return rng.int(ages[0], ages[1]);
   const age = Math.round(rng.normal(s.meanAge, s.ageSpread));
   return Math.max(s.minAge, Math.min(s.maxAge, age));
 }
@@ -263,6 +270,40 @@ function rollPotential(
     ATTRIBUTE_MAX,
     Math.max(overall, Math.round(overall + growth)),
   );
+}
+
+/** How far above overall a prospect's potential starts (D181). */
+export const PROSPECT_POTENTIAL_LIFT = 10;
+
+/**
+ * A special pack's potential (D181), as soccer's. Prospects: at least 10
+ * above overall, with the usual growth on top, and a shown range that
+ * starts there. Veterans: their overall, shown as a range at or below it.
+ */
+function packPotential(
+  rng: Rng,
+  style: PotentialStyle,
+  overall: number,
+  age: number,
+  s: GenerationSettings,
+): { potential: number; range: [number, number] } {
+  const width = s.potentialRangeWidth;
+  if (style === "veteran")
+    return {
+      potential: overall,
+      range: [Math.max(ATTRIBUTE_MIN, overall - width), overall],
+    };
+  const floor = Math.min(ATTRIBUTE_MAX, overall + PROSPECT_POTENTIAL_LIFT);
+  const years = Math.max(0, s.peakAge - age);
+  const potential = Math.min(
+    ATTRIBUTE_MAX,
+    Math.round(floor + rng.float(0, years * s.growthPerYear)),
+  );
+  const low = Math.max(floor, potential - rng.int(0, width));
+  return {
+    potential,
+    range: [low, Math.max(potential, Math.min(ATTRIBUTE_MAX, low + width))],
+  };
 }
 
 /** A range of the configured width that contains the true potential. */
@@ -290,6 +331,10 @@ export interface GeneratePlayerOptions {
   settings?: GenerationSettings;
   /** The chemistry colors the player may have (D180); all 4 when left out. */
   colors?: readonly number[];
+  /** Ages to roll between, for a pack with its own ages (D181). */
+  ages?: readonly [number, number];
+  /** How potential is rolled, for a prospect or veteran pack (D181). */
+  potentialStyle?: PotentialStyle;
 }
 
 export function generatePlayer(
@@ -312,8 +357,13 @@ export function generatePlayer(
   const attributes = rollAttributes(rng.fork("attributes"), slot, target, s);
   const overall = overallAt(attributes, slot, s.overallWeights);
   const bio = rng.fork("bio");
-  const age = rollAge(bio, s);
-  const potential = rollPotential(bio, overall, age, s);
+  const age = rollAge(bio, s, options.ages);
+  const special = options.potentialStyle
+    ? packPotential(bio, options.potentialStyle, overall, age, s)
+    : null;
+  const potential = special
+    ? special.potential
+    : rollPotential(bio, overall, age, s);
   const nationality = pickNationality(
     rng.fork("nationality"),
     s.nationalityWeights,
@@ -373,12 +423,9 @@ export function generatePlayer(
     pitcherRole,
     overall,
     potential,
-    potentialRange: potentialRange(
-      bio,
-      potential,
-      overall,
-      s.potentialRangeWidth,
-    ),
+    potentialRange:
+      special?.range ??
+      potentialRange(bio, potential, overall, s.potentialRangeWidth),
     chemistryColor:
       options.colors && options.colors.length > 0
         ? (options.colors[
