@@ -7,7 +7,7 @@
  * season seed and the game's id, so it can be replayed exactly.
  */
 import { updateElo } from "@lfs/core";
-import type { BaseballConfig, BaseballOutput } from "./game";
+import type { BaseballConfig, BaseballOutput, BaseballTeam } from "./game";
 import { simulateGame } from "./game";
 import {
   nextStarter,
@@ -49,6 +49,8 @@ export interface PlayedBaseballWeekGame {
   box: BoxScore;
   /** Who started for each side. */
   starters: { home: string; away: string };
+  /** Both teams as they played, so the game can be replayed from its seed (D204). */
+  teams: { home: BaseballTeam; away: BaseballTeam };
 }
 
 /** A club as it comes out of the week. */
@@ -217,6 +219,7 @@ export function playBaseballWeek(input: {
         winner: result.winner === "home" ? "home" : "away",
         box,
         starters: { home: home.starter, away: away.starter },
+        teams: { home: home.team, away: away.team },
       });
     }
     for (const [slot, s] of state)

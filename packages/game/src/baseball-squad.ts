@@ -14,6 +14,7 @@ import {
   type BaseballSquad,
   type BatterPosition,
   baseballConfigFromValues,
+  DEFAULT_SEASON_END_SETTINGS,
   type GeneratedPlayer,
   generationSettings,
   isPackFocus,
@@ -28,6 +29,7 @@ import {
   squadProblems,
   starterMixError,
   starterPackPlan,
+  youthIntake,
   type ZonePreset,
 } from "./sports/baseball";
 import {
@@ -338,4 +340,16 @@ export async function saveBaseballSquadFor(
     updated_at: new Date().toISOString(),
   });
   if (error) throw new Error(error.message);
+}
+
+/** The season's youth prospects as the manager scouts them: no true potential (D48, D53). */
+export async function loadBaseballYouth(
+  seed: string,
+): Promise<ScoutedBaseballPlayer[]> {
+  const { config } = await liveBaseballConfig();
+  return youthIntake(
+    seed,
+    DEFAULT_SEASON_END_SETTINGS,
+    generationSettings(config.balance),
+  ).map(scoutBaseballPlayer);
 }

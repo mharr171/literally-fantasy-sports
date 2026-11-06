@@ -5,7 +5,7 @@
  * shares and ask the club's sport for the rest (ADR 0009 §1).
  */
 import { createServiceClient } from "./db";
-import { readyToPlay, seasonOf } from "./play-week";
+import { playOneWeek, readyToPlay, seasonOf } from "./play-week";
 import { loadLatestSeason } from "./season";
 import type { MyTeam } from "./team";
 
@@ -35,6 +35,9 @@ export async function startSeasonFor(team: MyTeam): Promise<void> {
       );
     throw new Error(error.message);
   }
+  // A sport whose club sits out the opening week plays it now (free).
+  if (seasonOf(team).playsOpeningWeek)
+    await playOneWeek(team, { useEnergy: false });
 }
 
 /**

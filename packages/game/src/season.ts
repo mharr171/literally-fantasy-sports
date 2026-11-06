@@ -194,13 +194,15 @@ export async function loadLeagueCandidates(
   elo: number,
   excludeTeamId: string,
   each = 11,
+  /** The sport's clubs (D192); soccer's by default. */
+  sport: string = SOCCER,
 ): Promise<GhostCandidate[]> {
   const db = createServiceClient();
   const ai = (above: boolean) => {
     const q = db
       .from("teams")
       .select("id, name, elo")
-      .eq("sport", SOCCER)
+      .eq("sport", sport)
       .eq("kind", "ai")
       .neq("id", excludeTeamId);
     return (above ? q.gte("elo", elo) : q.lt("elo", elo))
@@ -211,7 +213,7 @@ export async function loadLeagueCandidates(
     const q = db
       .from("ghosts")
       .select("team_id, team_name, elo")
-      .eq("sport", SOCCER)
+      .eq("sport", sport)
       .neq("team_id", excludeTeamId);
     return (above ? q.gte("elo", elo) : q.lt("elo", elo))
       .order("elo", { ascending: above })
