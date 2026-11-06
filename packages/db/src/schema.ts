@@ -267,6 +267,13 @@ export const players = pgTable(
     injuredWeeks: integer().notNull().default(0),
     /** Matches still to sit out. */
     suspendedWeeks: integer().notNull().default(0),
+    /**
+     * Days still out injured and games still banned (ADR 0007 §5). For
+     * soccer a week is one day and one game, so these match the two columns
+     * above; a trigger keeps them in step until M17 drops those.
+     */
+    injuredDays: integer().notNull().default(0),
+    suspendedGames: integer().notNull().default(0),
     /** Yellow cards this season (every 5th earns a ban). */
     yellowCards: integer().notNull().default(0),
     /** Recent form, −1 to 1 (M4). */
@@ -319,7 +326,7 @@ export const players = pgTable(
     check("players_worth_nonnegative", sql`${t.worth} >= 0`),
     check(
       "players_condition",
-      sql`${t.fitness} between 0 and 100 and ${t.injuredWeeks} >= 0 and ${t.suspendedWeeks} >= 0 and ${t.yellowCards} >= 0 and ${t.form} between -1 and 1`,
+      sql`${t.fitness} between 0 and 100 and ${t.injuredWeeks} >= 0 and ${t.suspendedWeeks} >= 0 and ${t.injuredDays} >= 0 and ${t.suspendedGames} >= 0 and ${t.yellowCards} >= 0 and ${t.form} between -1 and 1`,
     ),
     pgPolicy("players_select_own", {
       for: "select",

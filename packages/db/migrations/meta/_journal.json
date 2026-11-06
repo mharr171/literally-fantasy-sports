@@ -498,6 +498,20 @@
       "when": 1793938878548,
       "tag": "0070_season_events_series",
       "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1793940793371,
+      "tag": "0071_condition_in_days",
+      "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1793940794392,
+      "tag": "0072_condition_in_days_sync",
+      "breakpoints": true
     }
   ]
 }
