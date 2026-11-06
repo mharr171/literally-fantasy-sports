@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.8.0](https://github.com/mharr171/literally-fantasy-sports/compare/v1.7.0...v1.8.0) (2026-11-06)
+
+
+### Features
+
+* baseball benches, injuries and auto-pick with lineup styles ([#168](https://github.com/mharr171/literally-fantasy-sports/issues/168)) ([ac1427c](https://github.com/mharr171/literally-fantasy-sports/commit/ac1427cebd29a3a6fb7a2d92e71ec0e3c2b21f27))
+* baseball box scores, stats by key, wins, losses, saves and earned runs ([#169](https://github.com/mharr171/literally-fantasy-sports/issues/169)) ([abd628d](https://github.com/mharr171/literally-fantasy-sports/commit/abd628df2ed0b6010235c0819381a3341890b191))
+* baseball game-day skill: position fit, chemistry, color matchups and home advantage ([#165](https://github.com/mharr171/literally-fantasy-sports/issues/165)) ([4d3247e](https://github.com/mharr171/literally-fantasy-sports/commit/4d3247e5ac72fe06a1010f72017651f3547ea9f8))
+* baseball pitchers tire, and the bullpen comes in by plan ([#167](https://github.com/mharr171/literally-fantasy-sports/issues/167)) ([30392d8](https://github.com/mharr171/literally-fantasy-sports/commit/30392d830b7feb07b3ec2d8f6c34bb1a6ab45bb9))
+* baseball players: positions, attributes, Bat and Field ratings, and generation ([#164](https://github.com/mharr171/literally-fantasy-sports/issues/164)) ([0841dea](https://github.com/mharr171/literally-fantasy-sports/commit/0841deaa99226176c0b72ed4f1dc13c4089caf82))
+* baseball tuning harness, tuned to every target, and a win probability table ([#170](https://github.com/mharr171/literally-fantasy-sports/issues/170)) ([1d0190c](https://github.com/mharr171/literally-fantasy-sports/commit/1d0190c6902eaff968a718c8981897133230c4e9))
+* baseball's balance settings in Admin, with drafts, tests and publishing ([#172](https://github.com/mharr171/literally-fantasy-sports/issues/172)) ([8f60a8e](https://github.com/mharr171/literally-fantasy-sports/commit/8f60a8e31a775e3df853c456f45d1e066bf22cbd))
+* core groundwork for baseball: a 4-color matchup ring and four new nationalities ([#163](https://github.com/mharr171/literally-fantasy-sports/issues/163)) ([01920ae](https://github.com/mharr171/literally-fantasy-sports/commit/01920ae8948f9b4a1a781e40a65cd522200dc268))
+* drop soccer's old stat, lineup and condition columns ([#162](https://github.com/mharr171/literally-fantasy-sports/issues/162)) ([1d16103](https://github.com/mharr171/literally-fantasy-sports/commit/1d1610379933d5ae66ed1a9ff4aa87d93b33dd56))
+* soccer's season functions write only the new stat, lineup and condition columns ([#160](https://github.com/mharr171/literally-fantasy-sports/issues/160)) ([8d0c5b8](https://github.com/mharr171/literally-fantasy-sports/commit/8d0c5b811aab8c40288659baf293c8cde19f5626))
+* the baseball game, pitch by pitch ([#166](https://github.com/mharr171/literally-fantasy-sports/issues/166)) ([59dbef6](https://github.com/mharr171/literally-fantasy-sports/commit/59dbef6d39d2307de25fd094a1297c81dee86707))
+* the real baseball engine replaces the stand-in, and starters keep no-hitters going ([#171](https://github.com/mharr171/literally-fantasy-sports/issues/171)) ([ad862f5](https://github.com/mharr171/literally-fantasy-sports/commit/ad862f5baa3f7e68dd20cbf8700ba69858610c39))
+
+
+### Bug Fixes
+
+* the app writes only soccer's new stat, lineup and condition columns ([#161](https://github.com/mharr171/literally-fantasy-sports/issues/161)) ([545222f](https://github.com/mharr171/literally-fantasy-sports/commit/545222fda5054739dad228f50e7456785f2eb8ee))
+
+
+### Documentation
+
+* plan how a baseball game is simulated (ADR 0008) ([#158](https://github.com/mharr171/literally-fantasy-sports/issues/158)) ([a582d17](https://github.com/mharr171/literally-fantasy-sports/commit/a582d17e6ec1055e4b0f2ce206c6405e41d28f13))
+* tick M17 baseball engine and harness (D215, D216) ([#173](https://github.com/mharr171/literally-fantasy-sports/issues/173)) ([23f67e2](https://github.com/mharr171/literally-fantasy-sports/commit/23f67e2ecb1cf2a412eeeb1a44e7fee7df0250a9))
+
 ## [1.7.0](https://github.com/mharr171/literally-fantasy-sports/compare/v1.6.0...v1.7.0) (2026-11-06)
 
 
