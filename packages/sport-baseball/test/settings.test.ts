@@ -5,7 +5,9 @@ import {
   BASEBALL_SETTING_PATHS,
   baseballConfigFromValues,
   baseballConfigToRows,
+  baseballConfigToStoredRows,
   baseballSettingsErrors,
+  baseballStoredKey,
   DEFAULT_GENERATION_SETTINGS,
   DEFAULT_REST,
   defaultBaseballBalance,
@@ -145,5 +147,21 @@ describe("baseball's balance settings (ADR 0009 §6, §7)", () => {
     expect(
       baseballSettingsErrors({ ...values, "balance.payouts.eloK": 2.5 }),
     ).toEqual(["Elo K per game must be a whole number."]);
+  });
+});
+
+describe("stored keys", () => {
+  it("fit the database's key format, one per path, and read back", () => {
+    const rows = baseballConfigToStoredRows(defaultBaseballConfig());
+    for (const r of rows) expect(r.key).toMatch(/^[a-z][a-z0-9_.]{0,63}$/);
+    expect(new Set(rows.map((r) => r.key)).size).toBe(rows.length);
+    expect(baseballStoredKey("pitch.missAtZero")).toBe("pitch.miss_at_zero");
+    const stored = Object.fromEntries(rows.map((r) => [r.key, r.value]));
+    expect(baseballConfigFromValues(stored)).toEqual(defaultBaseballConfig());
+    const c = baseballConfigFromValues({
+      ...stored,
+      "pitch.miss_at_zero": 0.7,
+    });
+    expect(c.pitch.missAtZero).toBe(0.7);
   });
 });

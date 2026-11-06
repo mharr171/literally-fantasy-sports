@@ -463,8 +463,18 @@ export const BASEBALL_SETTING_PATHS = BASEBALL_SETTING_GROUPS.flatMap((g) =>
 );
 
 /**
- * A config from stored values (path → number): known paths only, and a
- * value outside its limits or not a number keeps the default.
+ * The key a settings path is stored under: lower case with underscores,
+ * as the database's key format asks (`pitch.missAtZero` is stored as
+ * `pitch.miss_at_zero`).
+ */
+export function baseballStoredKey(path: string): string {
+  return path.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
+}
+
+/**
+ * A config from stored values (path → number, by path or stored key):
+ * known paths only, and a value outside its limits or not a number keeps
+ * the default.
  */
 export function baseballConfigFromValues(
   values: Readonly<Record<string, unknown>>,
@@ -472,13 +482,23 @@ export function baseballConfigFromValues(
   const kept: Record<string, number> = {};
   for (const g of BASEBALL_SETTING_GROUPS)
     for (const f of g.fields) {
-      const v = values[f.path];
+      const v = values[f.path] ?? values[baseballStoredKey(f.path)];
       if (limitError(f.limit, v) === null) kept[f.path] = v as number;
     }
   return withPaths(defaultBaseballConfig(), kept);
 }
 
-/** The config as stored rows, one per settings path. */
+/** The config as the database stores it: one row per path, under its stored key. */
+export function baseballConfigToStoredRows(
+  config: BaseballConfig,
+): { key: string; value: number }[] {
+  return baseballConfigToRows(config).map((r) => ({
+    key: baseballStoredKey(r.key),
+    value: r.value,
+  }));
+}
+
+/** The config's values, one per settings path. */
 export function baseballConfigToRows(
   config: BaseballConfig,
 ): { key: string; value: number }[] {
