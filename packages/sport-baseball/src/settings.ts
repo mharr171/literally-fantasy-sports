@@ -224,6 +224,14 @@ export const BASEBALL_SETTING_GROUPS: readonly SettingGroup[] = [
         limit: per("Second colors' matchup", 0.3),
       },
       {
+        path: "skill.platoonEdge",
+        limit: per(
+          "Platoon edge",
+          0.3,
+          "Opposite-side batter or same-side pitcher",
+        ),
+      },
+      {
         path: "skill.playerMatchup",
         limit: per("Pitcher against batter", 0.3),
       },

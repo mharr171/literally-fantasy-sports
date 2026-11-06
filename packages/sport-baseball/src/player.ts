@@ -29,6 +29,30 @@ export interface BaseballPlayer {
   sprayProfile?: SprayPreset | null;
   /** Where a pitcher likes to aim; attacks when left out. */
   locationProfile?: LocationPreset | null;
+  /** How he bats (D224): right, left or switch; right when left out. */
+  bats?: Bats;
+  /** How he throws: right or left; right when left out. */
+  throws?: Throws;
+}
+
+export type Bats = "R" | "L" | "S";
+export type Throws = "R" | "L";
+
+/** The side a batter hits from against this pitcher: a switch hitter takes the other side. */
+export function battingSide(
+  bats: Bats | undefined,
+  pitcherThrows: Throws | undefined,
+): Throws {
+  if (bats === "S") return (pitcherThrows ?? "R") === "R" ? "L" : "R";
+  return bats ?? "R";
+}
+
+/** How a player bats and throws, as cards show it: "Bats L · Throws R". */
+export function handednessLabel(
+  p: Pick<BaseballPlayer, "bats" | "throws">,
+): string {
+  const side = { R: "R", L: "L", S: "S" } as const;
+  return `Bats ${side[p.bats ?? "R"]} · Throws ${side[p.throws ?? "R"]}`;
 }
 
 /** The headline overall on a player card: at the primary position (and role). */

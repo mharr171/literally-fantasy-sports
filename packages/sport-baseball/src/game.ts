@@ -50,7 +50,7 @@ import {
   fatigueFactor,
   pitchBudget,
 } from "./pitching";
-import type { BaseballPlayer } from "./player";
+import { type BaseballPlayer, battingSide, type Throws } from "./player";
 import type { BatterPosition, FieldPosition } from "./positions";
 import {
   DEFAULT_FIELDING_RANGES,
@@ -59,14 +59,18 @@ import {
   type FieldRange,
   inZone,
   LOCATION_PRESETS,
+  mirrorGrid,
+  mirrorSpray,
   SPRAY_PRESETS,
   ZONE_PRESETS,
   ZONE_SIZE,
+  type ZoneGrid,
 } from "./profiles";
 import {
   atBatEdges,
   DEFAULT_SKILL_TUNING,
   type GameSide,
+  platoonEdges,
   type SideMultipliers,
   type SkillTuning,
   sideMultipliers,
@@ -138,7 +142,7 @@ export const DEFAULT_PITCH_TUNING: PitchTuning = {
   powerEffect: 0.0055,
   hitSpread: 0.25,
   homeRunAt: 0.86,
-  outChance: { ground: 0.81, line: 0.38, fly: 0.83, popup: 0.97 },
+  outChance: { ground: 0.81, line: 0.39, fly: 0.83, popup: 0.97 },
   fieldingEffect: 0.002,
   errorRate: 0.045,
   extraBase: 0.68,
@@ -304,19 +308,33 @@ interface SideState {
 const clamp01 = (p: number) => Math.min(1, Math.max(0, p));
 
 /** Each location preset's aim weights, flat, and more into the zone when behind. */
+const aimOf = (grid: ZoneGrid) => ({
+  normal: grid.flat(),
+  behind: grid.flatMap((r, i) => r.map((w, j) => (inZone(i, j) ? w * 1.4 : w))),
+});
+type Aim = { normal: number[]; behind: number[] };
+/** Aim by preset, for a right-handed pitcher and mirrored for a left-hander (D224). */
 const AIM = Object.fromEntries(
   Object.entries(LOCATION_PRESETS).map(([name, grid]) => [
     name,
-    {
-      normal: grid.flat(),
-      behind: grid.flatMap((r, i) =>
-        r.map((w, j) => (inZone(i, j) ? w * 1.4 : w)),
-      ),
-    },
+    { R: aimOf(grid), L: aimOf(mirrorGrid(grid)) },
   ]),
-) as Record<
-  keyof typeof LOCATION_PRESETS,
-  { normal: number[]; behind: number[] }
+) as Record<keyof typeof LOCATION_PRESETS, Record<Throws, Aim>>;
+/** Zones and spray for each side a batter hits from. */
+const ZONES = Object.fromEntries(
+  Object.entries(ZONE_PRESETS).map(([name, grid]) => [
+    name,
+    { R: grid, L: mirrorGrid(grid) },
+  ]),
+) as unknown as Record<keyof typeof ZONE_PRESETS, Record<Throws, ZoneGrid>>;
+const SPRAYS = Object.fromEntries(
+  Object.entries(SPRAY_PRESETS).map(([name, w]) => [
+    name,
+    { R: w, L: mirrorSpray(w) },
+  ]),
+) as unknown as Record<
+  keyof typeof SPRAY_PRESETS,
+  Record<Throws, readonly number[]>
 >;
 
 export function simulateGame(
@@ -540,7 +558,9 @@ export function simulateGame(
         batter: due.player,
         inning,
         needRuns: score[batting] <= score[def.side],
+        pitcher: def.pitcher,
         tuning: bt,
+        skill,
       });
       if (ph) substitute(off, index, ph, "pinchHitter");
       const batter = (off.gameSide.batters[index] as { player: BaseballPlayer })
@@ -550,8 +570,12 @@ export function simulateGame(
         pitcher.chemistryColor,
         skill,
       );
-      const bm = (off.mult.batters[index] as number) + edges.batter;
-      const pm = def.mult.pitcher + edges.pitcher;
+      // The platoon edge (D224), and the side he hits from.
+      const side = battingSide(batter.bats, pitcher.throws);
+      const platoon = platoonEdges(batter, pitcher, skill);
+      const bm =
+        (off.mult.batters[index] as number) + edges.batter + platoon.batter;
+      const pm = def.mult.pitcher + edges.pitcher + platoon.pitcher;
       const bat = (a: Attribute) => batter.attributes[a] * bm;
       // Velocity, control and movement fade once past the pitch budget.
       const budget = budgetOf(pitcher);
@@ -559,9 +583,10 @@ export function simulateGame(
       let tired = 1;
       const arm = (a: Attribute) =>
         pitcher.attributes[a] * pm * (a === "stamina" ? 1 : tired);
-      const zone = ZONE_PRESETS[batter.zoneProfile ?? "even"];
-      const sprayWeights = SPRAY_PRESETS[batter.sprayProfile ?? "spray"];
-      const aim = AIM[pitcher.locationProfile ?? "attacks"];
+      const zone = ZONES[batter.zoneProfile ?? "even"][side];
+      const sprayWeights = SPRAYS[batter.sprayProfile ?? "spray"][side];
+      const aim =
+        AIM[pitcher.locationProfile ?? "attacks"][pitcher.throws ?? "R"];
       let balls = 0;
       let strikes = 0;
       let result: PlayResult | null = null;

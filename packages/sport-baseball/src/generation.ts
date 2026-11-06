@@ -31,6 +31,7 @@ import {
   type OverallWeights,
   overallAt,
 } from "./overall";
+import type { Bats, Throws } from "./player";
 import {
   type BatterPosition,
   type PitcherRole,
@@ -69,11 +70,22 @@ export interface GeneratedPlayer {
   /** What managers see: a range that contains the true potential (D48). */
   potentialRange: [number, number];
   chemistryColor: number;
+  /** How he bats and throws (D224). */
+  bats: Bats;
+  throws: Throws;
   /** A batter's zone and spray presets, a pitcher's location (D211). */
   zoneProfile: ZonePreset | null;
   sprayProfile: SprayPreset | null;
   locationProfile: LocationPreset | null;
 }
+
+/** Positions only right-handed throwers play (D224). */
+export const RIGHT_HANDED_ONLY: ReadonlySet<Position> = new Set([
+  "C",
+  "2B",
+  "3B",
+  "SS",
+]);
 
 /** Positions a batter could also be comfortable in (D195). */
 export const SECONDARY_OPTIONS: Record<Position, BatterPosition[]> = {
@@ -139,6 +151,12 @@ export interface GenerationSettings {
   potentialRangeWidth: number;
   nationalityWeights: NationalityWeights;
   overallWeights: OverallWeights;
+  /** Handedness shares (D224). */
+  leftyPitcherShare: number;
+  /** Of fielders who may throw left (1B, outfield, DH). */
+  leftyThrowerShare: number;
+  leftyBatterShare: number;
+  switchHitterShare: number;
 }
 
 export const DEFAULT_GENERATION_SETTINGS: GenerationSettings = {
@@ -157,6 +175,10 @@ export const DEFAULT_GENERATION_SETTINGS: GenerationSettings = {
   potentialRangeWidth: 10,
   nationalityWeights: BASEBALL_NATIONALITY_WEIGHTS,
   overallWeights: DEFAULT_OVERALL_WEIGHTS,
+  leftyPitcherShare: 0.28,
+  leftyThrowerShare: 0.3,
+  leftyBatterShare: 0.32,
+  switchHitterShare: 0.1,
 };
 
 const clampAttr = (v: number) =>
@@ -310,8 +332,36 @@ export function generatePlayer(
   const zoneProfile = pick(choices.zone);
   const sprayProfile = pick(choices.spray);
   const locationProfile = pick(choices.location);
+  // Bats and throws (D224), on their own stream too.
+  const hands = rng.fork("hands");
+  const throws: Throws =
+    position === "P"
+      ? hands.chance(s.leftyPitcherShare)
+        ? "L"
+        : "R"
+      : RIGHT_HANDED_ONLY.has(position)
+        ? "R"
+        : hands.chance(s.leftyThrowerShare)
+          ? "L"
+          : "R";
+  const batRoll = hands.next();
+  const bats: Bats =
+    batRoll < s.switchHitterShare
+      ? "S"
+      : batRoll < s.switchHitterShare + s.leftyBatterShare
+        ? "L"
+        : "R";
+  // A left-handed thrower never plays C, 2B, 3B or SS.
+  const secondary =
+    throws === "L" &&
+    secondaryPosition &&
+    RIGHT_HANDED_ONLY.has(secondaryPosition)
+      ? null
+      : secondaryPosition;
   return {
     ...name,
+    bats,
+    throws,
     zoneProfile,
     sprayProfile,
     locationProfile,
@@ -319,7 +369,7 @@ export function generatePlayer(
     age,
     attributes,
     primaryPosition: position,
-    secondaryPosition,
+    secondaryPosition: secondary,
     pitcherRole,
     overall,
     potential,
