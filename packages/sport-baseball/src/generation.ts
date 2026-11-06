@@ -38,6 +38,12 @@ import {
   type RatingSlot,
   ratingSlot,
 } from "./positions";
+import {
+  type LocationPreset,
+  profileChoices,
+  type SprayPreset,
+  type ZonePreset,
+} from "./profiles";
 
 /** Players on the field per side; with the DH, 10 take part (ADR 0008 §3). */
 export const PLAYERS_ON_FIELD = 9;
@@ -63,6 +69,10 @@ export interface GeneratedPlayer {
   /** What managers see: a range that contains the true potential (D48). */
   potentialRange: [number, number];
   chemistryColor: number;
+  /** A batter's zone and spray presets, a pitcher's location (D211). */
+  zoneProfile: ZonePreset | null;
+  sprayProfile: SprayPreset | null;
+  locationProfile: LocationPreset | null;
 }
 
 /** Positions a batter could also be comfortable in (D195). */
@@ -292,8 +302,19 @@ export function generatePlayer(
     secondaryChoices.length > 0 && roles.chance(s.secondaryChance)
       ? roles.pick(secondaryChoices)
       : null;
+  // Presets on their own stream, so every other roll stays the same.
+  const profiles = rng.fork("profiles");
+  const choices = profileChoices(position);
+  const pick = <T>(options: readonly T[]): T | null =>
+    options.length > 0 ? profiles.pick(options) : null;
+  const zoneProfile = pick(choices.zone);
+  const sprayProfile = pick(choices.spray);
+  const locationProfile = pick(choices.location);
   return {
     ...name,
+    zoneProfile,
+    sprayProfile,
+    locationProfile,
     nationality,
     age,
     attributes,
