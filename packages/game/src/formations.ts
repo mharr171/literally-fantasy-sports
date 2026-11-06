@@ -195,8 +195,6 @@ export async function moveOffTurnedOff(
   const { error } = await createServiceClient()
     .from("matchday_squads")
     .update({
-      formation: moved.formation,
-      lineup: moved.lineup,
       lineup_data: squadToGroups(moved),
       moved_from: squad.formation,
       updated_at: new Date().toISOString(),
