@@ -1,6 +1,7 @@
 # ADR 0007: A framework for every sport (M16)
 
-Status: proposed (Nov 6, 2026). Covers D190–D192 and D206, as D205 asks.
+Status: accepted (Nov 6, 2026: Gary OK'd every point, with sport toggles
+in admin for point 3). Covers D190–D192, D206 and D207, as D205 asks.
 
 ## Context
 
@@ -32,7 +33,8 @@ without touching shared code.
 - Soccer plays exactly as before: every test, the fingerprint and the
   harness are unchanged, and existing data is migrated without loss (D131).
 - Every old link redirects.
-- A placeholder second sport can be switched on for admins only.
+- Baseball (with a stand-in engine) is hidden from players and visible to
+  admins until its toggles are switched on.
 
 **How the shapes are chosen (D206):** they are designed with all six
 sports in mind, but only what soccer and baseball need is built. Each
@@ -247,23 +249,31 @@ M16 adds:
 
 The account and theme stay shared.
 
-### 12. The baseball switch and a placeholder (D190)
+### 12. Sport toggles in admin (D190, D207)
 
-**The switch.** `sport_settings` gains `enabled` with three values:
-`off`, `admins` or `everyone`. Soccer is `everyone`. Baseball is created as
-`off`. Admin → Sports sets it.
+**Two toggles per sport.** Admin → Sports lists every sport with:
 
-**What the switch controls.** Pages, the header icons, club creation, the
-AI runner and the leaderboards only show sports the viewer may see:
-- `everyone`: every viewer
-- `admins`: admins only
-- `off`: nobody
+| Toggle | On | Off |
+| --- | --- | --- |
+| **Public** | Players see the sport: home page card, top-bar icon, club creation, its pages, leaderboard and hall of fame | Hidden from players; its pages show "not found" to them |
+| **AI world** | The scheduled AI runs play that sport's AI clubs | The scheduled AI runs skip it |
 
-**The placeholder.** For M16's done-when, baseball is registered with a
-**placeholder engine**: a coin-flip score, one lineup group of 9 players
-and a single stat. An admin can switch it to `admins`, create a club, and
-play a week through the shared code. M17 replaces the placeholder with
-the real engine.
+**Who sees a hidden sport.** Admins always see every sport, public or
+not, so a sport can be built and tried before launch.
+
+**The starting values.**
+- Soccer starts with both toggles on, as today.
+- Baseball starts with both off.
+
+**Storage.** `sport_settings` gains `public` and `ai_enabled` booleans.
+Every page and the AI runner check them on the server, so a hidden sport
+can't be reached by typing its URL.
+
+**Baseball during M16.** There's no baseball engine until M17. So that
+the toggles can be tried end to end in M16, baseball gets a stand-in:
+matches with random scores, a lineup of 9 and one stat. Only admins can
+see it while Public is off. M17 replaces the stand-in with the real
+engine, and the toggles stay as they are.
 
 ### 13. Replay safety and data
 
@@ -296,7 +306,7 @@ gain checks that each backfill matches the old columns.
 | 8 | Web sport registry: soccer's screens into `sports/soccer/`, template editor moved (§1, §7) | UI refactor |
 | 9 | `/soccer/...` URLs, redirects, sport picker and top-bar icons (§10) | UI; every old link tested |
 | 10 | Per-sport club creation with copy option, leaderboards and hall of fame by sport (§11) | UI |
-| 11 | `enabled` switch and the placeholder baseball (§12) | Migration; waits for Gary |
+| 11 | Public and AI world toggles per sport, and the baseball stand-in for admins (§12) | Migration; waits for Gary |
 | 12 | Account progress (§9) | Migration; waits for Gary |
 | 13 | Tick M16 and release `v1.7.0`; the drops of old columns follow in M17's first PR once lfs-prod is checked | Docs |
 
@@ -312,19 +322,17 @@ These are recorded here so M16's shapes leave room for them:
 
 ## Needs Gary
 
-Proposed for your OK:
+Gary OK'd all five (Nov 6, 2026):
 
-1. **Soccer's "day":** soccer's week counts as one day, so every soccer
-   number stays exactly as it is (§5).
-2. **Where pages live:** sport pages under `/soccer/...`; account, sign-in,
-   legal and What's new stay shared; admin stays at `/admin` with a sport
-   switcher (§10).
-3. **The placeholder:** M16 ships a placeholder baseball (coin-flip
-   scores), visible only once you set it to "admins", replaced in M17
-   (§12).
-4. **Dropping old columns:** the old soccer stat, lineup and condition
-   columns are kept in sync through `v1.7.0` and dropped in M17's first PR
-   after a check on lfs-prod (§13).
-5. **Account progress:** a simple log of season-end milestones per sport
-   (seasons, titles, finals, best Elo), unused until cross-sport bonuses
-   exist (§9).
+1. Soccer's week counts as one day, so every soccer number stays exactly
+   as it is (§5).
+2. Sport pages go under `/soccer/...`; account, sign-in, legal and What's
+   new stay shared; admin stays at `/admin` with a sport switcher (§10).
+3. Admin → Sports has a **Public** toggle and an **AI world** toggle for
+   each sport. Admins always see every sport. Baseball starts hidden, with
+   a stand-in engine until M17 (§12, D207).
+4. The old soccer stat, lineup and condition columns are kept in sync
+   through `v1.7.0` and dropped in M17's first PR, after a check on
+   lfs-prod (§13).
+5. Account progress is a simple log of season-end milestones per sport
+   (§9).
