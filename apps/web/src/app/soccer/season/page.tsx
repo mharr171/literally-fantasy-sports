@@ -58,9 +58,9 @@ async function SeasonContent() {
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
   const team = await loadMyTeam(user.id);
-  if (!team) redirect("/team");
+  if (!team) redirect("/soccer/team");
   const packs = await loadStarterPacks(team.id);
-  if (packs.some((p) => !p.resolved)) redirect("/team");
+  if (packs.some((p) => !p.resolved)) redirect("/soccer/team");
   const season = await loadLatestSeason(team.id);
 
   if (!season) {
@@ -78,7 +78,7 @@ async function SeasonContent() {
         </p>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
           Your saved{" "}
-          <Link href="/team/squad" className="underline">
+          <Link href="/soccer/team/squad" className="underline">
             matchday squad
           </Link>{" "}
           plays every match, so set it up first.
@@ -128,7 +128,7 @@ async function SeasonContent() {
         <div className="mt-3 flex flex-col gap-3 text-sm">
           <p className="text-zinc-600 dark:text-zinc-400">
             Season {season.number} is wrapped up. Check your{" "}
-            <Link href="/team/squad" className="underline">
+            <Link href="/soccer/team/squad" className="underline">
               matchday squad
             </Link>{" "}
             (retired players leave it) and your roster size, then start the next
@@ -200,7 +200,7 @@ async function SeasonContent() {
                   .map((s) => `${name.get(s.in)} for ${name.get(s.out)}`)
                   .join(", ")}
                 . Change it in your{" "}
-                <Link href="/team/squad" className="underline">
+                <Link href="/soccer/team/squad" className="underline">
                   matchday squad
                 </Link>
                 .

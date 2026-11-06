@@ -128,10 +128,10 @@ export function SeasonView({
         <div
           className={`flex flex-col items-start gap-1 text-sm font-medium sm:items-end ${archive ? "hidden" : ""}`}
         >
-          <Link href="/season/schedule" className="hover:underline">
+          <Link href="/soccer/season/schedule" className="hover:underline">
             Schedule and opponents&apos; colors →
           </Link>
-          <Link href="/team/squad" className="hover:underline">
+          <Link href="/soccer/team/squad" className="hover:underline">
             Matchday squad →
           </Link>
         </div>
@@ -228,7 +228,7 @@ export function SeasonView({
                         </span>
                       ) : (
                         <Link
-                          href={`/season/club/${slot}`}
+                          href={`/soccer/season/club/${slot}`}
                           className="inline-flex items-center gap-1.5 hover:underline"
                           title="See this club's roster"
                         >
@@ -320,7 +320,7 @@ export function SeasonView({
                         {name(f.homeSlot)} {badge(f.homeSlot)}
                       </span>
                       <Link
-                        href={`/season/match/${f.id}`}
+                        href={`/soccer/season/match/${f.id}`}
                         className="tabular-nums hover:underline"
                         title="Heatmap, play-by-play and replay"
                       >
@@ -421,7 +421,7 @@ function MatchCard({
         </ul>
       )}
       <Link
-        href={`/season/match/${id}`}
+        href={`/soccer/season/match/${id}`}
         className="self-center text-sm font-medium hover:underline"
       >
         Heatmap, play-by-play and replay →
@@ -517,7 +517,7 @@ function PlayoffBracketView({
                     <Link
                       // biome-ignore lint/suspicious/noArrayIndexKey: fixed bracket places
                       key={i}
-                      href={`/season/match/${f.id}`}
+                      href={`/soccer/season/match/${f.id}`}
                       className="hover:opacity-80"
                       title="Heatmap, play-by-play and replay"
                     >

@@ -41,7 +41,7 @@ async function SquadContent() {
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
   const team = await loadMyTeam(user.id);
-  if (!team) redirect("/team");
+  if (!team) redirect("/soccer/team");
   const [packs, roster, saved, outOfPosition, all, movedFrom, limits, live] =
     await Promise.all([
       loadStarterPacks(team.id),
@@ -58,7 +58,7 @@ async function SquadContent() {
   const formations = all
     .filter((f) => f.enabled || f.id === saved?.formation)
     .map((f) => ({ ...f.formation, enabled: f.enabled }));
-  if (packs.some((p) => !p.resolved)) redirect("/team");
+  if (packs.some((p) => !p.resolved)) redirect("/soccer/team");
 
   return (
     <>
@@ -72,7 +72,10 @@ async function SquadContent() {
             11 start, 11 wait on the bench.
           </p>
         </div>
-        <Link href="/team" className="text-sm font-medium hover:underline">
+        <Link
+          href="/soccer/team"
+          className="text-sm font-medium hover:underline"
+        >
           ← Back to team
         </Link>
       </div>

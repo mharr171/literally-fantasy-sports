@@ -324,11 +324,11 @@ async function Guide() {
         )}
         <p>
           Plan for it on the{" "}
-          <Link href="/season/schedule" className="underline">
+          <Link href="/soccer/season/schedule" className="underline">
             season schedule
           </Link>
           , which shows every opponent&apos;s colors, and on the{" "}
-          <Link href="/team/squad" className="underline">
+          <Link href="/soccer/team/squad" className="underline">
             matchday squad
           </Link>{" "}
           page.

@@ -19,10 +19,12 @@ import { MatchView, type MatchViewProps } from "./match-view";
 
 export const metadata: Metadata = { title: "Match" };
 
-export default function MatchPage({ params }: PageProps<"/season/match/[id]">) {
+export default function MatchPage({
+  params,
+}: PageProps<"/soccer/season/match/[id]">) {
   return (
     <section className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
-      <Link href="/season" className="text-sm hover:underline">
+      <Link href="/soccer/season" className="text-sm hover:underline">
         ← Season
       </Link>
       <Suspense fallback={<p className="text-sm text-zinc-500">Loading…</p>}>
@@ -52,13 +54,13 @@ function rows(map: {
 
 async function MatchContent({
   params,
-}: Pick<PageProps<"/season/match/[id]">, "params">) {
+}: Pick<PageProps<"/soccer/season/match/[id]">, "params">) {
   const { id } = await params;
   if (!UUID.test(id)) notFound();
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
   const team = await loadMyTeam(user.id);
-  if (!team) redirect("/team");
+  if (!team) redirect("/soccer/team");
   const match = await loadMatch(team.id, id);
   if (!match) notFound();
   const { fixture, slots } = match;

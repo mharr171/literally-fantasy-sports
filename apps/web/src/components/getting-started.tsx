@@ -77,7 +77,7 @@ export async function GettingStarted() {
           {next.action} →
         </Link>
         <Link
-          href="/guide"
+          href="/soccer/guide"
           className="text-sky-800 underline dark:text-sky-300"
         >
           New here? Read the game guide

@@ -19,6 +19,17 @@ const nextConfig: NextConfig = {
   // The engine packages are TypeScript source in the monorepo.
   transpilePackages: ["@lfs/core", "@lfs/game", "@lfs/sport-soccer"],
   partialPrefetching: true,
+  // Soccer's pages moved under /soccer (D191, ADR 0007 §10): every old link
+  // and bookmark goes to its new address, query string included.
+  redirects() {
+    return ["team", "season", "leaderboard", "hall-of-fame", "guide"].map(
+      (page) => ({
+        source: `/${page}/:path*`,
+        destination: `/soccer/${page}/:path*`,
+        permanent: true,
+      }),
+    );
+  },
   turbopack: {
     rules: {
       "*.css": {

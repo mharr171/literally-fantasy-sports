@@ -36,7 +36,7 @@ const ordinal = (n: number) => {
 export default function HistoryPage() {
   return (
     <section className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
-      <Link href="/team" className="text-sm hover:underline">
+      <Link href="/soccer/team" className="text-sm hover:underline">
         ← My team
       </Link>
       <Suspense fallback={<p className="text-sm text-zinc-500">Loading…</p>}>
@@ -50,7 +50,7 @@ async function History() {
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
   const team = await loadMyTeam(user.id);
-  if (!team) redirect("/team");
+  if (!team) redirect("/soccer/team");
   const [lines, latest, hall] = await Promise.all([
     loadClubHistory(team.id),
     loadLatestSeason(team.id),
@@ -72,7 +72,7 @@ async function History() {
       {lines.length === 0 && !inProgress ? (
         <EmptyState
           title="No seasons yet."
-          action={{ href: "/season", label: "Play a season" }}
+          action={{ href: "/soccer/season", label: "Play a season" }}
         >
           Your seasons appear here as you play them.
         </EmptyState>
@@ -95,7 +95,7 @@ async function History() {
                 <tr className="border-t border-zinc-200 dark:border-zinc-800">
                   <td className="px-3 py-1.5">
                     <Link
-                      href="/season"
+                      href="/soccer/season"
                       className="font-medium hover:underline"
                     >
                       Season {inProgress.number}
@@ -116,7 +116,7 @@ async function History() {
                   >
                     <td className="px-3 py-1.5">
                       <Link
-                        href={`/team/history/${l.seasonNumber}`}
+                        href={`/soccer/team/history/${l.seasonNumber}`}
                         className="font-medium hover:underline"
                       >
                         Season {l.seasonNumber}

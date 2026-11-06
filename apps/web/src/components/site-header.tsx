@@ -7,6 +7,10 @@ import { ADMIN_VIEW_COOKIE } from "@/lib/admin-view";
 import { toggleAdminView } from "@/lib/admin-view-actions";
 import { getCurrentProfile } from "@/lib/auth";
 import { loadMyTeam } from "@/lib/team";
+import { SPORT_UI, type SportUi } from "@/sports/registry";
+
+/** The sports the top bar shows; each sport's Public toggle comes in M16 step 11. */
+const SPORTS_SHOWN = Object.values(SPORT_UI) as SportUi[];
 
 export function SiteHeader() {
   return (
@@ -16,14 +20,28 @@ export function SiteHeader() {
           <Link href="/" className="text-lg font-semibold tracking-tight">
             LiterallyFantasySports
           </Link>
+          {/* A small icon per sport, for quick switching (D191). */}
+          <nav aria-label="Sports" className="flex items-center gap-1">
+            {SPORTS_SHOWN.map((s) => (
+              <Link
+                key={s.id}
+                href={`${s.basePath}/team`}
+                title={s.name}
+                aria-label={s.name}
+                className="rounded px-1 text-lg leading-none hover:bg-zinc-100 dark:hover:bg-zinc-900"
+              >
+                <span aria-hidden="true">{s.icon}</span>
+              </Link>
+            ))}
+          </nav>
           <Link
-            href="/leaderboard"
+            href="/soccer/leaderboard"
             className="hidden text-sm font-medium hover:underline sm:inline"
           >
             Leaderboard
           </Link>
           <Link
-            href="/hall-of-fame"
+            href="/soccer/hall-of-fame"
             className="hidden text-sm font-medium hover:underline sm:inline"
           >
             Hall of fame
@@ -58,13 +76,13 @@ async function AccountMenu() {
   return (
     <div className="flex min-w-0 items-center gap-3 text-sm">
       <Link
-        href="/team"
+        href="/soccer/team"
         className="inline-flex items-center gap-1.5 font-medium hover:underline"
       >
         {team && <ClubBadge name={team.name} colors={team.colors} />}
         My team
       </Link>
-      <Link href="/season" className="font-medium hover:underline">
+      <Link href="/soccer/season" className="font-medium hover:underline">
         Season
       </Link>
       {user.isAdmin && (
