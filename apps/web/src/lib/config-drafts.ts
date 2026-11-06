@@ -17,9 +17,11 @@ export async function saveDraftRows(
   note: string,
   defaultNote: string,
   rows: readonly { key: string; value: unknown }[],
+  /** Whose settings: soccer's unless said (ADR 0007 §7). */
+  scope: string = SOCCER,
 ): Promise<number> {
   const supabase = await createClient();
-  const versions = await listSoccerVersions();
+  const versions = await listSoccerVersions(scope);
   const base = versions.find((v) => v.version === baseVersion);
 
   let version: number;
@@ -28,20 +30,22 @@ export async function saveDraftRows(
     const { error } = await supabase
       .from("game_config_versions")
       .update({ note })
-      .eq("scope", SOCCER)
+      .eq("scope", scope)
       .eq("version", version);
     if (error) throw new Error(error.message);
   } else {
     version = (versions[0]?.version ?? 0) + 1;
     const { error } = await supabase
       .from("game_config_versions")
-      .insert({ scope: SOCCER, version, note: note || defaultNote });
+      .insert({ scope, version, note: note || defaultNote });
     if (error) throw new Error(error.message);
     if (base) {
       const replaced = new Set(rows.map((r) => r.key));
-      const carried = Object.entries(await loadVersionValues(base.version))
+      const carried = Object.entries(
+        await loadVersionValues(base.version, scope),
+      )
         .filter(([key]) => !replaced.has(key))
-        .map(([key, value]) => ({ scope: SOCCER, version, key, value }));
+        .map(([key, value]) => ({ scope, version, key, value }));
       if (carried.length > 0) {
         const { error: copyError } = await supabase
           .from("game_config")
@@ -53,20 +57,21 @@ export async function saveDraftRows(
 
   const { error } = await supabase
     .from("game_config")
-    .upsert(
-      rows.map((r) => ({ scope: SOCCER, version, key: r.key, value: r.value })),
-    );
+    .upsert(rows.map((r) => ({ scope, version, key: r.key, value: r.value })));
   if (error) throw new Error(error.message);
   return version;
 }
 
 /** Makes a draft live. Published versions can never change again. */
-export async function publishDraft(version: number): Promise<void> {
+export async function publishDraft(
+  version: number,
+  scope: string = SOCCER,
+): Promise<void> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("game_config_versions")
     .update({ published_at: new Date().toISOString() })
-    .eq("scope", SOCCER)
+    .eq("scope", scope)
     .eq("version", version)
     .is("published_at", null)
     .select("version");

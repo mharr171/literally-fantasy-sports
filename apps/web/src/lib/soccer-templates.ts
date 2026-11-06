@@ -35,12 +35,15 @@ export interface EditorState {
   live: number | null;
 }
 
-export async function listSoccerVersions(): Promise<SoccerVersion[]> {
+/** A sport's settings versions, newest first (soccer's by default). */
+export async function listSoccerVersions(
+  scope: string = SOCCER,
+): Promise<SoccerVersion[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("game_config_versions")
     .select("version, note, published_at")
-    .eq("scope", SOCCER)
+    .eq("scope", scope)
     .order("version", { ascending: false });
   if (error) throw new Error(`Couldn't load versions: ${error.message}`);
   return (data ?? []).map((r) => ({
@@ -53,12 +56,13 @@ export async function listSoccerVersions(): Promise<SoccerVersion[]> {
 /** Every stored value of a version, keyed by setting name. */
 export async function loadVersionValues(
   version: number,
+  scope: string = SOCCER,
 ): Promise<Record<string, unknown>> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("game_config")
     .select("key, value")
-    .eq("scope", SOCCER)
+    .eq("scope", scope)
     .eq("version", version);
   if (error)
     throw new Error(`Couldn't load version ${version}: ${error.message}`);
