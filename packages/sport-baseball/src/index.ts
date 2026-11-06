@@ -4,7 +4,6 @@
  * M17 replaces it with the real engine (D194–D204).
  */
 import {
-  createInfluenceMap,
   createRng,
   type MatchInput,
   type MatchOutput,
@@ -56,11 +55,6 @@ export function simulateStandIn(
       ...(events.length > 18 ? { decidedBy: "extra_innings" } : {}),
     },
     events,
-    // Baseball draws no field heatmap (D201): a 1 × 1 map stands in.
-    influence: {
-      home: createInfluenceMap({ rows: 1, cols: 1 }),
-      away: createInfluenceMap({ rows: 1, cols: 1 }),
-    },
   };
 }
 

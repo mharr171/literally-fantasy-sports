@@ -44,8 +44,12 @@ export interface MatchOutput<
   result: TResult;
   /** Play-by-play, in order. */
   events: TEvent[];
-  /** Each side's influence over the playing surface, for heatmaps. */
-  influence: Record<Side, InfluenceMap>;
+  /**
+   * Each side's influence over the playing surface, for heatmaps. Optional
+   * (ADR 0008 §4): a sport that draws its players another way, like
+   * baseball, leaves it out.
+   */
+  influence?: Record<Side, InfluenceMap>;
 }
 
 /**

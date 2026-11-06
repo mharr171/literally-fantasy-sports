@@ -329,6 +329,11 @@ export interface PlayerMatchReport {
  */
 export const ASSIST_SHARE = 0.8;
 
+/** A soccer match's output: soccer always returns its heatmaps. */
+export type SoccerMatchOutput = MatchOutput<SoccerEvent, SoccerResult> & {
+  influence: Record<Side, InfluenceMap>;
+};
+
 export interface SoccerResult extends MatchResult {
   /** "forfeit": a side had fewer than MIN_PLAYERS available (D183). */
   decidedBy?: "extra_time" | "penalties" | "forfeit";
@@ -1164,7 +1169,7 @@ function teamMap(team: TeamState, phases: number): InfluenceMap {
  */
 function forfeit(
   input: MatchInput<SoccerTeam, SoccerConfig>,
-): MatchOutput<SoccerEvent, SoccerResult> {
+): SoccerMatchOutput {
   const loser: Side = input.home.lineup.length < MIN_PLAYERS ? "home" : "away";
   const score =
     loser === "home"
@@ -1190,7 +1195,7 @@ function forfeit(
 export function simulateMatch(
   input: MatchInput<SoccerTeam, SoccerConfig>,
   seed: Seed,
-): MatchOutput<SoccerEvent, SoccerResult> {
+): SoccerMatchOutput {
   const { config } = input;
   const short = (t: SoccerTeam) => t.lineup.length < MIN_PLAYERS;
   if (short(input.home) || short(input.away)) return forfeit(input);

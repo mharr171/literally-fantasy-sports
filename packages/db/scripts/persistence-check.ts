@@ -76,7 +76,20 @@ try {
   await migrate(drizzle(db), {
     migrationsFolder: path.join(base, "migrations"),
   });
-  await db.unsafe(pick("ci/persistence-seed.sql"));
+  try {
+    await db.unsafe(pick("ci/persistence-seed.sql"));
+  } catch (e) {
+    // The base branch's seed no longer fits the base branch's own schema
+    // (a merged PR dropped a column it uses). It runs as one statement, so
+    // nothing was loaded: seed from this branch's copy instead, which must
+    // fit the base schema too.
+    console.warn(
+      `Base seed failed (${e instanceof Error ? e.message : e}); using this branch's seed.`,
+    );
+    await db.unsafe(
+      readFileSync(path.join(here, "..", "ci/persistence-seed.sql"), "utf-8"),
+    );
+  }
   const before = await counts();
   await migrate(drizzle(db), {
     migrationsFolder: path.join(here, "..", "migrations"),

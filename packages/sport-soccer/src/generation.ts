@@ -95,6 +95,44 @@ export interface GenerationSettings {
   overallWeights: OverallWeights;
 }
 
+/**
+ * Soccer's nationalities, equally likely (D10): the 25 pools it has always
+ * used. Fixed here so that pools added for other sports (D203) never change
+ * which players a soccer pack's seed makes.
+ */
+export const SOCCER_NATIONALITY_WEIGHTS: NationalityWeights =
+  Object.fromEntries(
+    (
+      [
+        "ENG",
+        "ESP",
+        "BRA",
+        "ARG",
+        "GER",
+        "FRA",
+        "ITA",
+        "NED",
+        "POR",
+        "NGA",
+        "GHA",
+        "SEN",
+        "EGY",
+        "MAR",
+        "JPN",
+        "KOR",
+        "CHN",
+        "KSA",
+        "MEX",
+        "USA",
+        "COL",
+        "SWE",
+        "POL",
+        "TUR",
+        "IND",
+      ] as const
+    ).map((code) => [code, 1]),
+  );
+
 export const DEFAULT_GENERATION_SETTINGS: GenerationSettings = {
   minAge: 17,
   maxAge: 34,
@@ -270,7 +308,7 @@ export function generatePlayer(
     : rollPotential(bio, overall, age, s);
   const nationality = pickNationality(
     rng.fork("nationality"),
-    s.nationalityWeights,
+    s.nationalityWeights ?? SOCCER_NATIONALITY_WEIGHTS,
   );
   const name = generateName(rng.fork("name"), nationality);
   const roles = rng.fork("roles");

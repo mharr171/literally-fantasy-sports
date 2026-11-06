@@ -20,7 +20,7 @@ import {
   isAvailable,
   type PlayerCondition,
 } from "./condition";
-import type { PackFocus } from "./generation";
+import { type PackFocus, SOCCER_NATIONALITY_WEIGHTS } from "./generation";
 import {
   autoPickSquad,
   FORMATIONS,
@@ -87,7 +87,10 @@ export function rollAiIdentity(
   const colors = shuffled.slice(0, rng.fork("color-count").chance(0.3) ? 3 : 2);
   const person = generateName(
     rng.fork("manager"),
-    pickNationality(rng.fork("manager-nationality")),
+    pickNationality(
+      rng.fork("manager-nationality"),
+      SOCCER_NATIONALITY_WEIGHTS,
+    ),
   );
   const paceRoll = rng.fork("pace").next();
   const pace: Pace =
