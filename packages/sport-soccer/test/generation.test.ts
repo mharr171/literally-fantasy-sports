@@ -1,4 +1,9 @@
-import { createRng, NAME_POOLS } from "@lfs/core";
+import {
+  createRng,
+  NAME_POOLS,
+  NATIONALITY_CODES,
+  pickNationality,
+} from "@lfs/core";
 import { describe, expect, it } from "vitest";
 import { ATTRIBUTES } from "../src/attributes";
 import {
@@ -9,6 +14,7 @@ import {
   PACK_SIZE,
   positionsFor,
   SECONDARY_OPTIONS,
+  SOCCER_NATIONALITY_WEIGHTS,
   STARTER_PACKS,
   STARTER_TIER,
 } from "../src/generation";
@@ -219,5 +225,25 @@ describe("packs (D47, D83)", () => {
     expect(generatePack(createRng("p1"), "any", STARTER_TIER)).toEqual(
       generatePack(createRng("p1"), "any", STARTER_TIER),
     );
+  });
+});
+
+describe("soccer's nationalities (D10, D203)", () => {
+  // The 25 pools soccer has always used, in their order in NATIONALITY_CODES.
+  const ORIGINAL = Object.keys(SOCCER_NATIONALITY_WEIGHTS);
+
+  it("stay the original 25 when pools are added for other sports", () => {
+    expect(ORIGINAL).toHaveLength(25);
+    expect(NATIONALITY_CODES.slice(0, 25)).toEqual(ORIGINAL);
+  });
+
+  it("pick exactly as before, so a pack's seed makes the same players", () => {
+    for (let i = 0; i < 500; i++) {
+      const before =
+        ORIGINAL[createRng(`n${i}`).weightedIndex(ORIGINAL.map(() => 1))];
+      expect(
+        pickNationality(createRng(`n${i}`), SOCCER_NATIONALITY_WEIGHTS),
+      ).toBe(before);
+    }
   });
 });

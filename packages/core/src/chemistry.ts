@@ -132,10 +132,12 @@ export function rankedColors(
 }
 
 /**
- * How color `a` fares against color `b` on a ring of an odd number of
- * colors (D138): +1 when `a` beats `b` (b is one of the next half of the
- * ring after a), −1 when it loses, 0 for the same color or a color not on
- * the ring.
+ * How color `a` fares against color `b` on a ring of colors: +1 when `a`
+ * beats `b`, −1 when it loses, 0 for the same color or a color not on the
+ * ring. On an odd ring (soccer's 5, D138) each color beats the next half
+ * of the ring after it. On an even ring (baseball's 4, D211) it beats the
+ * colors before the one opposite, loses to those after it, and is neutral
+ * against the opposite one.
  */
 export function colorEdge(
   a: number,
@@ -145,7 +147,8 @@ export function colorEdge(
   const n = ring.length;
   const i = ring.indexOf(a);
   const j = ring.indexOf(b);
-  if (i < 0 || j < 0 || i === j || n % 2 === 0) return 0;
+  if (i < 0 || j < 0 || i === j) return 0;
   const steps = (j - i + n) % n;
-  return steps <= (n - 1) / 2 ? 1 : -1;
+  if (n % 2 === 0 && steps === n / 2) return 0;
+  return steps < n / 2 ? 1 : -1;
 }

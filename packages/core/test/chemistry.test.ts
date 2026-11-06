@@ -180,9 +180,27 @@ describe("color matchups (D119, D138)", () => {
     }
   });
 
-  it("calls an unknown color or an even ring even", () => {
+  it("calls an unknown color even", () => {
     expect(colorEdge(0, 9, ring)).toBe(0);
-    expect(colorEdge(0, 1, [0, 1, 2, 3])).toBe(0);
+  });
+
+  it("on a ring of 4, beats the next, loses to the one before and is neutral against the opposite (D211)", () => {
+    const four = [0, 1, 2, 3];
+    expect(four.map((b) => colorEdge(0, b, four))).toEqual([0, 1, 0, -1]);
+    for (const a of four) {
+      const edges = four.map((b) => colorEdge(a, b, four));
+      expect(edges.filter((e) => e === 1)).toHaveLength(1);
+      expect(edges.filter((e) => e === -1)).toHaveLength(1);
+      for (const b of four)
+        expect(colorEdge(b, a, four) + colorEdge(a, b, four)).toBe(0);
+    }
+  });
+
+  it("gives an odd ring exactly the answers it always has (soccer, D138)", () => {
+    // Each color beats the next two and loses to the two before.
+    expect(ring.map((b) => colorEdge(ring[0] as number, b, ring))).toEqual([
+      0, 1, 1, -1, -1,
+    ]);
   });
 
   it("ranks dominant and second colors the way chemistry does", () => {

@@ -9,8 +9,8 @@ import {
 import { createRng } from "../src/rng";
 
 describe("name pools (D10, D38)", () => {
-  it("covers 25 nationalities across Europe, Africa, Asia and the Americas", () => {
-    expect(NATIONALITY_CODES).toHaveLength(25);
+  it("covers 29 nationalities across Europe, Africa, Asia and the Americas", () => {
+    expect(NATIONALITY_CODES).toHaveLength(29);
     for (const code of [
       "ENG",
       "BRA",
@@ -81,14 +81,14 @@ describe("pickNationality", () => {
   it("spreads evenly by default", () => {
     const rng = createRng("spread");
     const counts = new Map<string, number>();
-    for (let i = 0; i < 25_000; i++) {
+    for (let i = 0; i < 29_000; i++) {
       const code = pickNationality(rng);
       counts.set(code, (counts.get(code) ?? 0) + 1);
     }
-    expect(counts.size).toBe(25);
+    expect(counts.size).toBe(29);
     for (const c of counts.values())
       expect(Math.abs(c - 1000)).toBeLessThan(150);
-    expect(Object.keys(EQUAL_NATIONALITY_WEIGHTS)).toHaveLength(25);
+    expect(Object.keys(EQUAL_NATIONALITY_WEIGHTS)).toHaveLength(29);
   });
 
   it("follows per-sport weights and skips unlisted nationalities", () => {
