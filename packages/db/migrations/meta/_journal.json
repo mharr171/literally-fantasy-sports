@@ -463,6 +463,20 @@
       "when": 1793923768451,
       "tag": "0065_reward_packs_functions",
       "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1793937953901,
+      "tag": "0066_stats_by_key",
+      "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1793937954852,
+      "tag": "0067_stats_by_key_sync",
+      "breakpoints": true
     }
   ]
 }

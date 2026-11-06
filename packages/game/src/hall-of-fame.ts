@@ -17,12 +17,13 @@ export interface HallClub {
   value: number;
 }
 
+/** The player lists, by stat key (ADR 0007 §2). */
 export const PLAYER_LISTS = [
-  { key: "goals", label: "Goals", column: "stat_goals" },
-  { key: "assists", label: "Assists", column: "assists" },
-  { key: "tackles", label: "Tackles", column: "tackles" },
-  { key: "saves", label: "Saves", column: "saves" },
-  { key: "games", label: "Games", column: "stat_games" },
+  { key: "goals", label: "Goals" },
+  { key: "assists", label: "Assists" },
+  { key: "tackles", label: "Tackles" },
+  { key: "saves", label: "Saves" },
+  { key: "games", label: "Games" },
 ] as const;
 
 export type PlayerListKey = (typeof PLAYER_LISTS)[number]["key"];
@@ -52,53 +53,21 @@ const club = (r: Record<string, unknown>): HallClub => ({
 });
 
 /** The top players of all time in one list, current and retired together. */
-async function topPlayers(column: string): Promise<HallPlayer[]> {
-  const db = createServiceClient();
-  const [current, retired] = await Promise.all([
-    db
-      .from("players")
-      .select(
-        `id, display_name, primary_position, team_id, ${column}, teams(name)`,
-      )
-      .eq("sport", SOCCER)
-      .gt(column, 0)
-      .order(column, { ascending: false, nullsFirst: false })
-      .limit(HALL_SIZE),
-    db
-      .from("player_careers")
-      .select(`id, display_name, primary_position, team_id, clubs, ${column}`)
-      .eq("sport", SOCCER)
-      .gt(column, 0)
-      .order(column, { ascending: false, nullsFirst: false })
-      .limit(HALL_SIZE),
-  ]);
-  if (current.error) throw new Error(current.error.message);
-  if (retired.error) throw new Error(retired.error.message);
-  const rows = (x: unknown) => (x ?? []) as Record<string, unknown>[];
-  const teamName = (t: unknown) =>
-    ((Array.isArray(t) ? t[0] : t) as { name?: string } | null)?.name ?? "?";
-  return [
-    ...rows(current.data).map((p) => ({
-      id: p.id as string,
-      name: p.display_name as string,
-      position: p.primary_position as string,
-      club: teamName(p.teams),
-      teamId: p.team_id as string,
-      retired: false,
-      value: p[column] as number,
-    })),
-    ...rows(retired.data).map((p) => ({
-      id: p.id as string,
-      name: p.display_name as string,
-      position: p.primary_position as string,
-      club: ((p.clubs as string[] | null) ?? []).at(-1) ?? "?",
-      teamId: (p.team_id as string | null) ?? null,
-      retired: true,
-      value: p[column] as number,
-    })),
-  ]
-    .sort((a, b) => b.value - a.value || a.name.localeCompare(b.name))
-    .slice(0, HALL_SIZE);
+async function topPlayers(stat: string): Promise<HallPlayer[]> {
+  const { data, error } = await createServiceClient().rpc(
+    "hall_of_fame_players",
+    { p_sport: SOCCER, p_stat: stat, p_limit: HALL_SIZE },
+  );
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as Record<string, unknown>[]).map((p) => ({
+    id: p.id as string,
+    name: p.name as string,
+    position: p.position as string,
+    club: (p.club as string | null) ?? "?",
+    teamId: (p.team_id as string | null) ?? null,
+    retired: p.retired === true,
+    value: p.value as number,
+  }));
 }
 
 export async function loadGlobalHallOfFame(): Promise<GlobalHallOfFame> {
@@ -107,7 +76,7 @@ export async function loadGlobalHallOfFame(): Promise<GlobalHallOfFame> {
       p_sport: SOCCER,
       p_limit: HALL_SIZE,
     }),
-    ...PLAYER_LISTS.map((l) => topPlayers(l.column)),
+    ...PLAYER_LISTS.map((l) => topPlayers(l.key)),
   ]);
   if (clubs.error) throw new Error(clubs.error.message);
   const c = (clubs.data ?? {}) as Record<string, Record<string, unknown>[]>;

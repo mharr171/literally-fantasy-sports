@@ -236,11 +236,27 @@ export interface RosterPlayer {
   stats: PlayerStats;
 }
 
+/** Soccer's card stats from the stored `stats` object. */
+function playerStats(stored: unknown): PlayerStats {
+  const s = (stored ?? {}) as Record<string, unknown>;
+  const n = (k: string) => (typeof s[k] === "number" ? (s[k] as number) : 0);
+  return {
+    games: n("games"),
+    wins: n("wins"),
+    draws: n("draws"),
+    losses: n("losses"),
+    goals: n("goals"),
+    assists: n("assists"),
+    tackles: n("tackles"),
+    saves: n("saves"),
+  };
+}
+
 export async function loadRoster(teamId: string): Promise<RosterPlayer[]> {
   const { data, error } = await createServiceClient()
     .from("players")
     .select(
-      "id, from_starter_pack, attributes, fitness, injured_weeks, suspended_weeks, yellow_cards, form, template_variant, secondary_template_variant, display_name, nationality, age, primary_position, secondary_position, overall, potential_low, potential_high, worth, chemistry_color, stat_games, stat_goals, wins, draws, losses, assists, tackles, saves",
+      "id, from_starter_pack, attributes, fitness, injured_weeks, suspended_weeks, yellow_cards, form, template_variant, secondary_template_variant, display_name, nationality, age, primary_position, secondary_position, overall, potential_low, potential_high, worth, chemistry_color, stats",
     )
     .eq("team_id", teamId);
   if (error) throw new Error(error.message);
@@ -266,16 +282,8 @@ export async function loadRoster(teamId: string): Promise<RosterPlayer[]> {
     potentialRange: [p.potential_low, p.potential_high],
     worth: p.worth,
     chemistryColor: p.chemistry_color,
-    stats: {
-      games: p.stat_games,
-      wins: p.wins,
-      draws: p.draws,
-      losses: p.losses,
-      goals: p.stat_goals,
-      assists: p.assists,
-      tackles: p.tackles,
-      saves: p.saves,
-    },
+    // Stats by key (ADR 0007 §2), 0 for any not yet kept.
+    stats: playerStats(p.stats),
   }));
 }
 
