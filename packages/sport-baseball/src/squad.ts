@@ -13,6 +13,7 @@ import {
   type LineupStyle,
   type PickedSquad,
   ROTATION_SIZE,
+  styledRating,
 } from "./lineup";
 import { defaultBullpenPlan } from "./pitching";
 import type { BaseballPlayer } from "./player";
@@ -237,5 +238,59 @@ export function squadFromData(data: unknown): BaseballSquad | null {
     setup: d.setup ?? null,
     starterPitchLimit: d.starterPitchLimit ?? DEFAULT_PITCH_LIMIT,
     bench: d.bench,
+  };
+}
+
+/**
+ * The squad for one game with injured players out (D213): each injured
+ * batter's place goes to the best fit left, bench first, then anyone on the
+ * roster not already playing; injured players leave the bench, rotation and
+ * bullpen. The saved squad itself is never changed.
+ */
+export function squadForGame(
+  squad: BaseballSquad,
+  players: ReadonlyMap<string, BaseballPlayer>,
+  injured: (id: string) => boolean,
+): BaseballSquad {
+  const playing = new Set(
+    squad.order.filter((b) => !injured(b.id)).map((b) => b.id),
+  );
+  const benchIds = squad.bench.map((b) => b.id);
+  const candidates = [
+    ...benchIds,
+    ...[...players.keys()].filter((id) => !benchIds.includes(id)),
+  ].filter((id) => {
+    const p = players.get(id);
+    return p && p.primaryPosition !== "P" && !injured(id) && !playing.has(id);
+  });
+  const order = squad.order.map((b) => {
+    if (!injured(b.id)) return b;
+    let best: string | null = null;
+    let bestScore = Number.NEGATIVE_INFINITY;
+    for (const id of candidates) {
+      if (playing.has(id)) continue;
+      const score = styledRating(
+        players.get(id) as BaseballPlayer,
+        b.slot,
+        squad.style,
+      );
+      if (score > bestScore) {
+        best = id;
+        bestScore = score;
+      }
+    }
+    if (!best) return b;
+    playing.add(best);
+    return { id: best, slot: b.slot };
+  });
+  const fit = (id: string) => !injured(id);
+  return {
+    ...squad,
+    order,
+    rotation: squad.rotation.filter(fit),
+    bullpen: squad.bullpen.filter(fit),
+    closer: squad.closer && fit(squad.closer) ? squad.closer : null,
+    setup: squad.setup && fit(squad.setup) ? squad.setup : null,
+    bench: squad.bench.filter((b) => fit(b.id) && !playing.has(b.id)),
   };
 }
