@@ -2,16 +2,51 @@
 
 import { clubColorsError, normalizeTeamName, teamNameError } from "@lfs/core";
 import { refresh } from "next/cache";
+import { z } from "zod";
 import type { CreateClubState } from "@/components/create-club-form";
 import { getCurrentUser } from "@/lib/auth";
+import {
+  confirmBaseballStarterSquadFor,
+  giveBaseballStarterPacksFor,
+} from "@/lib/baseball-squad";
 import { loadMyTeam } from "@/lib/team";
-import { createClub } from "@/lib/team-steps";
+import { createClub, openStarterPacks } from "@/lib/team-steps";
 import { canSeeSport } from "@/lib/visible-sports";
 
-/**
- * Starts the manager's baseball club (D192). Baseball is a stand-in until
- * M17, so only viewers who may see it (admins, while it's hidden) can.
- */
+export type ActionResult = { ok: true } | { ok: false; error: string };
+
+const fail = (e: unknown): { ok: false; error: string } => ({
+  ok: false,
+  error:
+    e instanceof z.ZodError
+      ? "That choice isn't valid."
+      : e instanceof Error
+        ? e.message
+        : "Something went wrong.",
+});
+
+/** Server actions are public endpoints: find the manager and check baseball is open to them on every call. */
+async function requireBaseballTeam() {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Sign in first.");
+  if (!(await canSeeSport("baseball")))
+    throw new Error("Baseball isn't open yet.");
+  const team = await loadMyTeam(user.id, "baseball");
+  if (!team) throw new Error("Create your baseball club first.");
+  return team;
+}
+
+async function run(step: () => Promise<void>): Promise<ActionResult> {
+  try {
+    await step();
+    refresh();
+    return { ok: true };
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+/** Starts the manager's baseball club with its 16 starter packs (D192, D221). */
 export async function createBaseballClub(
   _prev: CreateClubState,
   formData: FormData,
@@ -37,4 +72,37 @@ export async function createBaseballClub(
   }
   refresh();
   return { status: "idle" };
+}
+
+/** For a club made before baseball had packs: its 16 starter packs. */
+export async function claimStarterPacks(): Promise<ActionResult> {
+  return run(async () =>
+    giveBaseballStarterPacksFor(await requireBaseballTeam()),
+  );
+}
+
+const packIds = z.array(z.uuid()).min(1).max(16);
+
+/** Opens starter packs to scout their players. */
+export async function openBaseballPacks(ids: string[]): Promise<ActionResult> {
+  return run(async () =>
+    openStarterPacks(await requireBaseballTeam(), packIds.parse(ids)),
+  );
+}
+
+const selection = z.record(
+  z.uuid(),
+  z.array(z.number().int().min(0).max(4)).max(5),
+);
+
+/** Keeps the ticked players (14–30, at least 9 pitchers and 9 batters). */
+export async function confirmBaseballStarters(
+  chosen: Record<string, number[]>,
+): Promise<ActionResult> {
+  return run(async () =>
+    confirmBaseballStarterSquadFor(
+      await requireBaseballTeam(),
+      selection.parse(chosen),
+    ),
+  );
 }

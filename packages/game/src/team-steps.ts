@@ -15,6 +15,7 @@ import { loadFormations } from "./formations";
 import { playerRow } from "./scouting";
 import { liveGenerationSettings, liveSoccerConfig } from "./season";
 import { loadRosterLimits } from "./sport-settings";
+import { starterPackPlan as baseballStarterPackPlan } from "./sports/baseball";
 import {
   excludedColorsError,
   type MatchdaySquad,
@@ -54,7 +55,7 @@ function friendly(message: string): string {
 }
 
 /**
- * Creates an owner's soccer club with its 22 starter packs (D83). Returns
+ * Creates an owner's club with its starter packs (D83, D221). Returns
  * "exists" if they already have one.
  */
 export async function createClub(
@@ -72,8 +73,13 @@ export async function createClub(
       p_owner: ownerId,
       p_sport: sport,
       p_name: name,
-      // Soccer's 22 starter packs (D83); baseball's stand-in has none yet.
-      p_packs: sport === SOCCER ? starterPackPlan() : [],
+      // Soccer's 22 starter packs (D83), baseball's 16 (D221).
+      p_packs:
+        sport === SOCCER
+          ? starterPackPlan()
+          : sport === "baseball"
+            ? baseballStarterPackPlan()
+            : [],
       p_colors: colors,
     },
   );
