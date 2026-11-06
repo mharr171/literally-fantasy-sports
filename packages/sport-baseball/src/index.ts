@@ -79,8 +79,10 @@ export const baseball: Sport<
 };
 
 export * from "./attributes";
+export * from "./bench";
 export * from "./game";
 export * from "./generation";
+export * from "./lineup";
 export * from "./overall";
 export * from "./pitching";
 export * from "./player";

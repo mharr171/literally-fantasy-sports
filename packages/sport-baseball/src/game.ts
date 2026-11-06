@@ -31,6 +31,16 @@ import {
 } from "@lfs/core";
 import type { Attribute } from "./attributes";
 import {
+  type BenchPlayer,
+  type BenchRole,
+  type BenchTuning,
+  chooseDefense,
+  chooseInjuryCover,
+  choosePinchHitter,
+  choosePinchRunner,
+  DEFAULT_BENCH_TUNING,
+} from "./bench";
+import {
   type BullpenPlan,
   bullpenDecision,
   type ChangeReason,
@@ -74,6 +84,8 @@ export interface BaseballTeam {
   plan?: BullpenPlan;
   /** Relievers who still need rest (D213): they're skipped. */
   unavailable?: readonly string[];
+  /** Up to 5 bench players, each with a role (D212). */
+  bench?: readonly BenchPlayer[];
 }
 
 /** The pitch-by-pitch tuning. Starting values; the harness tunes them (step 8). */
@@ -136,6 +148,7 @@ export interface BaseballConfig {
   skill: SkillTuning;
   pitch: PitchTuning;
   fatigue: FatigueTuning;
+  bench: BenchTuning;
   fielding: Record<FieldPosition | "P", FieldRange>;
 }
 
@@ -144,6 +157,7 @@ export function defaultBaseballConfig(): BaseballConfig {
     skill: DEFAULT_SKILL_TUNING,
     pitch: DEFAULT_PITCH_TUNING,
     fatigue: DEFAULT_FATIGUE,
+    bench: DEFAULT_BENCH_TUNING,
     fielding: DEFAULT_FIELDING_RANGES,
   };
 }
@@ -212,6 +226,20 @@ export type BaseballEvent =
       reason: ChangeReason;
     })
   | (Situation & {
+      type: "substitution";
+      /** The side making it. */
+      side: Side;
+      out: string;
+      in: string;
+      role: BenchRole;
+    })
+  | (Situation & {
+      type: "injury";
+      side: Side;
+      player: string;
+      days: number;
+    })
+  | (Situation & {
       type: "steal";
       /** The batter at the plate when the runner went. */
       batter: string;
@@ -227,6 +255,8 @@ export interface BaseballResult extends MatchResult {
   errors: Record<Side, number>;
   /** Pitches each pitcher threw, by player id. */
   pitches: Record<string, number>;
+  /** Players hurt in the game, and the days they're out (D213). */
+  injuries: { id: string; days: number }[];
 }
 
 export type BaseballOutput = MatchOutput<BaseballEvent, BaseballResult>;
@@ -248,6 +278,8 @@ interface SideState {
   used: Set<string>;
   plan: BullpenPlan;
   unavailable: ReadonlySet<string>;
+  /** Bench players who have come in. */
+  subbed: Set<string>;
 }
 
 const clamp01 = (p: number) => Math.min(1, Math.max(0, p));
@@ -283,9 +315,12 @@ export function simulateGame(
     running: root.fork("running"),
     steals: root.fork("steals"),
     end: root.fork("end"),
+    injuries: root.fork("injuries"),
   };
+  const bt = input.config.bench;
   const gameSide = (team: BaseballTeam, home: boolean): GameSide => ({
-    batters: team.batters,
+    // A copy: substitutions change it during the game.
+    batters: [...team.batters],
     pitcher: team.pitcher,
     home,
   });
@@ -306,6 +341,7 @@ export function simulateGame(
     used: new Set([team.pitcher.id]),
     plan: team.plan ?? defaultBullpenPlan(team.bullpen ?? []),
     unavailable: new Set(team.unavailable ?? []),
+    subbed: new Set(),
   });
   const states: Record<Side, SideState> = {
     home: state("home", input.home, homeSide, awaySide),
@@ -325,6 +361,7 @@ export function simulateGame(
   const errors: Record<Side, number> = { home: 0, away: 0 };
   const lineScore: Record<Side, number[]> = { home: [], away: [] };
   const pitches: Record<string, number> = {};
+  const injuries: { id: string; days: number }[] = [];
   const events: BaseballEvent[] = [];
 
   /** One half-inning; returns when three are out or a walk-off ends it. */
@@ -337,7 +374,7 @@ export function simulateGame(
     >();
     const placeFielders = () => {
       fielders.set("P", { p: def.pitcher, m: def.mult.pitcher });
-      def.team.batters.forEach((b, i) => {
+      def.gameSide.batters.forEach((b, i) => {
         if (b.slot !== "DH")
           fielders.set(b.slot, {
             p: b.player,
@@ -345,13 +382,12 @@ export function simulateGame(
           });
       });
     };
-    placeFielders();
     let outs = 0;
     const bases: Bases = [null, null, null];
     // Extra innings start with the batter before the leadoff man on second.
     if (inning > 9) {
       const prev = (off.next + 8) % 9;
-      bases[1] = off.team.batters[prev]?.player.id ?? null;
+      bases[1] = off.gameSide.batters[prev]?.player.id ?? null;
     }
     let runs = 0;
     const situation = (): Situation => ({
@@ -366,8 +402,48 @@ export function simulateGame(
       runs++;
       score[batting]++;
     };
+    /** A bench player takes over lineup spot `index` for `side`. */
+    const substitute = (
+      side: SideState,
+      index: number,
+      sub: BenchPlayer,
+      role: BenchRole,
+    ) => {
+      const lineup = side.gameSide.batters as {
+        player: BaseballPlayer;
+        slot: BatterPosition;
+      }[];
+      const was = lineup[index] as {
+        player: BaseballPlayer;
+        slot: BatterPosition;
+      };
+      lineup[index] = { player: sub.player, slot: was.slot };
+      side.subbed.add(sub.player.id);
+      events.push({
+        ...situation(),
+        type: "substitution",
+        side: side.side,
+        out: was.player.id,
+        in: sub.player.id,
+        role,
+      });
+      def.mult = sideMultipliers(def.gameSide, off.gameSide, skill);
+      off.mult = sideMultipliers(off.gameSide, def.gameSide, skill);
+      placeFielders();
+    };
+    // A defensive replacement, at the start of the half.
+    const defense = chooseDefense({
+      bench: def.team.bench ?? [],
+      used: def.subbed,
+      lineup: def.gameSide.batters,
+      inning,
+      leading: score[def.side] > score[batting],
+      tuning: bt,
+    });
+    if (defense) substitute(def, defense.index, defense.sub, "defense");
+    placeFielders();
     const speedOf = (id: string) =>
-      off.team.batters.find((b) => b.player.id === id)?.player.attributes
+      off.gameSide.batters.find((b) => b.player.id === id)?.player.attributes
         .speed ?? 50;
 
     for (
@@ -409,9 +485,20 @@ export function simulateGame(
       const pitcher = def.pitcher;
       const index = off.next % 9;
       off.next++;
-      const slot = off.team.batters[index];
-      if (!slot) break;
-      const batter = slot.player;
+      const due = off.gameSide.batters[index];
+      if (!due) break;
+      // A pinch hitter, when behind or level late on.
+      const ph = choosePinchHitter({
+        bench: off.team.bench ?? [],
+        used: off.subbed,
+        batter: due.player,
+        inning,
+        needRuns: score[batting] <= score[def.side],
+        tuning: bt,
+      });
+      if (ph) substitute(off, index, ph, "pinchHitter");
+      const batter = (off.gameSide.batters[index] as { player: BaseballPlayer })
+        .player;
       const edges = atBatEdges(
         batter.chemistryColor,
         pitcher.chemistryColor,
@@ -745,8 +832,75 @@ export function simulateGame(
         runs: runs - runsBefore,
         rbi,
       });
+      if (outs < 3 && !walkOff())
+        afterPlay(inning, off, def, bases, batter.id, situation, substitute);
     }
     lineScore[batting].push(runs);
+  };
+
+  /** After a play: injuries, then a pinch runner in a close game. */
+  const afterPlay = (
+    inning: number,
+    off: SideState,
+    def: SideState,
+    bases: Bases,
+    batterId: string,
+    situation: () => Situation,
+    substitute: (
+      side: SideState,
+      index: number,
+      sub: BenchPlayer,
+      role: BenchRole,
+    ) => void,
+  ) => {
+    const lineup = off.gameSide.batters;
+    const indexOf = (id: string) => lineup.findIndex((b) => b.player.id === id);
+    if (rng.injuries.chance(bt.injuryPerPlateAppearance)) {
+      const at = indexOf(batterId);
+      const hurt = lineup[at];
+      if (hurt) {
+        const days = rng.injuries.int(bt.injuryDays[0], bt.injuryDays[1]);
+        injuries.push({ id: batterId, days });
+        events.push({
+          ...situation(),
+          type: "injury",
+          side: off.side,
+          player: batterId,
+          days,
+        });
+        const cover = chooseInjuryCover({
+          bench: off.team.bench ?? [],
+          used: off.subbed,
+          injured: hurt,
+        });
+        if (cover) {
+          substitute(off, at, cover, "injury");
+          const on = bases.indexOf(batterId);
+          if (on >= 0) bases[on] = cover.player.id;
+        }
+      }
+    }
+    const close = Math.abs(score[off.side] - score[def.side]) <= bt.closeRuns;
+    for (let i = 0; i < 3; i++) {
+      const runnerId = bases[i];
+      if (!runnerId) continue;
+      const at = indexOf(runnerId);
+      const runner = lineup[at];
+      if (!runner) continue;
+      const pr = choosePinchRunner({
+        bench: off.team.bench ?? [],
+        used: off.subbed,
+        runner: runner.player,
+        inning,
+        close,
+        tuning: bt,
+      });
+      if (pr) {
+        substitute(off, at, pr, "pinchRunner");
+        bases[i] = pr.player.id;
+        break;
+      }
+    }
   };
 
   let inning = 1;
@@ -769,6 +923,7 @@ export function simulateGame(
       hits,
       errors,
       pitches,
+      injuries,
     },
     events,
   };
