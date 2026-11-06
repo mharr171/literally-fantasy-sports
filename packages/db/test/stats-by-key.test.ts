@@ -87,4 +87,58 @@ describe.runIf(sql)("stats by key (ADR 0007 §2)", () => {
         ),
       ).rejects.toThrow(/permission denied/);
   });
+
+  it("saves soccer's week the same sent by key as sent as fields (ADR 0009 §5)", async () => {
+    const week = {
+      games: 1,
+      wins: 1,
+      draws: 0,
+      losses: 0,
+      goals: 2,
+      assists: 1,
+      tackles: 3,
+      saves: 0,
+    };
+    const result = await asService(db, async (tx) => {
+      const [a] = await addPlayer(tx, "Gil", 4);
+      const [b] = await addPlayer(tx, "Hal", 4);
+      const [s] = await tx<{ id: string }[]>`
+        select public.start_season(${team}, 'seed', 'defaults',
+          ${tx.json([
+            { slot: 0, kind: "manager", name: "Mine", start_rating: 1500 },
+            { slot: 1, kind: "ai", name: "Them", start_rating: 1500 },
+          ])},
+          ${tx.json([{ week: 1, stage: "league", home_slot: 0, away_slot: 1 }])}) as id`;
+      const [f] = await tx<{ id: string }[]>`
+        select id from fixtures where season_id = ${s?.id as string}`;
+      const condition = {
+        fitness: 90,
+        injured_days: 0,
+        suspended_games: 0,
+        yellow_cards: 0,
+        form: 0.1,
+        appeared: true,
+        minutes: 90,
+      };
+      await tx`select public.record_week(${s?.id as string}, 1,
+        ${tx.json([{ id: f?.id, home_score: 2, away_score: 0, winner: null, summary: null, manager_team: null }])},
+        '{}', 0, '[]', 'regular', 2, null, null,
+        ${tx.json([
+          { id: a?.id, ...condition, ...week },
+          { id: b?.id, ...condition, stats: week },
+        ])}, null)`;
+      return tx`
+        select first_name, fitness, appearances, goals, season_minutes, stats
+        from players where id in (${a?.id as string}, ${b?.id as string}) order by first_name`;
+    });
+    const [fields, byKey] = result;
+    expect(byKey).toEqual({ ...fields, first_name: "Hal" });
+    expect(fields?.stats).toMatchObject({
+      games: 11,
+      goals: 6,
+      wins: 7,
+      assists: 3,
+      tackles: 3,
+    });
+  });
 });
