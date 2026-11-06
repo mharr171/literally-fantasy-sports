@@ -27,11 +27,11 @@ async function Overview() {
       <ul className="grid gap-4 sm:grid-cols-2">
         <li className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
           <Link href="/admin/settings" className="font-medium hover:underline">
-            Game settings →
+            Sports →
           </Link>
           <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-            Versions of each sport&apos;s tuning values and templates, and which
-            one is live.
+            Each sport&apos;s Public and AI world switches, energy and roster
+            limits, and its settings versions.
           </p>
         </li>
         <li className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">

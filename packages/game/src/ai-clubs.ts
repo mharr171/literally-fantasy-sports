@@ -48,8 +48,12 @@ import {
 /** How soccer's AI clubs decide (ADR 0007 §8); other sports join in M18. */
 const ai = sportModule(SOCCER).ai;
 
-/** The AI world's switches (D113, D114). */
+/** The AI world's settings (D113, D114). */
 export interface AiSettings {
+  /**
+   * Whether scheduled runs play the sport's AI clubs: the sport's AI world
+   * switch in Admin → Sports (D207), the only on/off switch since D208.
+   */
   enabled: boolean;
   poolSize: number;
   runsPerDay: number;
@@ -62,24 +66,30 @@ export const DEFAULT_AI_SETTINGS: AiSettings = {
 };
 
 export async function loadAiSettings(): Promise<AiSettings> {
-  const { data, error } = await createServiceClient()
-    .from("ai_settings")
-    .select("enabled, pool_size, runs_per_day")
-    .eq("sport", SOCCER)
-    .maybeSingle();
+  const [{ data, error }, switches] = await Promise.all([
+    createServiceClient()
+      .from("ai_settings")
+      .select("pool_size, runs_per_day")
+      .eq("sport", SOCCER)
+      .maybeSingle(),
+    loadSportSwitches(),
+  ]);
   if (error) throw new Error(error.message);
-  if (!data) return DEFAULT_AI_SETTINGS;
+  const enabled = switches.find((s) => s.sport === SOCCER)?.aiEnabled === true;
+  if (!data) return { ...DEFAULT_AI_SETTINGS, enabled };
   return {
-    enabled: data.enabled,
+    enabled,
     poolSize: data.pool_size,
     runsPerDay: data.runs_per_day,
   };
 }
 
-export async function saveAiSettings(settings: AiSettings): Promise<void> {
+/** Saves the pool size and runs per day; on/off lives in Admin → Sports. */
+export async function saveAiSettings(
+  settings: Pick<AiSettings, "poolSize" | "runsPerDay">,
+): Promise<void> {
   const { error } = await createServiceClient().from("ai_settings").upsert({
     sport: SOCCER,
-    enabled: settings.enabled,
     pool_size: settings.poolSize,
     runs_per_day: settings.runsPerDay,
     updated_at: new Date().toISOString(),
@@ -479,10 +489,8 @@ export async function runAiWorld({
 }): Promise<AiWorldRun> {
   const started = Date.now();
   const settings = await loadAiSettings();
+  // The sport's AI world switch in Admin → Sports (D207, D208).
   if (!settings.enabled) return { status: "disabled" };
-  // The sport's AI world switch in Admin → Sports (D207).
-  const switches = (await loadSportSwitches()).find((s) => s.sport === SOCCER);
-  if (!switches?.aiEnabled) return { status: "disabled" };
   const db = createServiceClient();
   const { data: row, error } = await db
     .from("ai_runs")

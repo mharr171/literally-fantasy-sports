@@ -533,6 +533,13 @@
       "when": 1793943430423,
       "tag": "0075_reset_account_soccer",
       "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1793943926359,
+      "tag": "0076_one_ai_switch",
+      "breakpoints": true
     }
   ]
 }

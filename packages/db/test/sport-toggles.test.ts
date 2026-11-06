@@ -26,11 +26,18 @@ describe.runIf(sql)("sport toggles (D207)", () => {
         bench_max: 5,
         league_size: 15,
       },
-      expect.objectContaining({
-        sport: "soccer",
-        public: true,
-        ai_enabled: true,
-      }),
+      expect.objectContaining({ sport: "soccer", public: true }),
     ]);
+  });
+
+  it("carries the old AI clubs switch across: off stays off (D208)", async () => {
+    const [row] = await asService(
+      db,
+      (tx) =>
+        tx`select s.ai_enabled, coalesce(a.enabled, true) as old
+          from sport_settings s left join ai_settings a on a.sport = s.sport
+          where s.sport = 'soccer'`,
+    );
+    expect(row?.ai_enabled).toBe(row?.old);
   });
 });

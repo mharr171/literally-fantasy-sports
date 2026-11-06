@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import type { AiSettings } from "@/lib/ai-clubs";
 import { type AiResult, addClubs, runTurn, saveSettings } from "./actions";
@@ -18,7 +19,6 @@ export function AiControls({
   settings: AiSettings;
   clubs: number;
 }) {
-  const [enabled, setEnabled] = useState(settings.enabled);
   const [poolSize, setPoolSize] = useState(settings.poolSize);
   const [runsPerDay, setRunsPerDay] = useState(settings.runsPerDay);
   const [add, setAdd] = useState(5);
@@ -37,14 +37,14 @@ export function AiControls({
     <div className="grid gap-4 md:grid-cols-3">
       <div className={card}>
         <h2 className="font-semibold">Settings</h2>
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={enabled}
-            onChange={(e) => setEnabled(e.target.checked)}
-          />
-          Scheduled runs play AI clubs
-        </label>
+        {/* One on/off switch per sport, in Admin → Sports (D208). */}
+        <p>
+          AI world is <strong>{settings.enabled ? "on" : "off"}</strong>.{" "}
+          <Link href="/admin/settings" className="underline">
+            Change it in Admin → Sports
+          </Link>
+          .
+        </p>
         <label className="flex items-center justify-between gap-2">
           Clubs to keep
           <input
@@ -70,16 +70,14 @@ export function AiControls({
         <button
           type="button"
           disabled={pending}
-          onClick={() =>
-            run(() => saveSettings({ enabled, poolSize, runsPerDay }))
-          }
+          onClick={() => run(() => saveSettings({ poolSize, runsPerDay }))}
           className={button}
         >
           Save
         </button>
         <p className="text-xs text-zinc-500">
-          When on, a run every 2 hours (GitHub Actions) adds clubs up to the
-          pool size, a few dozen at a time, and gives every club its turn at its
+          While the AI world is on, each scheduled run adds clubs up to the pool
+          size, a few dozen at a time, and gives every club its turn at its
           pace. Off: nothing plays on its own.
         </p>
       </div>

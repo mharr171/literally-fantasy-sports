@@ -16,13 +16,13 @@ import { EnergyForm } from "./energy-form";
 import { RosterForm } from "./roster-form";
 import { SwitchesForm } from "./switches-form";
 
-export const metadata: Metadata = { title: "Game settings" };
+export const metadata: Metadata = { title: "Sports" };
 
 export default function SettingsPage() {
   return (
     <section className="flex flex-col gap-4">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Game settings</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Sports</h1>
         <p className="max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
           Each sport has numbered versions of its settings. New matches use the{" "}
           <strong>live</strong> version (the newest published one). Published
