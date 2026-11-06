@@ -6,7 +6,13 @@
  * started with, and the built-in defaults apply until a version is
  * published.
  */
-import { getPath, type Limit, type SettingGroup, withPaths } from "@lfs/core";
+import {
+  BOUGHT_TIERS,
+  getPath,
+  type Limit,
+  type SettingGroup,
+  withPaths,
+} from "@lfs/core";
 import { type BaseballConfig, defaultBaseballConfig } from "./game";
 
 const share = (label: string, help?: string): Limit => ({
@@ -21,6 +27,19 @@ const per = (label: string, max: number, help?: string): Limit => ({
   min: 0,
   max,
 });
+const money = (label: string, help?: string): Limit => ({
+  label,
+  ...(help ? { help } : {}),
+  min: 0,
+  max: 100_000,
+  integer: true,
+});
+const PACK_PRICE: Limit = {
+  label: "Price",
+  min: 500,
+  max: 500_000,
+  integer: true,
+};
 const whole = (
   label: string,
   min: number,
@@ -237,6 +256,205 @@ export const BASEBALL_SETTING_GROUPS: readonly SettingGroup[] = [
       },
     ],
   },
+  {
+    id: "payouts",
+    title: "Payouts and Elo",
+    columns: 4,
+    fields: [
+      { path: "balance.payouts.perMatch", limit: money("Every game") },
+      { path: "balance.payouts.win", limit: money("Extra for a win") },
+      {
+        path: "balance.payouts.quarter",
+        limit: money("Reaching the quarterfinals"),
+      },
+      {
+        path: "balance.payouts.playoffs",
+        limit: money(
+          "Reaching the semifinals",
+          "On top of the quarterfinal bonus.",
+        ),
+      },
+      {
+        path: "balance.payouts.final",
+        limit: money("Reaching the final", "On top of the semifinal bonus."),
+      },
+      {
+        path: "balance.payouts.champion",
+        limit: money("Winning the final", "On top of the final bonus."),
+      },
+      {
+        path: "balance.payouts.eloK",
+        limit: whole(
+          "Elo K per game",
+          1,
+          40,
+          "How far Elo moves after each game",
+        ),
+      },
+    ],
+  },
+  {
+    id: "packs",
+    title: "Pack prices",
+    columns: 4,
+    fields: [
+      ...BOUGHT_TIERS.map((t) => ({
+        path: `balance.packs.tiers.${t.id}`,
+        limit: { ...PACK_PRICE, label: `${t.name} pack` },
+      })),
+      {
+        path: "balance.packs.focusSurcharge",
+        limit: per("Position focus surcharge", 2, "0.2 = 20% more"),
+      },
+      {
+        path: "balance.packs.eloPerOverall",
+        limit: whole(
+          "Elo per overall point",
+          0,
+          400,
+          "Pack odds move one overall point per this much Elo above 1500; 0 = off",
+        ),
+      },
+      {
+        path: "balance.packs.pricePerOverall",
+        limit: per("Price per overall point moved", 0.2),
+      },
+      {
+        path: "balance.packs.excludeOne",
+        limit: per("Leaving out 1 color", 3),
+      },
+      {
+        path: "balance.packs.excludeTwo",
+        limit: per("Leaving out 2 colors", 3),
+      },
+      {
+        path: "balance.packs.excludeThree",
+        limit: per("Leaving out 3 colors", 3),
+      },
+    ],
+  },
+  {
+    id: "condition",
+    title: "Rest and growth",
+    columns: 4,
+    fields: [
+      {
+        path: "balance.condition.rest.starterAfter100",
+        limit: whole("Starter's rest after 100+ pitches", 0, 10, "Days"),
+      },
+      {
+        path: "balance.condition.rest.starterAfter75",
+        limit: whole("Starter's rest after 75–99", 0, 10, "Days"),
+      },
+      {
+        path: "balance.condition.rest.starterAfter50",
+        limit: whole("Starter's rest after 50–74", 0, 10, "Days"),
+      },
+      {
+        path: "balance.condition.rest.starterShort",
+        limit: whole("Starter's rest after fewer", 0, 10, "Days"),
+      },
+      {
+        path: "balance.condition.rest.relieverPitches",
+        limit: whole(
+          "Reliever rests a day after",
+          1,
+          100,
+          "Pitches, or after pitching two days running",
+        ),
+      },
+      {
+        path: "balance.condition.playingTimeGrowth",
+        limit: share(
+          "Growth from playing time",
+          "0 = not at all; 1 = a player who didn't play barely grows (D154)",
+        ),
+      },
+    ],
+  },
+  {
+    id: "form",
+    title: "Form and morale",
+    columns: 4,
+    fields: [
+      {
+        path: "balance.form.formEffect",
+        limit: per(
+          "Form effect",
+          0.3,
+          "Skill change at full form (0.05 = ±5%)",
+        ),
+      },
+      {
+        path: "balance.form.moraleEffect",
+        limit: per("Morale effect", 0.3, "Skill change at full morale"),
+      },
+      {
+        path: "balance.form.formMemory",
+        limit: share("Form memory", "Share of old form kept after a game"),
+      },
+      {
+        path: "balance.form.formIdleDecay",
+        limit: share("Form kept when not playing", "Each week"),
+      },
+      {
+        path: "balance.form.moraleMemory",
+        limit: share("Morale memory", "Share kept after a game"),
+      },
+      {
+        path: "balance.form.moraleSwing",
+        limit: share("Morale swing", "Gained for a win, lost for a loss"),
+      },
+    ],
+  },
+  {
+    id: "generation",
+    title: "New players",
+    columns: 4,
+    fields: [
+      {
+        path: "balance.generation.meanAge",
+        limit: whole("Average age", 18, 37),
+      },
+      { path: "balance.generation.ageSpread", limit: per("Age spread", 10) },
+      { path: "balance.generation.peakAge", limit: whole("Peak age", 20, 35) },
+      {
+        path: "balance.generation.growthPerYear",
+        limit: per("Most growth a year", 10, "Shrinks to 0 by the peak age"),
+      },
+      {
+        path: "balance.generation.potentialRangeWidth",
+        limit: whole("Shown potential range", 0, 30),
+      },
+      {
+        path: "balance.generation.secondaryChance",
+        limit: share("Batters with a second position"),
+      },
+      {
+        path: "balance.generation.starterChance",
+        limit: share("Pitchers who start", "In packs that don't choose"),
+      },
+      {
+        path: "balance.generation.leftyPitcherShare",
+        limit: share("Left-handed pitchers"),
+      },
+      {
+        path: "balance.generation.leftyThrowerShare",
+        limit: share(
+          "Left-handed throwers",
+          "Of fielders who may be: 1B, outfield and DH",
+        ),
+      },
+      {
+        path: "balance.generation.leftyBatterShare",
+        limit: share("Batters hitting left"),
+      },
+      {
+        path: "balance.generation.switchHitterShare",
+        limit: share("Switch hitters"),
+      },
+    ],
+  },
 ];
 
 /** Every settings path, in editor order. */
@@ -245,8 +463,18 @@ export const BASEBALL_SETTING_PATHS = BASEBALL_SETTING_GROUPS.flatMap((g) =>
 );
 
 /**
- * A config from stored values (path → number): known paths only, and a
- * value outside its limits or not a number keeps the default.
+ * The key a settings path is stored under: lower case with underscores,
+ * as the database's key format asks (`pitch.missAtZero` is stored as
+ * `pitch.miss_at_zero`).
+ */
+export function baseballStoredKey(path: string): string {
+  return path.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
+}
+
+/**
+ * A config from stored values (path → number, by path or stored key):
+ * known paths only, and a value outside its limits or not a number keeps
+ * the default.
  */
 export function baseballConfigFromValues(
   values: Readonly<Record<string, unknown>>,
@@ -254,13 +482,23 @@ export function baseballConfigFromValues(
   const kept: Record<string, number> = {};
   for (const g of BASEBALL_SETTING_GROUPS)
     for (const f of g.fields) {
-      const v = values[f.path];
+      const v = values[f.path] ?? values[baseballStoredKey(f.path)];
       if (limitError(f.limit, v) === null) kept[f.path] = v as number;
     }
   return withPaths(defaultBaseballConfig(), kept);
 }
 
-/** The config as stored rows, one per settings path. */
+/** The config as the database stores it: one row per path, under its stored key. */
+export function baseballConfigToStoredRows(
+  config: BaseballConfig,
+): { key: string; value: number }[] {
+  return baseballConfigToRows(config).map((r) => ({
+    key: baseballStoredKey(r.key),
+    value: r.value,
+  }));
+}
+
+/** The config's values, one per settings path. */
 export function baseballConfigToRows(
   config: BaseballConfig,
 ): { key: string; value: number }[] {

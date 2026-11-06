@@ -21,6 +21,7 @@
  * fatigue, the bullpen plan and bench roles. Everything random comes from
  * the seed, one fork per kind of roll, so a game always replays exactly.
  */
+
 import {
   createRng,
   type MatchInput,
@@ -30,6 +31,7 @@ import {
   type Side,
 } from "@lfs/core";
 import type { Attribute } from "./attributes";
+import { type BaseballBalance, defaultBaseballBalance } from "./balance";
 import {
   type BenchPlayer,
   type BenchRole,
@@ -157,6 +159,8 @@ export interface BaseballConfig {
   fatigue: FatigueTuning;
   bench: BenchTuning;
   fielding: Record<FieldPosition | "P", FieldRange>;
+  /** Payouts, packs, condition, form and generation (ADR 0009 §6); the game never reads them. */
+  balance: BaseballBalance;
 }
 
 export function defaultBaseballConfig(): BaseballConfig {
@@ -166,6 +170,7 @@ export function defaultBaseballConfig(): BaseballConfig {
     fatigue: DEFAULT_FATIGUE,
     bench: DEFAULT_BENCH_TUNING,
     fielding: DEFAULT_FIELDING_RANGES,
+    balance: defaultBaseballBalance(),
   };
 }
 

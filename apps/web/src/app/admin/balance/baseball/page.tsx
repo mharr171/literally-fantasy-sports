@@ -37,7 +37,9 @@ export default function BaseballBalancePage({
         <p className="max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
           The pitch-by-pitch engine&apos;s tuning (ADR 0008): pitches, balls in
           play, running, pitchers and rest, the bench, home advantage and color
-          matchups. Baseball has its own numbered settings versions: save a
+          matchups. Then the season&apos;s balance (ADR 0009): payouts and Elo,
+          pack prices, pitchers&apos; rest days, form and morale, and new
+          players. Baseball has its own numbered settings versions: save a
           draft, test it against the live version, then publish. Until a version
           is published the built-in defaults apply. Baseball is still hidden
           from players.

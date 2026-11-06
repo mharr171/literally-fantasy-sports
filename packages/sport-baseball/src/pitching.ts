@@ -161,21 +161,44 @@ export function bullpenDecision(input: {
   return null;
 }
 
+/** Pitchers' rest rules (D213): a balance setting, under condition. */
+export interface RestSettings {
+  /** Days a starter rests after 100+ pitches, 75–99, 50–74 and fewer. */
+  starterAfter100: number;
+  starterAfter75: number;
+  starterAfter50: number;
+  starterShort: number;
+  /** A reliever rests a day after this many pitches, or after two days running. */
+  relieverPitches: number;
+}
+
+export const DEFAULT_REST: RestSettings = {
+  starterAfter100: 5,
+  starterAfter75: 4,
+  starterAfter50: 3,
+  starterShort: 1,
+  relieverPitches: 25,
+};
+
 /** Rest days a starter needs after a start (D213). */
-export function starterRestDays(pitches: number): number {
-  if (pitches >= 100) return 5;
-  if (pitches >= 75) return 4;
-  if (pitches >= 50) return 3;
-  return 1;
+export function starterRestDays(
+  pitches: number,
+  rest: RestSettings = DEFAULT_REST,
+): number {
+  if (pitches >= 100) return rest.starterAfter100;
+  if (pitches >= 75) return rest.starterAfter75;
+  if (pitches >= 50) return rest.starterAfter50;
+  return rest.starterShort;
 }
 
 /** Rest days a reliever needs: one after 25+ pitches or two days running (D213). */
 export function relieverRestDays(
   pitches: number,
   pitchedYesterday: boolean,
+  rest: RestSettings = DEFAULT_REST,
 ): number {
   if (pitches === 0) return 0;
-  return pitches >= 25 || pitchedYesterday ? 1 : 0;
+  return pitches >= rest.relieverPitches || pitchedYesterday ? 1 : 0;
 }
 
 /**

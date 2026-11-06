@@ -3,7 +3,7 @@
 import {
   BASEBALL_SETTING_PATHS,
   baseballConfigFromValues,
-  baseballConfigToRows,
+  baseballConfigToStoredRows,
   baseballSettingsErrors,
   formatReport,
   type HarnessReport,
@@ -70,7 +70,7 @@ export async function saveBaseballBalance(
       baseVersion,
       note,
       "Baseball balance",
-      baseballConfigToRows(config),
+      baseballConfigToStoredRows(config),
       BASEBALL,
     );
     revalidatePath("/admin/balance/baseball");
