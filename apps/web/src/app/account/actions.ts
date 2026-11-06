@@ -26,6 +26,6 @@ export async function resetAccount(
       error: e instanceof Error ? e.message : "Something went wrong.",
     };
   }
-  if (done) redirect("/team");
+  if (done) redirect("/soccer/team");
   return { ok: false, error: "Something went wrong." };
 }

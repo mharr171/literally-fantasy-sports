@@ -15,10 +15,10 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** A finished season from the leaderboard, as it finished (D111). */
 export default function LeaderboardEntryPage({
   params,
-}: PageProps<"/leaderboard/[id]">) {
+}: PageProps<"/soccer/leaderboard/[id]">) {
   return (
     <section className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
-      <Link href="/leaderboard" className="text-sm hover:underline">
+      <Link href="/soccer/leaderboard" className="text-sm hover:underline">
         ← Leaderboard
       </Link>
       <Suspense fallback={<p className="text-sm text-zinc-500">Loading…</p>}>
@@ -30,7 +30,7 @@ export default function LeaderboardEntryPage({
 
 async function Entry({
   params,
-}: Pick<PageProps<"/leaderboard/[id]">, "params">) {
+}: Pick<PageProps<"/soccer/leaderboard/[id]">, "params">) {
   await connection();
   const { id } = await params;
   if (!UUID.test(id) || !getSupabaseEnv()) notFound();

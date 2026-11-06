@@ -55,6 +55,6 @@ describe("getting started (M6)", () => {
       packsDone: true,
       squadReady: false,
     });
-    expect(nextStep(steps)?.href).toBe("/team/squad");
+    expect(nextStep(steps)?.href).toBe("/soccer/team/squad");
   });
 });

@@ -61,7 +61,7 @@ async function Board() {
     return (
       <EmptyState
         title="No finished seasons yet."
-        action={{ href: "/season", label: "Play a season" }}
+        action={{ href: "/soccer/season", label: "Play a season" }}
       >
         Finish a season, playoffs included, and your club goes on the board.
       </EmptyState>
@@ -96,7 +96,7 @@ async function Board() {
                   <span className="inline-flex flex-wrap items-center gap-2">
                     {e.ghostTeamId ? (
                       <Link
-                        href={`/leaderboard/${e.ghostTeamId}`}
+                        href={`/soccer/leaderboard/${e.ghostTeamId}`}
                         className="inline-flex items-center gap-1.5 hover:underline"
                         title="See this season's roster"
                       >

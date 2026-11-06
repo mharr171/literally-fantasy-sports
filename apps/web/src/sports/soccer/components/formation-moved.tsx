@@ -23,7 +23,7 @@ export function FormationMoved({
         {link ? (
           <>
             Check your{" "}
-            <Link href="/team/squad" className="underline">
+            <Link href="/soccer/team/squad" className="underline">
               matchday squad
             </Link>{" "}
             and save it.

@@ -113,16 +113,19 @@ async function TeamContent() {
           {squadReady ? "ready" : squad ? "needs changes" : "not picked yet"}
         </span>
         <span className="flex-1" />
-        <Link href="/team/history" className="font-medium hover:underline">
+        <Link
+          href="/soccer/team/history"
+          className="font-medium hover:underline"
+        >
           History
         </Link>
         {squadReady && (
-          <Link href="/season" className="font-medium hover:underline">
+          <Link href="/soccer/season" className="font-medium hover:underline">
             Go to season →
           </Link>
         )}
         <Link
-          href="/team/squad"
+          href="/soccer/team/squad"
           className="rounded-md bg-zinc-900 px-3 py-1.5 font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
         >
           {squad ? "Edit squad" : "Pick your matchday 22"}

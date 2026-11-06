@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
-import { SeasonView } from "@/app/season/season-view";
+import { SeasonView } from "@/app/soccer/season/season-view";
 import { RetirementTributes } from "@/components/retirement-tributes";
 import { SeasonReviewPanel } from "@/components/season-review";
 import { getCurrentUser } from "@/lib/auth";
@@ -20,10 +20,10 @@ export const metadata: Metadata = { title: "Past season" };
 /** One of your club's past seasons (D121, ADR 0005). */
 export default function PastSeasonPage({
   params,
-}: PageProps<"/team/history/[season]">) {
+}: PageProps<"/soccer/team/history/[season]">) {
   return (
     <section className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
-      <Link href="/team/history" className="text-sm hover:underline">
+      <Link href="/soccer/team/history" className="text-sm hover:underline">
         ← History
       </Link>
       <Suspense fallback={<p className="text-sm text-zinc-500">Loading…</p>}>
@@ -35,14 +35,14 @@ export default function PastSeasonPage({
 
 async function PastSeason({
   params,
-}: Pick<PageProps<"/team/history/[season]">, "params">) {
+}: Pick<PageProps<"/soccer/team/history/[season]">, "params">) {
   const { season: raw } = await params;
   if (!/^\d{1,4}$/.test(raw)) notFound();
   const number = Number(raw);
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
   const team = await loadMyTeam(user.id);
-  if (!team) redirect("/team");
+  if (!team) redirect("/soccer/team");
   const [season, lines, tributes, hall] = await Promise.all([
     loadSeasonByNumber(team.id, number),
     loadClubHistory(team.id),
@@ -53,7 +53,7 @@ async function PastSeason({
   if (!season) notFound();
   const line = lines.find((l) => l.seasonNumber === number);
   // Still being played: that's the Season page.
-  if (!line) redirect("/season");
+  if (!line) redirect("/soccer/season");
   const scorers = seasonScorers(season);
   return (
     <>

@@ -19,13 +19,13 @@ export default function NotFound() {
       </p>
       <div className="flex flex-wrap gap-3 text-sm">
         <Link
-          href="/team"
+          href="/soccer/team"
           className="rounded-md bg-zinc-900 px-3 py-1.5 font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
         >
           My team
         </Link>
         <Link
-          href="/season"
+          href="/soccer/season"
           className="rounded-md border border-zinc-300 px-3 py-1.5 font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
         >
           Season

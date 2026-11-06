@@ -47,7 +47,7 @@ async function Hall() {
     return (
       <EmptyState
         title="No finished seasons yet."
-        action={{ href: "/season", label: "Play a season" }}
+        action={{ href: "/soccer/season", label: "Play a season" }}
       >
         Finish a season and your club joins the hall of fame.
       </EmptyState>
@@ -148,7 +148,7 @@ function ClubList({
                 </span>
                 {c.hasGhost ? (
                   <Link
-                    href={`/leaderboard/${c.teamId}`}
+                    href={`/soccer/leaderboard/${c.teamId}`}
                     className="min-w-0 hover:underline"
                     title="See its best season"
                   >

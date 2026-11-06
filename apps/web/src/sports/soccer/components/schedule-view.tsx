@@ -118,7 +118,7 @@ export function ScheduleView({ schedule }: { schedule: Schedule }) {
                 </td>
                 <td className="py-2 pr-3 align-top">
                   <Link
-                    href={`/season/club/${r.opponent.slot}`}
+                    href={`/soccer/season/club/${r.opponent.slot}`}
                     className="inline-flex items-center gap-2 hover:underline"
                   >
                     <ClubBadge
@@ -153,7 +153,7 @@ export function ScheduleView({ schedule }: { schedule: Schedule }) {
       </div>
       <p className="text-xs text-zinc-500">
         Your colors are from your saved matchday squad. Change it on the{" "}
-        <Link href="/team/squad" className="underline">
+        <Link href="/soccer/team/squad" className="underline">
           matchday squad
         </Link>{" "}
         page.
