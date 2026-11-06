@@ -24,11 +24,11 @@ export interface BaseballPlayer {
   /** Permanent chemistry color, 0–3 for baseball (D200). */
   chemistryColor: number;
   /** A batter's hot and cold zones (D211); even when left out. */
-  zoneProfile?: ZonePreset;
+  zoneProfile?: ZonePreset | null;
   /** Where a batter tends to hit the ball; spray when left out. */
-  sprayProfile?: SprayPreset;
+  sprayProfile?: SprayPreset | null;
   /** Where a pitcher likes to aim; attacks when left out. */
-  locationProfile?: LocationPreset;
+  locationProfile?: LocationPreset | null;
 }
 
 /** The headline overall on a player card: at the primary position (and role). */

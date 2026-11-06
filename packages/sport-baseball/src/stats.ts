@@ -348,7 +348,8 @@ export const DEFAULT_FORM_WEIGHTS: FormWeights = {
     win: 0.4,
     save: 0.4,
   },
-  offset: {},
+  // From the harness (10,000 games): pitchers averaged 0.67 below batters.
+  offset: { P: 0.67 },
 };
 
 const clampRating = (r: number) =>
