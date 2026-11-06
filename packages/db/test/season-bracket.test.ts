@@ -40,7 +40,7 @@ describe.runIf(sql)("12-club season rounds (D117)", () => {
       await tx`savepoint a`;
       const bad =
         await tx`insert into fixtures (season_id, week, stage, home_slot, away_slot)
-        values (${s?.id as string}, 25, 'round_of_16', 0, 1)`.then(
+        values (${s?.id as string}, 25, 'Round of 16', 0, 1)`.then(
           () => "ok",
           (e: Error) => e.message,
         );
@@ -48,6 +48,8 @@ describe.runIf(sql)("12-club season rounds (D117)", () => {
       return { stages, bad };
     });
     expect(result.stages).toEqual([{ stage: "play_in" }, { stage: "quarter" }]);
+    // Each sport lists its own stages (ADR 0007 §4); the database refuses
+    // anything that isn't a stage key.
     expect(result.bad).toMatch(/fixtures_stage/);
   });
 });

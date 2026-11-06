@@ -630,7 +630,12 @@ export const fixtures = pgTable(
       .notNull()
       .references(() => seasons.id, { onDelete: "cascade" }),
     week: integer().notNull(),
+    /** The event within the season (ADR 0007 §4); one, `main`, for now. */
+    event: text().notNull().default("main"),
+    /** The sport's stage key, e.g. soccer's `league` or `final`. */
     stage: text().notNull(),
+    /** Game number within a series (ADR 0007 §4): 1 for a single game. */
+    gameNo: integer().notNull().default(1),
     homeSlot: integer().notNull(),
     awaySlot: integer().notNull(),
     homeScore: integer(),
@@ -649,10 +654,10 @@ export const fixtures = pgTable(
   },
   (t) => [
     index("fixtures_season_week").on(t.seasonId, t.week),
-    check(
-      "fixtures_stage",
-      sql`${t.stage} in ('league', 'play_in', 'quarter', 'semi', 'final')`,
-    ),
+    // Each sport lists its own stages (ADR 0007 §4); here only their shape.
+    check("fixtures_stage", sql`${t.stage} ~ '^[a-z][a-z0-9_]{0,23}$'`),
+    check("fixtures_event", sql`${t.event} ~ '^[a-z][a-z0-9_]{0,23}$'`),
+    check("fixtures_game_no", sql`${t.gameNo} between 1 and 9`),
     check(
       "fixtures_winner",
       sql`${t.winner} is null or ${t.winner} in ('home', 'away')`,
@@ -681,6 +686,8 @@ export const sportSettings = pgTable(
     rosterMin: integer().notNull().default(11),
     rosterMax: integer().notNull().default(33),
     benchMax: integer().notNull().default(11),
+    /** Clubs in a season's league, the manager's included (ADR 0007 §4). */
+    leagueSize: integer().notNull().default(12),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -689,6 +696,7 @@ export const sportSettings = pgTable(
       "sport_settings_roster",
       sql`${t.rosterMin} between 11 and 30 and ${t.rosterMax} between 22 and 50 and ${t.rosterMin} <= ${t.rosterMax} and ${t.benchMax} between 0 and 11`,
     ),
+    check("sport_settings_league_size", sql`${t.leagueSize} between 4 and 30`),
     check(
       "sport_settings_energy",
       sql`${t.energyRefillMinutes} between 1 and 1440 and ${t.energyMax} between 1 and 20`,
