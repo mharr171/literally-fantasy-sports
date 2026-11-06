@@ -257,7 +257,7 @@ export async function loadRoster(teamId: string): Promise<RosterPlayer[]> {
   const { data, error } = await createServiceClient()
     .from("players")
     .select(
-      "id, from_starter_pack, attributes, fitness, injured_weeks, suspended_weeks, yellow_cards, form, template_variant, secondary_template_variant, display_name, nationality, age, primary_position, secondary_position, overall, potential_low, potential_high, worth, chemistry_color, stats",
+      "id, from_starter_pack, attributes, fitness, injured_days, suspended_games, yellow_cards, form, template_variant, secondary_template_variant, display_name, nationality, age, primary_position, secondary_position, overall, potential_low, potential_high, worth, chemistry_color, stats",
     )
     .eq("team_id", teamId);
   if (error) throw new Error(error.message);
@@ -266,8 +266,8 @@ export async function loadRoster(teamId: string): Promise<RosterPlayer[]> {
     fromStarterPack: p.from_starter_pack,
     condition: {
       fitness: p.fitness,
-      injuredWeeks: p.injured_weeks,
-      suspendedWeeks: p.suspended_weeks,
+      injuredDays: p.injured_days,
+      suspendedGames: p.suspended_games,
       yellowCards: p.yellow_cards,
     },
     attributes: p.attributes as Attributes,

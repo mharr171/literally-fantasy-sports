@@ -16,8 +16,11 @@ import {
 
 /** Balance defaults: changed only with Gary's OK. */
 export interface ConditionSettings {
-  /** Fitness regained each game week, up to 100. */
-  weeklyRecovery: number;
+  /**
+   * Fitness regained each day, up to 100 (ADR 0007 §5). Soccer's week is one
+   * day (SOCCER_DAYS_PER_WEEK), so this is what a player gets back a week.
+   */
+  recoveryPerDay: number;
   /** Matches banned for a red card. */
   redCardBan: number;
   /** Every this many yellow cards in a season earns a ban. */
@@ -36,8 +39,11 @@ export interface ConditionSettings {
   restBelowFitness: number;
 }
 
+/** Days in a soccer game week (ADR 0007 §5): one, its match day. */
+export const SOCCER_DAYS_PER_WEEK = 1;
+
 export const DEFAULT_CONDITION_SETTINGS: ConditionSettings = {
-  weeklyRecovery: 20,
+  recoveryPerDay: 20,
   redCardBan: 1,
   yellowsForBan: 5,
   yellowBan: 1,
@@ -51,22 +57,22 @@ export interface PlayerCondition {
   /** Match fitness at the next kickoff, 0–100. */
   fitness: number;
   /** Game weeks still out injured. */
-  injuredWeeks: number;
+  injuredDays: number;
   /** Matches still to sit out. */
-  suspendedWeeks: number;
+  suspendedGames: number;
   /** Yellow cards this season. */
   yellowCards: number;
 }
 
 export const FRESH: PlayerCondition = {
   fitness: 100,
-  injuredWeeks: 0,
-  suspendedWeeks: 0,
+  injuredDays: 0,
+  suspendedGames: 0,
   yellowCards: 0,
 };
 
 export function isAvailable(c: PlayerCondition): boolean {
-  return c.injuredWeeks === 0 && c.suspendedWeeks === 0;
+  return c.injuredDays === 0 && c.suspendedGames === 0;
 }
 
 /**
@@ -79,27 +85,29 @@ export function nextCondition(
   before: PlayerCondition,
   report: PlayerMatchReport | undefined,
   s: ConditionSettings = DEFAULT_CONDITION_SETTINGS,
+  /** Days the week holds, each recovering `recoveryPerDay` (ADR 0007 §5). */
+  days = SOCCER_DAYS_PER_WEEK,
 ): PlayerCondition {
   const start = report ? report.energy : before.fitness;
-  const fitness = Math.min(100, Math.round(start + s.weeklyRecovery));
-  let injuredWeeks = Math.max(0, before.injuredWeeks - 1);
-  let suspendedWeeks = Math.max(0, before.suspendedWeeks - 1);
+  const fitness = Math.min(100, Math.round(start + s.recoveryPerDay * days));
+  let injuredDays = Math.max(0, before.injuredDays - 1);
+  let suspendedGames = Math.max(0, before.suspendedGames - 1);
   let yellowCards = before.yellowCards;
   if (report) {
     if (report.injuryWeeks > 0)
-      injuredWeeks = Math.max(injuredWeeks, report.injuryWeeks);
+      injuredDays = Math.max(injuredDays, report.injuryWeeks);
     if (report.redCard) {
-      suspendedWeeks += s.redCardBan;
+      suspendedGames += s.redCardBan;
       // A second yellow's cards count toward the red, not the running total.
     } else if (report.yellowCards > 0) {
       const crossed =
         Math.floor((yellowCards + report.yellowCards) / s.yellowsForBan) -
         Math.floor(yellowCards / s.yellowsForBan);
       yellowCards += report.yellowCards;
-      suspendedWeeks += crossed * s.yellowBan;
+      suspendedGames += crossed * s.yellowBan;
     }
   }
-  return { fitness, injuredWeeks, suspendedWeeks, yellowCards };
+  return { fitness, injuredDays, suspendedGames, yellowCards };
 }
 
 /**
@@ -200,8 +208,8 @@ export function availableSquad(
 export function seasonReset(c: PlayerCondition): PlayerCondition {
   return {
     fitness: 100,
-    injuredWeeks: c.injuredWeeks,
-    suspendedWeeks: 0,
+    injuredDays: c.injuredDays,
+    suspendedGames: 0,
     yellowCards: 0,
   };
 }

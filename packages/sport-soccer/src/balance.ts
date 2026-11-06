@@ -265,9 +265,9 @@ export const PACK_PRICE_LIMIT: Limit = {
 };
 
 export const CONDITION_LIMITS: Record<keyof ConditionSettings, Limit> = {
-  weeklyRecovery: {
-    label: "Weekly recovery",
-    help: "Fitness every player gets back each game week, up to 100.",
+  recoveryPerDay: {
+    label: "Recovery per day",
+    help: 'Fitness every player gets back each day, up to 100. A soccer week is one day, so this is what a player gets back each game week (it was "Weekly recovery"). ADR 0007 §5.',
     min: 0,
     max: 100,
   },
@@ -562,6 +562,16 @@ export function balanceFromValues(
     },
     condition: {
       ...DEFAULT_CONDITION_SETTINGS,
+      // Versions saved before ADR 0007 §5 call it weeklyRecovery: a soccer
+      // week is one day, so the same number is the recovery per day.
+      ...numbers<ConditionSettings>(
+        {
+          recoveryPerDay: (
+            values.condition as { weeklyRecovery?: unknown } | undefined
+          )?.weeklyRecovery,
+        },
+        ["recoveryPerDay"],
+      ),
       ...numbers<ConditionSettings>(
         values.condition,
         Object.keys(CONDITION_LIMITS),

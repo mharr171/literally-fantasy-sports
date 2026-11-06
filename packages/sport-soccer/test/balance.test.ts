@@ -141,20 +141,25 @@ describe("recovery, bans and form in admin (D157, D158)", () => {
     const old = balanceFromValues({ tuning: { phases: 30 } });
     expect(old.condition).toEqual(DEFAULT_CONDITION_SETTINGS);
     expect(old.form).toEqual(DEFAULT_FORM_SETTINGS);
-    expect(old.condition.weeklyRecovery).toBe(20);
+    expect(old.condition.recoveryPerDay).toBe(20);
   });
 
   it("stores and reads them back, and checks their limits", () => {
     const changed = {
       ...DEFAULT_BALANCE,
-      condition: { ...DEFAULT_CONDITION_SETTINGS, weeklyRecovery: 25 },
+      condition: { ...DEFAULT_CONDITION_SETTINGS, recoveryPerDay: 25 },
       form: { ...DEFAULT_FORM_SETTINGS, formEffect: 0.08 },
     };
     const values = Object.fromEntries(
       balanceToRows(changed).map((r) => [r.key, r.value]),
     );
     const back = balanceFromValues(values);
-    expect(back.condition.weeklyRecovery).toBe(25);
+    expect(back.condition.recoveryPerDay).toBe(25);
+    // A version saved as weeklyRecovery reads as the same recovery per day.
+    expect(
+      balanceFromValues({ condition: { weeklyRecovery: 50 } }).condition
+        .recoveryPerDay,
+    ).toBe(50);
     expect(back.form.formEffect).toBe(0.08);
     expect(
       balanceErrors({

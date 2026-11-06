@@ -44,20 +44,20 @@ describe("nextCondition", () => {
   it("counts injuries and bans down, then adds new ones", () => {
     const hurt: PlayerCondition = {
       ...FRESH,
-      injuredWeeks: 2,
-      suspendedWeeks: 1,
+      injuredDays: 2,
+      suspendedGames: 1,
     };
     expect(nextCondition(hurt, undefined)).toMatchObject({
-      injuredWeeks: 1,
-      suspendedWeeks: 0,
+      injuredDays: 1,
+      suspendedGames: 0,
     });
-    expect(nextCondition(FRESH, report({ injuryWeeks: 3 })).injuredWeeks).toBe(
+    expect(nextCondition(FRESH, report({ injuryWeeks: 3 })).injuredDays).toBe(
       3,
     );
     expect(
       nextCondition(FRESH, report({ redCard: true, yellowCards: 2 })),
     ).toMatchObject({
-      suspendedWeeks: 1,
+      suspendedGames: 1,
       yellowCards: 0,
     });
   });
@@ -66,9 +66,9 @@ describe("nextCondition", () => {
     let c: PlayerCondition = FRESH;
     for (let i = 0; i < 4; i++)
       c = nextCondition(c, report({ yellowCards: 1 }));
-    expect(c).toMatchObject({ yellowCards: 4, suspendedWeeks: 0 });
+    expect(c).toMatchObject({ yellowCards: 4, suspendedGames: 0 });
     c = nextCondition(c, report({ yellowCards: 1 }));
-    expect(c).toMatchObject({ yellowCards: 5, suspendedWeeks: 1 });
+    expect(c).toMatchObject({ yellowCards: 5, suspendedGames: 1 });
     c = nextCondition(c, undefined);
     expect(isAvailable(c)).toBe(true);
   });
@@ -77,14 +77,14 @@ describe("nextCondition", () => {
     expect(
       seasonReset({
         fitness: 40,
-        injuredWeeks: 2,
-        suspendedWeeks: 1,
+        injuredDays: 2,
+        suspendedGames: 1,
         yellowCards: 7,
       }),
     ).toEqual({
       fitness: 100,
-      injuredWeeks: 2,
-      suspendedWeeks: 0,
+      injuredDays: 2,
+      suspendedGames: 0,
       yellowCards: 0,
     });
   });

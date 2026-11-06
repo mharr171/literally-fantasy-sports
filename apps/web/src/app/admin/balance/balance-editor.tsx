@@ -438,8 +438,8 @@ function FatigueSummary({ tuning, condition }: BalanceSettings) {
     return null;
   const loss = fatiguePerMatch(tuning);
   const fmt = (x: number) => Math.round(x).toString();
-  const recovery = Number.isFinite(condition.weeklyRecovery)
-    ? condition.weeklyRecovery
+  const recovery = Number.isFinite(condition.recoveryPerDay)
+    ? condition.recoveryPerDay
     : null;
   return (
     <p className="rounded-md bg-zinc-50 px-3 py-2 text-sm text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
