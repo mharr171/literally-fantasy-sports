@@ -8,10 +8,11 @@ export const metadata: Metadata = {
 
 const NAV = [
   { href: "/admin", label: "Overview" },
-  { href: "/admin/settings", label: "Game settings" },
+  { href: "/admin/settings", label: "Sports" },
   { href: "/admin/templates", label: "Templates" },
   { href: "/admin/balance", label: "Balance" },
   { href: "/admin/formations", label: "Formations" },
+  { href: "/admin/ai", label: "AI clubs" },
   { href: "/admin/tools", label: "Testing tools" },
 ] as const;
 
