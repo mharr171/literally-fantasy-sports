@@ -11,9 +11,13 @@ import {
   generateName,
   type NationalityCode,
   type NationalityWeights,
+  PACK_SIZE,
+  type PackTier,
+  type PotentialStyle,
   pickNationality,
   type Rng,
   rollChemistryColor,
+  rollPackOverall,
 } from "@lfs/core";
 import {
   ATTRIBUTE_MAX,
@@ -277,9 +281,6 @@ export interface GeneratePlayerOptions {
   potentialStyle?: PotentialStyle;
 }
 
-/** How a special pack rolls potential (D181). */
-export type PotentialStyle = "prospect" | "veteran";
-
 export function generatePlayer(
   rng: Rng,
   options: GeneratePlayerOptions,
@@ -367,8 +368,6 @@ function pickVariant(
 /** Which positions a pack can contain. */
 export type PackFocus = "attack" | "midfield" | "defence" | "goal" | "any";
 
-export const PACK_SIZE = 5;
-
 /** How often each position turns up in an all-position pack, roughly a squad's shape. */
 export const ANY_POSITION_WEIGHTS: Record<Position, number> = {
   GK: 2,
@@ -398,40 +397,14 @@ export function positionsFor(focus: PackFocus): Position[] {
   return POSITIONS.filter((p) => POSITION_LINE[p] === line);
 }
 
-/** One band of a tier's published odds: overalls from `min` to `max`. */
-export interface OddsBand {
-  min: number;
-  max: number;
-  /** Chance of a player landing in this band, as a fraction of the tier total. */
-  weight: number;
-}
-
-/**
- * The skill level of a pack. Tiers with `bands` draw each overall from the
- * published odds (D47): a band by weight, then evenly within it. Otherwise
- * overalls are drawn around `mean` and kept between `min` and `max`.
- */
-export interface PackTier {
-  id: string;
-  mean: number;
-  spread: number;
-  min: number;
-  max: number;
-  bands?: OddsBand[];
-  /** Ages the pack's players roll between (D181); the usual spread if unset. */
-  ages?: readonly [number, number];
-  /** How the pack rolls potential (D181); the usual way if unset. */
-  potentialStyle?: PotentialStyle;
-}
-
-/** Starter packs (D83). Balance default: changed only with Gary's OK. */
-export const STARTER_TIER: PackTier = {
-  id: "starter",
-  mean: 55,
-  spread: 6,
-  min: 40,
-  max: 70,
-};
+// Pack tiers and their odds are shared with every sport (core's packs.ts).
+export {
+  type OddsBand,
+  PACK_SIZE,
+  type PackTier,
+  type PotentialStyle,
+  STARTER_TIER,
+} from "@lfs/core";
 
 /** D83: 2 attacker, 4 midfielder, 4 defender, 1 goalkeeper and 11 all-position packs. */
 export const STARTER_PACKS: { focus: PackFocus; count: number }[] = [
@@ -441,19 +414,6 @@ export const STARTER_PACKS: { focus: PackFocus; count: number }[] = [
   { focus: "goal", count: 1 },
   { focus: "any", count: 11 },
 ];
-
-function rollOverall(rng: Rng, tier: PackTier): number {
-  if (tier.bands && tier.bands.length > 0) {
-    const band = tier.bands[
-      rng.weightedIndex(tier.bands.map((b) => b.weight))
-    ] as OddsBand;
-    return rng.int(band.min, band.max);
-  }
-  return Math.max(
-    tier.min,
-    Math.min(tier.max, Math.round(rng.normal(tier.mean, tier.spread))),
-  );
-}
 
 /** Opens a pack: PACK_SIZE players of the focus's positions at the tier's level. */
 export function generatePack(
@@ -471,7 +431,7 @@ export function generatePack(
   return Array.from({ length: PACK_SIZE }, (_, i) => {
     const r = rng.fork(`player-${i}`);
     const position = positions[r.weightedIndex(weights)] as Position;
-    const overall = rollOverall(r, tier);
+    const overall = rollPackOverall(r, tier);
     return generatePlayer(r, {
       position,
       overall,
