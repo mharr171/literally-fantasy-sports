@@ -353,7 +353,7 @@ export const packs = pgTable(
   (t) => [
     index("packs_team").on(t.teamId),
     check("packs_sport", sql`${t.sport} ${SPORT_CHECK}`),
-    check("packs_kind", sql`${t.kind} in ('starter', 'bought')`),
+    check("packs_kind", sql`${t.kind} in ('starter', 'bought', 'reward')`),
     check(
       "packs_choice",
       sql`${t.eloShift} between -10 and 15 and cardinality(${t.excludedColors}) <= 3`,

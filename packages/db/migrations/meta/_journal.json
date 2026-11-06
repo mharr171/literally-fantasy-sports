@@ -449,6 +449,20 @@
       "when": 1793922482093,
       "tag": "0063_pack_choices_functions",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1793923767519,
+      "tag": "0064_reward_packs",
+      "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1793923768451,
+      "tag": "0065_reward_packs_functions",
+      "breakpoints": true
     }
   ]
 }

@@ -9,6 +9,7 @@ import {
   DEFAULT_ROSTER_LIMITS,
   excludedColorsError,
   isPackFocus,
+  LADDER_TIERS,
   PACK_FOCUSES,
   packChoiceError,
   packContents,
@@ -18,6 +19,7 @@ import {
   ROSTER_MAX,
   ROSTER_MIN,
   removalError,
+  rewardTier,
   rosterLimitsError,
   rosterWarning,
   type StarterPackState,
@@ -109,11 +111,14 @@ describe("starterSelectionError", () => {
 });
 
 describe("bought packs (D47)", () => {
-  it("sells three tiers, cheapest first, with odds adding up to 100%", () => {
+  it("sells three tiers cheapest first, then the special packs, with odds adding up to 100%", () => {
     expect(BOUGHT_TIERS.map((t) => [t.id, t.price])).toEqual([
       ["basic", 5_000],
       ["silver", 12_000],
       ["gold", 30_000],
+      ["prospect", 12_000],
+      ["veteran", 8_400],
+      ["wildcard", 12_000],
     ]);
     for (const tier of BOUGHT_TIERS) {
       expect(tier.bands?.reduce((a, b) => a + b.weight, 0)).toBe(100);
@@ -248,5 +253,82 @@ describe("Elo-scaled packs and color exclusion (D179, D180)", () => {
     expect(excludedColorsError([1, 1])).toMatch(/twice/);
     expect(excludedColorsError([5])).toMatch(/isn't/);
     expect(excludedColorsError([0, 4])).toBeNull();
+  });
+});
+
+describe("Prospect, Veteran, Wildcard and Reward packs (D181)", () => {
+  const open = (tier: string, n = 40) =>
+    Array.from({ length: n }, (_, i) =>
+      packContents(`special-${tier}-${i}`, "any", tier),
+    ).flat();
+
+  it("prospects are 17–20 with potential at least 10 above overall", () => {
+    for (const p of open("prospect")) {
+      expect(p.age).toBeGreaterThanOrEqual(17);
+      expect(p.age).toBeLessThanOrEqual(20);
+      expect(p.potential).toBeGreaterThanOrEqual(Math.min(99, p.overall + 10));
+      expect(p.potentialRange[0]).toBeGreaterThanOrEqual(
+        Math.min(99, p.overall + 10),
+      );
+      expect(p.potentialRange[0]).toBeLessThanOrEqual(p.potential);
+      expect(p.potentialRange[1]).toBeGreaterThanOrEqual(p.potential);
+      expect(p.overall).toBeGreaterThanOrEqual(30);
+      expect(p.overall).toBeLessThanOrEqual(69);
+    }
+  });
+
+  it("veterans are 30–33 with potential at or below overall", () => {
+    for (const p of open("veteran")) {
+      expect(p.age).toBeGreaterThanOrEqual(30);
+      expect(p.age).toBeLessThanOrEqual(33);
+      expect(p.potential).toBe(p.overall);
+      expect(p.potentialRange[1]).toBe(p.overall);
+      expect(p.potentialRange[0]).toBeLessThanOrEqual(p.overall);
+    }
+  });
+
+  it("wildcards land at both ends more often than Silver", () => {
+    const players = open("wildcard", 200);
+    const low = players.filter((p) => p.overall < 50).length / players.length;
+    const high = players.filter((p) => p.overall >= 80).length / players.length;
+    expect(low).toBeGreaterThan(0.1);
+    expect(low).toBeLessThan(0.2);
+    expect(high).toBeGreaterThan(0.1);
+    expect(high).toBeLessThan(0.2);
+  });
+
+  it("special packs follow the Elo shift, focus and colors, and are priced as agreed", () => {
+    expect(packPrice("prospect", "any")).toBe(12_000);
+    expect(packPrice("veteran", "any")).toBe(8_400);
+    expect(packPrice("wildcard", "any")).toBe(12_000);
+    expect(
+      packPrice("veteran", "defence", DEFAULT_PACK_PRICES, {
+        eloShift: 5,
+        excludedColors: [2],
+      }),
+    ).toBe(Math.round((8_400 * 1.45 * 1.15) / 50) * 50);
+    const pack = packContents("v", "goal", "veteran", undefined, {
+      eloShift: 5,
+      excludedColors: [0, 1],
+    });
+    for (const p of pack) {
+      expect(p.primaryPosition).toBe("GK");
+      expect([2, 3, 4]).toContain(p.chemistryColor);
+    }
+  });
+
+  it("only Basic, Silver and Gold make the price ladder; rewards follow the playoff finish", () => {
+    expect(LADDER_TIERS.map((t) => t.id)).toEqual(["basic", "silver", "gold"]);
+    expect(rewardTier("champion")).toBe("gold");
+    expect(rewardTier("final")).toBe("silver");
+    expect(rewardTier("semi")).toBe("basic");
+    expect(rewardTier("quarter")).toBeNull();
+    expect(rewardTier("none")).toBeNull();
+  });
+
+  it("leaves the classic packs as they were", () => {
+    const before = packContents("classic", "any", "silver");
+    expect(before.every((p) => p.age >= 17 && p.age <= 34)).toBe(true);
+    expect(packContents("classic", "any", "silver")).toEqual(before);
   });
 });

@@ -222,9 +222,15 @@ async function Guide() {
             <li key={tier.id}>
               {tier.name}: {money(balance.packs.tiers[tier.id] ?? tier.price)}
               {(balance.packs.eloPerOverall ?? 0) > 0 ? " at Elo 1500" : ""}
+              {tier.blurb ? `. ${tier.blurb}` : ""}
             </li>
           ))}
         </ul>
+        <p>
+          The playoffs pay in packs too: the champion gets a free Gold pack, the
+          losing finalist a Silver pack and each losing semi-finalist a Basic
+          pack. They wait on My team until you open them.
+        </p>
       </Section>
 
       <Section id="youth" title="Youth and ageing">

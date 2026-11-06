@@ -108,6 +108,76 @@ describe.runIf(sql)("season end and youth intake (D35, D53)", () => {
     });
   });
 
+  it("grants one reward pack for the playoff finish, which opens and sorts like a bought pack (D181)", async () => {
+    const result = await asService(db, async (tx) => {
+      const season = await finishedSeason(tx);
+      const close = () =>
+        tx`select public.close_season_with_reward(${season}, '[]', '[]', '{}', ${tx.json(SNAPSHOT)}, 4)`;
+      await close();
+      const twice = await attempt(tx, close());
+      const packs = await tx<
+        {
+          id: string;
+          kind: string;
+          tier: string;
+          elo_shift: number;
+          opened: boolean;
+        }[]
+      >`select id, kind, tier, elo_shift, opened_at is not null as opened
+        from packs where team_id = ${team} and kind = 'reward'`;
+      const pack = packs[0]?.id as string;
+      await tx`select public.open_reward_pack(${team}, ${pack})`;
+      const buyWhileOpen = await attempt(
+        tx,
+        tx`select public.buy_pack_with_choices(${team}, 'any', 'basic', 100, 0, '{}')`,
+      );
+      await tx`select public.resolve_bought_pack(${team}, ${pack}, '[]', '[]', 700)`;
+      const again = await attempt(
+        tx,
+        tx`select public.open_reward_pack(${team}, ${pack})`,
+      );
+      const [done] =
+        await tx`select resolved_at is not null as done from packs where id = ${pack}`;
+      // A club out in the quarter-finals gets nothing.
+      await tx`select public.resolve_youth_intake(${season}, '[]', '[]')`;
+      const next = await finishedSeason(tx);
+      await tx`select public.close_season_with_reward(${next}, '[]', '[]', '{}',
+        ${tx.json({ ...SNAPSHOT, stats: { ...SNAPSHOT.stats, playoffs: "quarter" } })}, 0)`;
+      const [count] = await tx<{ n: number }[]>`
+        select count(*)::int as n from packs where team_id = ${team} and kind = 'reward'`;
+      return {
+        twice,
+        packs: packs.map(({ id: _, ...p }) => p),
+        again,
+        buyWhileOpen,
+        done,
+        count,
+      };
+    });
+    expect(result.twice).toMatch(/cannot be closed/);
+    expect(result.packs).toEqual([
+      { kind: "reward", tier: "silver", elo_shift: 4, opened: false },
+    ]);
+    expect(result.again).toMatch(/not waiting/);
+    expect(result.buyWhileOpen).toMatch(/finish your open pack/);
+    expect(result.done).toEqual({ done: true });
+    expect(result.count).toEqual({ n: 1 });
+  });
+
+  it("lets only the server grant or open reward packs", async () => {
+    for (const run of [
+      (fn: Parameters<typeof asAnon>[1]) => asAnon(db, fn),
+      (fn: Parameters<typeof asAnon>[1]) => asUser(db, owner, fn),
+    ])
+      for (const call of [
+        (tx: Tx) =>
+          tx`select public.close_season_with_reward(gen_random_uuid(), '[]', '[]', '{}', '{}', 0)`,
+        (tx: Tx) =>
+          tx`select public.open_reward_pack(${team}, gen_random_uuid())`,
+      ])
+        await expect(run(call)).rejects.toThrow(/permission denied/);
+  });
+
   it("refuses to close a season that's still being played", async () => {
     await expect(
       asService(db, async (tx) => {

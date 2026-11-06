@@ -142,6 +142,11 @@ export function Shop({
                 <h3 className="font-semibold">{tier.name}</h3>
                 <span className="tabular-nums">{money(price)}</span>
               </div>
+              {tier.blurb && (
+                <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                  {tier.blurb}
+                </p>
+              )}
               <table className="text-sm">
                 <caption className="sr-only">
                   Chance of each overall rating

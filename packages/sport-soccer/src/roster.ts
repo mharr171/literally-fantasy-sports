@@ -71,6 +71,10 @@ export function isPackFocus(value: string): value is PackFocus {
 export interface BoughtTier extends PackTier {
   name: string;
   price: number;
+  /** A special pack (D181), outside the Basic → Silver → Gold ladder. */
+  special?: boolean;
+  /** One line for the shop, e.g. the ages a special pack holds. */
+  blurb?: string;
 }
 
 const bandTier = (
@@ -78,10 +82,12 @@ const bandTier = (
   name: string,
   price: number,
   bands: [min: number, max: number, percent: number][],
+  extra: Partial<BoughtTier> = {},
 ): BoughtTier => {
   const odds = bands.map(([min, max, weight]) => ({ min, max, weight }));
   const total = odds.reduce((a, b) => a + b.weight, 0);
   return {
+    ...extra,
     id,
     name,
     price,
@@ -117,7 +123,73 @@ export const BOUGHT_TIERS: readonly BoughtTier[] = [
     [80, 89, 13],
     [90, 99, 2],
   ]),
+  // Special packs (D181, ADR 0006 §6). Balance defaults: Gary OK'd.
+  bandTier(
+    "prospect",
+    "Prospect",
+    12_000,
+    [
+      [30, 39, 25],
+      [40, 49, 50],
+      [50, 59, 20],
+      [60, 69, 5],
+    ],
+    {
+      special: true,
+      ages: [17, 20],
+      potentialStyle: "prospect",
+      blurb:
+        "Ages 17–20, with potential starting at least 10 above their overall.",
+    },
+  ),
+  bandTier(
+    "veteran",
+    "Veteran",
+    8_400,
+    [
+      [53, 62, 35],
+      [63, 72, 45],
+      [73, 82, 17],
+      [83, 92, 3],
+    ],
+    {
+      special: true,
+      ages: [30, 33],
+      potentialStyle: "veteran",
+      blurb: "Ages 30–33: ready now, with no growth left.",
+    },
+  ),
+  bandTier(
+    "wildcard",
+    "Wildcard",
+    12_000,
+    [
+      [40, 49, 15],
+      [50, 79, 70],
+      [80, 89, 15],
+    ],
+    { special: true, blurb: "Anything can happen: wider odds both ways." },
+  ),
 ];
+
+/** Basic, Silver and Gold: each costs more than the one before (D47). */
+export const LADDER_TIERS: readonly BoughtTier[] = BOUGHT_TIERS.filter(
+  (t) => !t.special,
+);
+
+/**
+ * The free pack a club earns for its playoff finish (D181): Gold for the
+ * champion, Silver for the losing finalist, Basic for a semi-finalist.
+ */
+export function rewardTier(playoffs: string): string | null {
+  return playoffs === "champion"
+    ? "gold"
+    : playoffs === "final"
+      ? "silver"
+      : playoffs === "semi"
+        ? "basic"
+        : null;
+}
 
 /** Position-focused packs cost this much more than all-position ones. */
 export const FOCUS_SURCHARGE = 0.2;

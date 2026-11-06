@@ -28,7 +28,12 @@ import {
   DEFAULT_MATCH_TUNING,
   type MatchTuning,
 } from "./match";
-import { BOUGHT_TIERS, DEFAULT_PACK_PRICES, type PackPrices } from "./roster";
+import {
+  BOUGHT_TIERS,
+  DEFAULT_PACK_PRICES,
+  LADDER_TIERS,
+  type PackPrices,
+} from "./roster";
 
 export interface BalanceSettings {
   tuning: MatchTuning;
@@ -486,7 +491,7 @@ export function balanceErrors(settings: BalanceSettings): string[] {
     );
   for (const [key, limit] of Object.entries(FORM_LIMITS))
     check(limit.label, settings.form[key as keyof FormSettings], limit);
-  const prices = BOUGHT_TIERS.map((t) => settings.packs.tiers[t.id] ?? 0);
+  const prices = LADDER_TIERS.map((t) => settings.packs.tiers[t.id] ?? 0);
   if (prices.some((p, i) => i > 0 && p <= (prices[i - 1] as number)))
     errors.push("Each pack tier must cost more than the one before it.");
   return errors;

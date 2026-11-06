@@ -10,6 +10,7 @@ import {
   MANAGER_SLOT,
   nearestLeague,
   type PlayerCondition,
+  packEloShift,
   seasonReset,
   seasonStats,
   snapshotTeam,
@@ -162,13 +163,19 @@ export async function endSeasonFor(team: MyTeam): Promise<void> {
       .filter((c) => c.from !== c.to)
       .sort((x, y) => y.to - y.from - (x.to - x.from)),
   };
-  const { error } = await createServiceClient().rpc("close_season", {
-    p_season: season.id,
-    p_updates: updates,
-    p_retired: result.retired,
-    p_review: review,
-    p_snapshot: snapshot,
-  });
+  // The playoff finish earns a free pack (D181), at the club's Elo now.
+  const { balance: live } = await liveSoccerConfig();
+  const { error } = await createServiceClient().rpc(
+    "close_season_with_reward",
+    {
+      p_season: season.id,
+      p_updates: updates,
+      p_retired: result.retired,
+      p_review: review,
+      p_snapshot: snapshot,
+      p_elo_shift: packEloShift(team.elo, live.packs),
+    },
+  );
   if (error) {
     if (error.message.includes("cannot be closed"))
       throw new Error("This season is already wrapped up.");

@@ -146,7 +146,13 @@ function rollAttributes(
   return attributes;
 }
 
-function rollAge(rng: Rng, s: GenerationSettings): number {
+function rollAge(
+  rng: Rng,
+  s: GenerationSettings,
+  ages?: readonly [number, number],
+): number {
+  // A pack with its own ages (D181) rolls evenly between them.
+  if (ages) return rng.int(ages[0], ages[1]);
   const age = Math.round(rng.normal(s.meanAge, s.ageSpread));
   return Math.max(s.minAge, Math.min(s.maxAge, age));
 }
@@ -165,6 +171,40 @@ function rollPotential(
     Math.max(overall, Math.round(overall + growth)),
   );
 }
+
+/**
+ * A special pack's potential (D181). Prospects: at least 10 above overall,
+ * with the usual growth on top, and a shown range that starts there.
+ * Veterans: their overall, shown as a range at or below it.
+ */
+function packPotential(
+  rng: Rng,
+  style: PotentialStyle,
+  overall: number,
+  age: number,
+  s: GenerationSettings,
+): { potential: number; range: [number, number] } {
+  const width = s.potentialRangeWidth;
+  if (style === "veteran")
+    return {
+      potential: overall,
+      range: [Math.max(ATTRIBUTE_MIN, overall - width), overall],
+    };
+  const floor = Math.min(ATTRIBUTE_MAX, overall + PROSPECT_POTENTIAL_LIFT);
+  const years = Math.max(0, s.peakAge - age);
+  const potential = Math.min(
+    ATTRIBUTE_MAX,
+    Math.round(floor + rng.float(0, years * s.growthPerYear)),
+  );
+  const low = Math.max(floor, potential - rng.int(0, width));
+  return {
+    potential,
+    range: [low, Math.max(potential, Math.min(ATTRIBUTE_MAX, low + width))],
+  };
+}
+
+/** How far above overall a prospect's potential starts (D181). */
+export const PROSPECT_POTENTIAL_LIFT = 10;
 
 /** A range of the configured width that contains the true potential. */
 function potentialRange(
@@ -193,7 +233,14 @@ export interface GeneratePlayerOptions {
    * leaves some out. Rolled on its own stream; all colors when left out.
    */
   colors?: readonly number[];
+  /** Ages to roll between, for a pack with its own ages (D181). */
+  ages?: readonly [number, number];
+  /** How potential is rolled, for a prospect or veteran pack (D181). */
+  potentialStyle?: PotentialStyle;
 }
+
+/** How a special pack rolls potential (D181). */
+export type PotentialStyle = "prospect" | "veteran";
 
 export function generatePlayer(
   rng: Rng,
@@ -214,8 +261,13 @@ export function generatePlayer(
   );
   const overall = overallAt(attributes, position, s.overallWeights);
   const bio = rng.fork("bio");
-  const age = rollAge(bio, s);
-  const potential = rollPotential(bio, overall, age, s);
+  const age = rollAge(bio, s, options.ages);
+  const special = options.potentialStyle
+    ? packPotential(bio, options.potentialStyle, overall, age, s)
+    : null;
+  const potential = special
+    ? special.potential
+    : rollPotential(bio, overall, age, s);
   const nationality = pickNationality(
     rng.fork("nationality"),
     s.nationalityWeights,
@@ -242,12 +294,9 @@ export function generatePlayer(
     secondaryPosition,
     overall,
     potential,
-    potentialRange: potentialRange(
-      bio,
-      potential,
-      overall,
-      s.potentialRangeWidth,
-    ),
+    potentialRange:
+      special?.range ??
+      potentialRange(bio, potential, overall, s.potentialRangeWidth),
     chemistryColor:
       options.colors && options.colors.length > 0
         ? (options.colors[
@@ -331,6 +380,10 @@ export interface PackTier {
   min: number;
   max: number;
   bands?: OddsBand[];
+  /** Ages the pack's players roll between (D181); the usual spread if unset. */
+  ages?: readonly [number, number];
+  /** How the pack rolls potential (D181); the usual way if unset. */
+  potentialStyle?: PotentialStyle;
 }
 
 /** Starter packs (D83). Balance default: changed only with Gary's OK. */
@@ -386,6 +439,8 @@ export function generatePack(
       overall,
       settings,
       ...(colors ? { colors } : {}),
+      ...(tier.ages ? { ages: tier.ages } : {}),
+      ...(tier.potentialStyle ? { potentialStyle: tier.potentialStyle } : {}),
     });
   });
 }
