@@ -1,7 +1,7 @@
 # ADR 0008: How a baseball game is simulated (M17)
 
-Status: proposed (Nov 6, 2026). Covers D194–D198, D200, D202–D204, as D205
-asks. Needs Gary's answers to the questions at the end before coding starts.
+Status: accepted (Nov 6, 2026: Gary answered every question, D210–D214).
+Covers D194–D198, D200, D202–D204, as D205 asks.
 
 ## Context
 
@@ -121,6 +121,19 @@ takes the out-of-position penalty, −50% (D195). Pitchers can't be placed as
 fielders and fielders can't pitch (no two-way players). The squad check
 refuses it.
 
+**Bat and Field.** Besides the overall at each position, the engine
+exports every player's batting rating (contact, power, eye, speed) and
+fielding rating at a position (fielding, arm). The squad builder shows both
+next to the overall (M18), so a manager can choose a big bat with a weak
+glove, or the other way round (D212).
+
+**Lineup style** (D212). Auto-pick takes a style: **Balanced** (the
+position weights as they are), **Bat first** or **Glove first** (batting or
+fielding weighed more, a setting). It changes only how auto-pick chooses;
+the game always uses the real weights. Auto-pick also sets the batting
+order: the best on-base hitters first, power in spots 3 to 5. Managers can
+reorder it.
+
 **Generation** reuses soccer's ages, potential, growth and worth rules,
 with baseball's own weights:
 - **Nationalities** (D203): USA, Dominican Republic, Venezuela, Japan,
@@ -213,8 +226,8 @@ rested one starts, already tired.
 **Rest in days** (ADR 0007 §5). Baseball's series week is 4 days (3 games
 and a rest day, D197). A week without a game counts as 4 rest days. Proposed
 defaults:
-- **Starters:** a starter needs 4 rest days after 75+ pitches, 3 after
-  50–74 and 1 after fewer.
+- **Starters:** a starter needs 5 rest days after 100+ pitches, 4 after
+  75–99, 3 after 50–74 and 1 after fewer (D213).
 - **Relievers:** a reliever needs a day off after 25+ pitches or after
   pitching 2 days running.
 
@@ -223,9 +236,21 @@ soccer stores condition.
 
 ### 6. Bench, injuries and energy
 
-- **Bench** (up to 5): used only to replace an injured player in M17. The
-  engine picks the best fit for the position, as soccer's automatic subs
-  do. Pinch hitters and runners are left for later (see questions).
+- **Bench roles** (up to 5, D212). The manager gives each bench player a
+  role, and the engine uses them automatically, as with the bullpen plan:
+  - **Pinch hitter:** from the 7th, with his side behind or level, he bats
+    for the weakest hitter due up, if he's clearly better against this
+    pitcher.
+  - **Pinch runner:** from the 8th in a close game (within 2 runs), he
+    replaces a slow runner on base.
+  - **Defensive replacement:** from the 8th with a lead, he replaces the
+    weakest fielder at a position he can play.
+  - **Injury cover:** any bench player still covers an injury, best fit
+    first.
+
+  A role may name the starter it replaces; otherwise the engine picks the
+  weakest. A player taken out can't come back that game (MLB's rule), and
+  the new player takes over the position with the usual position fit.
 - **Injuries:** a small chance per game per player, counted in days. Rates
   are settings. Baseball has no cards or suspensions.
 - **Energy** (D61): 1 per game week, a 3-game series (D199). This is M18's
@@ -262,8 +287,14 @@ soccer stores condition.
   - they entered with a lead of 3 or fewer
   - they pitched the last 3 innings
 
-**Earned runs, simplified.** A run is unearned if the runner reached on an
-error. Real scorers rebuild the inning without the error; that's left out.
+**Earned runs** (D214), MLB's two main rules:
+- **Rule A:** a runner who reached on an error scores an unearned run.
+- **Rule B:** the engine counts the outs there would have been without
+  errors. Once that count reaches three, every later run in the inning is
+  unearned.
+
+MLB's remaining edge cases (passed balls, how inherited runners count
+after a change) are left out.
 
 **Form** (D178): each player gets a game rating from what they did. A
 batter is rated on bases gained, outs made, RBI and steals; a pitcher on
@@ -346,6 +377,7 @@ merge on green CI. The two database PRs (step 1 and step 9) wait for Gary.
 | 4 | Effective skill, chemistry, matchups, home boost | Low |
 | 5 | The pitch-by-pitch game: count, contact, batted balls, fielding ranges, running, steals, extra innings | Low |
 | 6 | Fatigue, the bullpen plan, the rotation and rest days | Low |
+| 6b | Bench roles (pinch hitter, pinch runner, defensive replacement), lineup style and auto-pick with the batting order | Low |
 | 7 | Stats, the box score, W/L/S, form | Low |
 | 8 | The harness and tuning to the targets; the win probability table | Low (report in PR) |
 | 9 | Baseball's real `Sport` replaces the stand-in; baseball settings in the balance editor | Migration (seeds baseball's settings); waits for Gary |
@@ -354,28 +386,21 @@ Baseball stays hidden from players throughout (D207).
 
 ## Not built now
 
-- **M18:** pinch hitters and runners, defensive subs, intentional walks,
-  bunts, double switches.
+- **Later:** intentional walks, bunts, double switches, and a per-club
+  base-running setting (cautious, normal or aggressive) for steals.
 - **Left- and right-handed matchups:** not in D198.
 - **Other details:** balks, wild pitches and passed balls; real scorers'
   earned-run reconstruction.
 
-## Needs Gary
+## Gary's answers (Nov 6, 2026)
 
-1. **Pitch by pitch** inside each at-bat, for pitch counts and the strike
-   zone charts? It's cheap: well under 1 ms a game.
-2. **Harness targets:** the table in §10 (about 9 runs a game, home teams
-   winning 52–55%, 7–10% extra innings). OK, or other numbers?
-3. **Four-color ring:** each color beats the next, loses to the one before,
-   and is neutral against the opposite one. The individual matchup is
-   pitcher against batter. OK?
-4. **Zone and spray profiles** as presets per player (like soccer's
-   variants), with fielding ranges as baseball's templates. OK?
-5. **Bench in M17:** injury replacements only, with pinch hitters and
-   runners later. Or do you want pinch hitting now?
-6. **Injuries** in days, with no cards or suspensions. Stolen bases are
-   automatic, with a setting. OK?
-7. **Rest-day defaults** from §5 (a starter needs 4 days after 75+
-   pitches). OK as starting values?
-8. **Earned runs simplified:** a run is unearned only if the runner reached
-   on an error. OK?
+1. **Pitch by pitch:** yes (D210).
+2. **Harness targets** in §10: OK (D210).
+3. **Four-color ring**, with pitcher against batter as the player matchup:
+   OK (D211).
+4. **Zone and spray presets**, with fielding ranges as templates: OK (D211).
+5. **Bench:** pinch hitters, pinch runners and defensive replacements in
+   M17. Also the Bat/Field split and the lineup style for auto-pick (D212).
+6. **Injuries** in days, no cards or suspensions, automatic steals: OK (D213).
+7. **Rest days:** 5 after 100+ pitches; the rest as proposed (D213).
+8. **Earned runs:** both MLB rules, A and B (D214).
