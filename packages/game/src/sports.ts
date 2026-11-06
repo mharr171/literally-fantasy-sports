@@ -3,9 +3,9 @@
  * id. Shared code asks it for a club's sport instead of importing a sport
  * package directly.
  */
-import type { MatchResult, Sport, SportId } from "@lfs/core";
+import type { MatchResult, SettingGroup, Sport, SportId } from "@lfs/core";
 import type { AiManager, AiTypes } from "./ai-manager";
-import { soccer } from "./sports/soccer";
+import { SOCCER_SETTING_GROUPS, soccer } from "./sports/soccer";
 import { type SoccerAiTypes, soccerAi } from "./sports/soccer-ai";
 
 /** What the game layer needs from a sport. Grows as M16 moves code behind it. */
@@ -14,6 +14,8 @@ export interface SportModule<TAi extends AiTypes = AiTypes> {
   engine: Sport<any, any, any, MatchResult>;
   /** How the sport's AI clubs decide (ADR 0007 §8). */
   ai: AiManager<TAi>;
+  /** Its balance settings as the admin editor draws them (ADR 0007 §7). */
+  settings: readonly SettingGroup[];
 }
 
 /** Each registered sport's module, with its own types. */
@@ -22,7 +24,7 @@ interface Modules {
 }
 
 const MODULES: Modules = {
-  soccer: { engine: soccer, ai: soccerAi },
+  soccer: { engine: soccer, ai: soccerAi, settings: SOCCER_SETTING_GROUPS },
 };
 
 /** Soccer's id, for the code that is still soccer-only until M16 moves it. */

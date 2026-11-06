@@ -9,6 +9,7 @@
  * D158). Each may hold only some fields; the rest use the built-in
  * defaults, so versions saved before a group existed play as they did.
  */
+import type { Limit, SettingGroup } from "@lfs/core";
 import { DEFAULT_PAYOUTS, type PayoutSettings } from "@lfs/core";
 import {
   type ConditionSettings,
@@ -74,15 +75,8 @@ export function fatiguePerMatch(
   return { outfield, keeper: outfield * tuning.keeperFatigueFactor };
 }
 
-/** What an admin may set a number to, with a label and a short help line. */
-export interface Limit {
-  label: string;
-  help?: string;
-  min: number;
-  max: number;
-  /** Whole numbers only. */
-  integer?: boolean;
-}
+// Limits are sport-neutral now (ADR 0007 §7); soccer keeps exporting the type.
+export type { Limit } from "@lfs/core";
 
 /** The number tuning values; the color cycle (D149) is checked on its own. */
 export type TuningNumberKey = Exclude<keyof MatchTuning, "colorCycle">;
@@ -619,3 +613,93 @@ export function balanceToRows(settings: BalanceSettings): {
     { key: "form", value: { ...settings.form } },
   ];
 }
+
+const tuningGroup = (
+  id: string,
+  title: string,
+  keys: readonly TuningNumberKey[],
+): SettingGroup => ({
+  id,
+  title,
+  fields: keys.map((k) => ({ path: `tuning.${k}`, limit: TUNING_LIMITS[k] })),
+});
+
+const group = <K extends string>(
+  id: string,
+  title: string,
+  prefix: string,
+  limits: Record<K, Limit>,
+  columns?: 3 | 4,
+): SettingGroup => ({
+  id,
+  title,
+  ...(columns ? { columns } : {}),
+  fields: (Object.keys(limits) as K[]).map((k) => ({
+    path: `${prefix}.${k}`,
+    limit: limits[k],
+  })),
+});
+
+/**
+ * Soccer's balance settings as the admin editor draws them (ADR 0007 §7),
+ * in order. Every limit appears once.
+ */
+export const SOCCER_SETTING_GROUPS: readonly SettingGroup[] = [
+  tuningGroup("flow", "Match flow", [
+    "phases",
+    "extraTimePhases",
+    "possessionSharpness",
+    "chanceRate",
+    "chanceSharpness",
+    "shotRate",
+    "goalRate",
+    "penaltyRate",
+    "thirdRows",
+  ]),
+  tuningGroup("tiredness", "Tiredness and substitutions", [
+    "fatiguePerPhase",
+    "keeperFatigueFactor",
+    "fatiguePenalty",
+    "autoSubEnergy",
+    "autoSubFromMinute",
+    "maxSubs",
+    "maxSubWindows",
+    "groupedSubs",
+  ]),
+  tuningGroup("cards", "Cards and injuries", [
+    "injuryRate",
+    "yellowRate",
+    "redRate",
+  ]),
+  tuningGroup("positions", "Positions", ["outOfPosition"]),
+  tuningGroup("matchups", "Color matchups", [
+    "teamMatchup",
+    "teamMatchupSecond",
+    "playerMatchup",
+  ]),
+  group(
+    "condition",
+    "Recovery, bans and growth",
+    "condition",
+    CONDITION_LIMITS,
+    4,
+  ),
+  group("form", "Form and morale", "form", FORM_LIMITS),
+  group("payouts", "Season payouts", "payouts", PAYOUT_LIMITS),
+  {
+    id: "packs",
+    title: "Pack prices",
+    columns: 4,
+    note: "The shop publishes the odds for each club's Elo. Color surcharges add to the position-focus surcharge.",
+    fields: [
+      ...BOUGHT_TIERS.map((t) => ({
+        path: `packs.tiers.${t.id}`,
+        limit: { ...PACK_PRICE_LIMIT, label: `${t.name} pack` },
+      })),
+      { path: "packs.focusSurcharge", limit: FOCUS_SURCHARGE_LIMIT },
+      ...(
+        Object.keys(PACK_EXTRA_LIMITS) as (keyof typeof PACK_EXTRA_LIMITS)[]
+      ).map((k) => ({ path: `packs.${k}`, limit: PACK_EXTRA_LIMITS[k] })),
+    ],
+  },
+];
