@@ -1,6 +1,6 @@
 # LiterallyFantasySports — Project Roadmap
 
-Nov 2, 2026 · @Gary · Last updated: Nov 6, 2026 (D224)
+Nov 2, 2026 · @Gary · Last updated: Nov 6, 2026 (D225)
 
 ## Review progress
 
@@ -245,6 +245,7 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D222 | Nov 6, 2026 | Baseball payouts and Elo (Gary, ADR 0009): 120 per game and 180 per win, postseason round bonuses as soccer's; Elo moves after every game with K = 8; energy is spent once per week (series) | M18 |
 | D223 | Nov 6, 2026 | Baseball player charts (Gary, ADR 0009): strike zone and spray charts from the player's presets, plus the pitches and batted balls of his last 5 games, replayed from their seeds | M18 |
 | D224 | Nov 6, 2026 | Handedness (Gary): essential to baseball, so it comes into M18's engine: bats right, left or switch and throws right or left (real shares; left-handed throwers never C, 2B, 3B or SS), a platoon edge for opposite-side matchups (setting, proposed +5%), spray relative to the batter's pull side, zones mirrored for left-handers, the platoon counted in pinch-hitting and auto-pick, and B/T shown on player cards. A lefty-specialist bullpen role is left for later | M18 |
+| D225 | Nov 6, 2026 | Baseball balance defaults (Gary OK'd, #183): 120 a game and 180 a win, postseason bonuses as soccer's, Elo K 8 per game; pack prices, form and morale as soccer's; starters rest 5/4/3/1 days by pitches and relievers a day after 25 (D213); youth intake 18 prospects aged 17–19; the platoon edge 8% (tuned from the proposed 5% so splits match MLB's). Baseball settings are stored under snake_case keys | M18 |
 
 ## 1. Vision & goals
 

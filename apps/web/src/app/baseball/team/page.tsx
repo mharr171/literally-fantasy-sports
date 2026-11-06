@@ -12,10 +12,17 @@ import { Suspense } from "react";
 import { ClubBadge } from "@/components/club-badge";
 import { CreateClubForm } from "@/components/create-club-form";
 import { getCurrentUser } from "@/lib/auth";
+import {
+  type BaseballRosterPlayer,
+  loadBaseballRoster,
+  loadBaseballScouting,
+} from "@/lib/baseball-squad";
 import { otherClub } from "@/lib/other-club";
-import { loadSportSwitches } from "@/lib/sport-settings";
+import { loadRosterLimits, loadSportSwitches } from "@/lib/sport-settings";
 import { loadMyTeam } from "@/lib/team";
 import { createBaseballClub } from "./actions";
+import { ClaimPacks } from "./claim-packs";
+import { BaseballScouting } from "./scouting";
 
 export const metadata: Metadata = { title: "Baseball" };
 
@@ -29,9 +36,9 @@ export default function BaseballTeamPage() {
     <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 px-4 py-8 sm:px-6">
       <h1 className="text-3xl font-semibold tracking-tight">⚾ Baseball</h1>
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
-        Baseball is being built. The engine is ready; clubs' squads, seasons and
-        the match screens arrive with M18. Below, a sample game between two
-        generated clubs, played pitch by pitch.
+        Baseball is being built. Start a club and scout its first squad; squads,
+        seasons and the match screens follow in M18. Below, a sample game
+        between two generated clubs, played pitch by pitch.
       </p>
       <Suspense fallback={null}>
         <Status />
@@ -66,16 +73,100 @@ async function Club() {
     return (
       <CreateClubForm
         action={createBaseballClub}
-        intro="Name your baseball club and pick its colors. Players, squads and seasons come with M17 and M18."
+        intro="Name your baseball club and pick its colors. You'll then scout 16 starter packs and keep your first squad."
         submitLabel="Create baseball club"
         copyFrom={await otherClub(user.id, "baseball")}
       />
     );
+  const [{ packs, resolved }, roster, limits] = await Promise.all([
+    loadBaseballScouting(team.id),
+    loadBaseballRoster(team.id),
+    loadRosterLimits("baseball"),
+  ]);
   return (
-    <p className="flex items-center gap-2 text-sm">
-      Your club: <ClubBadge name={team.name} colors={team.colors} />
-      <strong>{team.name}</strong>
-    </p>
+    <div className="flex flex-col gap-4">
+      <p className="flex items-center gap-2 text-sm">
+        Your club: <ClubBadge name={team.name} colors={team.colors} />
+        <strong>{team.name}</strong>
+      </p>
+      {packs.length === 0 && roster.length === 0 ? (
+        <ClaimPacks />
+      ) : !resolved ? (
+        <BaseballScouting packs={packs} min={limits.min} max={limits.max} />
+      ) : (
+        <Roster players={roster} />
+      )}
+    </div>
+  );
+}
+
+const roleOf = (p: BaseballRosterPlayer) =>
+  p.primaryPosition === "P"
+    ? p.traits.role === "reliever"
+      ? "RP"
+      : "SP"
+    : p.secondaryPosition
+      ? `${p.primaryPosition}/${p.secondaryPosition}`
+      : p.primaryPosition;
+
+/** The squad once it's picked; the squad builder comes next (M18 step 7). */
+function Roster({ players }: { players: BaseballRosterPlayer[] }) {
+  const pitchers = players.filter((p) => p.primaryPosition === "P");
+  const batters = players.filter((p) => p.primaryPosition !== "P");
+  const table = (title: string, list: BaseballRosterPlayer[]) => (
+    <div className="flex flex-col gap-1">
+      <h3 className="text-sm font-semibold">
+        {title} ({list.length})
+      </h3>
+      <div className="overflow-x-auto rounded-md border border-zinc-200 dark:border-zinc-800">
+        <table className="w-full text-sm">
+          <thead className="bg-zinc-50 text-left text-xs text-zinc-500 dark:bg-zinc-900">
+            <tr>
+              <th className="px-3 py-2">Player</th>
+              <th className="px-3 py-2">Pos</th>
+              <th className="px-3 py-2" title="Bats · Throws">
+                B/T
+              </th>
+              <th className="px-3 py-2 text-right">Age</th>
+              <th className="px-3 py-2 text-right">OVR</th>
+              <th className="px-3 py-2 text-right">Potential</th>
+            </tr>
+          </thead>
+          <tbody>
+            {list.map((p) => (
+              <tr
+                key={p.id}
+                className="border-t border-zinc-100 dark:border-zinc-800"
+              >
+                <td className="px-3 py-1.5">{p.displayName}</td>
+                <td className="px-3 py-1.5">{roleOf(p)}</td>
+                <td className="px-3 py-1.5">
+                  {p.traits.bats ?? "R"}/{p.traits.throws ?? "R"}
+                </td>
+                <td className="px-3 py-1.5 text-right">{p.age}</td>
+                <td className="px-3 py-1.5 text-right font-medium">
+                  {p.overall}
+                </td>
+                <td className="px-3 py-1.5 text-right">
+                  {p.potentialRange[0]}–{p.potentialRange[1]}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+  return (
+    <div className="flex flex-col gap-3">
+      <h2 className="text-xl font-semibold">Your squad</h2>
+      <p className="text-sm text-zinc-600 dark:text-zinc-400">
+        {players.length} players. The squad builder (batting order, rotation,
+        bullpen and bench) comes next.
+      </p>
+      {table("Pitchers", pitchers)}
+      {table("Batters", batters)}
+    </div>
   );
 }
 
