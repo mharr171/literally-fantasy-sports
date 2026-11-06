@@ -55,3 +55,15 @@ BEGIN
   END IF;
 END
 $$;
+
+-- A manager's season milestones (D206.9). Skipped on a base branch from
+-- before account progress existed.
+DO $$
+BEGIN
+  IF to_regclass('public.account_progress') IS NOT NULL THEN
+    INSERT INTO public.account_progress (owner_id, sport, season_id, kind, value, season_number)
+    VALUES ('00000000-0000-4000-8000-000000000001', 'soccer', '00000000-0000-4000-8000-0000000000c1', 'season_played', 1, 1)
+    ON CONFLICT DO NOTHING;
+  END IF;
+END
+$$;
