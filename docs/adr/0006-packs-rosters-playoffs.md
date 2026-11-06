@@ -194,7 +194,7 @@ It appears on the season page and on every past season in History. Old
 | 5 | Form by position and minutes (§3), with tuned weights | Balance; harness |
 | 6 | Elo-scaled packs and color exclusion (§4, §5) | Migration and balance; waits for Gary |
 | 7 | Prospect, Veteran, Wildcard and Reward packs (§6) | Migration; waits for Gary |
-| 8 | Gary publishes a settings version with the new values; tick M15 | Admin |
+| 8 | Gary publishes a settings version with the new values; tick M15 (done Nov 6, 2026, D187) | Admin |
 
 ## Needs Gary
 
