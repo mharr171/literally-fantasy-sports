@@ -400,6 +400,12 @@ export const matchdaySquads = pgTable(
      * (D140), until the manager saves the squad again.
      */
     movedFrom: text(),
+    /**
+     * The squad as named groups the sport defines (ADR 0007 §3); soccer's
+     * are formation, starters, bench and subPlan. A trigger keeps it in step
+     * with the columns above until M17 drops them.
+     */
+    lineupData: jsonb().notNull().default({}),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

@@ -1,0 +1,1 @@
+ALTER TABLE "matchday_squads" ADD COLUMN "lineup_data" jsonb DEFAULT '{}'::jsonb NOT NULL;
