@@ -3,12 +3,15 @@
 import { resalePrice } from "@lfs/core";
 import { POSITIONS, ROSTER_MIN } from "@lfs/sport-soccer";
 import { useState } from "react";
-import { ConditionBadge } from "@/components/condition-badge";
 import { FormLabel } from "@/components/form-label";
-import { ChemistryDot, PlayerCard } from "@/components/player/player-card";
 import { SortHeader } from "@/components/sort-header";
 import { nextSort, type SortState, sortRows } from "@/lib/table-sort";
 import type { RosterPlayer } from "@/lib/team";
+import { ConditionBadge } from "@/sports/soccer/components/condition-badge";
+import {
+  ChemistryDot,
+  PlayerCard,
+} from "@/sports/soccer/components/player/player-card";
 import { removePlayer } from "./actions";
 import { useAction } from "./use-action";
 

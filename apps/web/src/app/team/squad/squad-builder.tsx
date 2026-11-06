@@ -22,14 +22,17 @@ import {
   variantAt,
 } from "@lfs/sport-soccer";
 import { type DragEvent, useMemo, useState } from "react";
-import { ChemistryShares } from "@/components/chemistry-shares";
-import { ConditionBadge } from "@/components/condition-badge";
-import { Heatmap } from "@/components/player/heatmap";
-import { ChemistryDot, PlayerCardBody } from "@/components/player/player-card";
-import { useTemplates } from "@/components/player/templates-context";
 import { Popover } from "@/components/popover";
 import { pickOptions } from "@/lib/pick-options";
 import type { RosterPlayer } from "@/lib/team";
+import { ChemistryShares } from "@/sports/soccer/components/chemistry-shares";
+import { ConditionBadge } from "@/sports/soccer/components/condition-badge";
+import { Heatmap } from "@/sports/soccer/components/player/heatmap";
+import {
+  ChemistryDot,
+  PlayerCardBody,
+} from "@/sports/soccer/components/player/player-card";
+import { useTemplates } from "@/sports/soccer/components/player/templates-context";
 import { saveSquad } from "../actions";
 import { useAction } from "../use-action";
 

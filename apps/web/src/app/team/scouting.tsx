@@ -6,8 +6,11 @@ import {
   type RosterLimits,
 } from "@lfs/sport-soccer";
 import { useMemo, useState, useTransition } from "react";
-import { type ScoutRow, ScoutTable } from "@/components/scout-table";
 import { countByLine, FOCUS_LABELS, type ScoutedPlayer } from "@/lib/scouting";
+import {
+  type ScoutRow,
+  ScoutTable,
+} from "@/sports/soccer/components/scout-table";
 import { confirmStarterSquad, openPacks } from "./actions";
 
 export interface ScoutingPack {

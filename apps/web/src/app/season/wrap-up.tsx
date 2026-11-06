@@ -2,8 +2,8 @@
 
 import { ROSTER_MAX } from "@lfs/sport-soccer";
 import { useState } from "react";
-import { PlayerCard } from "@/components/player/player-card";
 import type { ScoutedPlayer } from "@/lib/scouting";
+import { PlayerCard } from "@/sports/soccer/components/player/player-card";
 import { useAction } from "../team/use-action";
 import { endSeason, takeYouth } from "./actions";
 

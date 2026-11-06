@@ -10,9 +10,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { FormationMoved } from "@/components/formation-moved";
 import { GettingStarted } from "@/components/getting-started";
-import { WithTemplates } from "@/components/player/with-templates";
 import { RetirementTributes } from "@/components/retirement-tributes";
 import { SeasonReviewPanel as Review } from "@/components/season-review";
 import { adminView } from "@/lib/admin-view";
@@ -33,6 +31,8 @@ import {
   loadSquad,
   loadStarterPacks,
 } from "@/lib/team";
+import { FormationMoved } from "@/sports/soccer/components/formation-moved";
+import { WithTemplates } from "@/sports/soccer/components/player/with-templates";
 import { StartSeasonButton } from "./season-buttons";
 import { SeasonView } from "./season-view";
 import { EndSeasonButton, YouthIntake } from "./wrap-up";

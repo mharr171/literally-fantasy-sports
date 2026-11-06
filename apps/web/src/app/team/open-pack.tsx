@@ -3,8 +3,8 @@
 import { resalePrice } from "@lfs/core";
 import { ROSTER_MAX } from "@lfs/sport-soccer";
 import { useState } from "react";
-import { ScoutTable } from "@/components/scout-table";
 import type { ScoutedPlayer } from "@/lib/scouting";
+import { ScoutTable } from "@/sports/soccer/components/scout-table";
 import { resolvePack } from "./actions";
 import { useAction } from "./use-action";
 

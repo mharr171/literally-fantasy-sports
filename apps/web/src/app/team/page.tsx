@@ -13,7 +13,6 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { ClubBadge } from "@/components/club-badge";
 import { GettingStarted } from "@/components/getting-started";
-import { WithTemplates } from "@/components/player/with-templates";
 import { getCurrentUser } from "@/lib/auth";
 import { FOCUS_LABELS, scoutPlayer } from "@/lib/scouting";
 import { liveGenerationSettings, liveSoccerConfig } from "@/lib/season";
@@ -29,6 +28,7 @@ import {
   openedContents,
   type RosterPlayer,
 } from "@/lib/team";
+import { WithTemplates } from "@/sports/soccer/components/player/with-templates";
 import { ClubColorsEditor } from "./club-colors-editor";
 import { CreateTeamForm } from "./create-team-form";
 import { OpenPack } from "./open-pack";

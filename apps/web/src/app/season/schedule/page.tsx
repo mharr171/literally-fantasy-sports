@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { ScheduleView } from "@/components/schedule-view";
 import { getCurrentUser } from "@/lib/auth";
 import { loadSchedule } from "@/lib/club-view";
+import { ScheduleView } from "@/sports/soccer/components/schedule-view";
 
 export const metadata: Metadata = { title: "Schedule" };
 

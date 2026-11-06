@@ -5,11 +5,11 @@ import {
   type Stage,
 } from "@lfs/sport-soccer";
 import Link from "next/link";
-import { ChemistryShares } from "@/components/chemistry-shares";
 import { ClubBadge } from "@/components/club-badge";
-import { ChemistryDot } from "@/components/player/player-card";
 import { CHEMISTRY_COLORS } from "@/lib/chemistry-colors";
 import type { Schedule } from "@/lib/club-view";
+import { ChemistryShares } from "@/sports/soccer/components/chemistry-shares";
+import { ChemistryDot } from "@/sports/soccer/components/player/player-card";
 
 const colorName = (c: number | null) =>
   c === null ? "none" : (CHEMISTRY_COLORS[c]?.name ?? "Unknown");

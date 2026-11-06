@@ -1,6 +1,6 @@
 import { chemistryShares } from "@lfs/sport-soccer";
-import { ChemistryDot } from "@/components/player/player-card";
 import { CHEMISTRY_COLORS } from "@/lib/chemistry-colors";
+import { ChemistryDot } from "@/sports/soccer/components/player/player-card";
 
 /** A bar and a list of how players split across chemistry colors (D111, D139). */
 export function ChemistryShares({

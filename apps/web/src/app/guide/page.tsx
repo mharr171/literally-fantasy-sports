@@ -11,12 +11,12 @@ import {
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { ColorRing } from "@/components/color-ring";
-import { ChemistryDot } from "@/components/player/player-card";
 import { CHEMISTRY_COLORS } from "@/lib/chemistry-colors";
 import { liveSoccerConfig } from "@/lib/season";
 import { loadEnergySettings, loadRosterLimits } from "@/lib/sport-settings";
 import { getSupabaseEnv } from "@/lib/supabase/env";
+import { ColorRing } from "@/sports/soccer/components/color-ring";
+import { ChemistryDot } from "@/sports/soccer/components/player/player-card";
 
 export const metadata: Metadata = {
   title: "Game guide",
