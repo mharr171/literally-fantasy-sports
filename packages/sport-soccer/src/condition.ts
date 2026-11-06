@@ -28,6 +28,12 @@ export interface ConditionSettings {
    * (D154): 0 = not at all, 1 = a player who never played barely grows.
    */
   playingTimeGrowth: number;
+  /**
+   * Auto-pick rests players below this fitness: it picks a fitter player,
+   * even out of position, and uses a tired one only when nobody fitter is
+   * left (D188). 0 = off.
+   */
+  restBelowFitness: number;
 }
 
 export const DEFAULT_CONDITION_SETTINGS: ConditionSettings = {
@@ -37,6 +43,8 @@ export const DEFAULT_CONDITION_SETTINGS: ConditionSettings = {
   yellowBan: 1,
   // Off unless a settings version turns it on (D154).
   playingTimeGrowth: 0,
+  // Squad picking only, not the match engine (D188).
+  restBelowFitness: 50,
 };
 
 export interface PlayerCondition {

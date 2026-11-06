@@ -76,7 +76,10 @@ export function SquadBuilder({
   morale = 0,
   formations,
   benchMax = BENCH_SIZE,
+  restBelowFitness = 0,
 }: {
+  /** Auto-pick rests players below this fitness if anyone fitter can play (D188). */
+  restBelowFitness?: number;
   /** The sport's bench size (D182): up to this many substitutes. */
   benchMax?: number;
   /** Formations that are on, plus the saved one if it's off (D140). */
@@ -256,7 +259,7 @@ export function SquadBuilder({
 
   function autoPick(rotate = false) {
     const squad = autoPickSquad(roster, formationId, {
-      ...pickOptions(roster, { rotate }),
+      ...pickOptions(roster, { rotate, restBelowFitness }),
       benchSize: benchMax,
     });
     setLineup(pad(squad.lineup, 11).map((id) => id || null));
@@ -294,6 +297,11 @@ export function SquadBuilder({
         <button
           type="button"
           onClick={() => autoPick()}
+          title={
+            restBelowFitness > 0
+              ? `Picks the strongest 22; players below ${restBelowFitness}% fitness start only if nobody fitter can play`
+              : "Picks the strongest 22"
+          }
           className="rounded-md border border-zinc-300 px-3 py-1.5 font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
         >
           Auto-pick best

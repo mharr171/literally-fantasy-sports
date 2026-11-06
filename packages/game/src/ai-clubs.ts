@@ -221,7 +221,9 @@ async function saveSquad(team: MyTeam, profile: AiProfile) {
     loadRoster(team.id),
     loadRosterLimits(),
   ]);
-  const squad = aiSquad(roster, profile);
+  // Tired players sit out if anyone fitter can play (D188).
+  const { balance } = await liveSoccerConfig();
+  const squad = aiSquad(roster, profile, balance.condition.restBelowFitness);
   // A sport with a shorter bench (D182) keeps the best of the AI's subs.
   await saveSquadFor(team, { ...squad, bench: squad.bench.slice(0, benchMax) });
 }

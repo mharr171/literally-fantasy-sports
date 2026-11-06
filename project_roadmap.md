@@ -1,6 +1,6 @@
 # LiterallyFantasySports — Project Roadmap
 
-Nov 2, 2026 · @Gary · Last updated: Nov 6, 2026 (D187)
+Nov 2, 2026 · @Gary · Last updated: Nov 6, 2026 (D188)
 
 ## Review progress
 
@@ -208,6 +208,7 @@ Legend: `[x]` done or agreed · `[ ]` not started · `[~]` in progress or draft
 | D185 | Nov 5, 2026 | Soccer feature freeze (Gary): after M15, soccer gets only bug fixes and balance tweaks; new soccer ideas go into the backlog until baseball ships. Baseball (backlog #1) is split into three milestones: making `packages/game` and the web app sport-agnostic through the `Sport` interface (with an ADR), the baseball engine and harness, then baseball's UI, AI clubs and settings | M15 |
 | D186 | Nov 5, 2026 | M15 plan (ADR 0006, Gary OK'd): rosters 11–33 with a bench of 0–11 in `sport_settings`; empty slots add no influence and a club with fewer than 7 available players forfeits 3–0; form weights per position line tuned until every line averages within ±0.1, and form moves with minutes / 90; bought packs shift 1 overall per 40 Elo (−10 to +15) with prices +3% per point; color exclusion +25/60/120% on top of focus; Prospect (17–20, Basic −10, potential +10, Silver price), Veteran (30–33, Silver +3, 70% of Silver), Wildcard (15% at 40–49 and 15% at 80–89) and Reward packs; a drawn playoff bracket. Match changes switch on with a settings version | M15 |
 | D187 | Nov 6, 2026 | M15 done (Gary published the settings version): form weights by position and form moving with minutes on, contributions counting for form, the tuned per-line weights (harness: every line within 0.02), and packs at 40 Elo per overall point. The 10-season `pack-spread` check showed the strength gap between top and bottom clubs shrinking and then holding at about 13–16 instead of growing (ADR 0006 §4). Soccer is frozen from here (D185) | M15 |
+| D188 | Nov 6, 2026 | Resting tired players (Gary): auto-pick ("Auto-pick best" and "Rotated squad") and AI clubs leave a player below 50% fitness out of the starting 11 whenever someone fitter can fill the slot, even out of position; a tired player starts only when nobody fitter is left. The cutoff is a balance setting ("Auto-pick rests players below", 0 = off). Squad picking only: matches play the same. A balance tweak, allowed under the freeze (D185) | M15 |
 
 ## 1. Vision & goals
 

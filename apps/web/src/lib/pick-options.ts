@@ -10,11 +10,19 @@ import type { RosterPlayer } from "./team";
  * What auto-pick should weigh this week (M4): injured and suspended players
  * are unavailable, and tired or out-of-form players rate lower, the same way
  * the match engine treats them at kickoff. `rotate` weighs fitness much more,
- * so tired starters are rested (D110).
+ * so tired starters are rested (D110). Players below `restBelowFitness`
+ * start only when nobody fitter can, even out of position (D188).
  */
 export function pickOptions(
   roster: readonly RosterPlayer[],
-  { rotate = false }: { rotate?: boolean } = {},
+  {
+    rotate = false,
+    restBelowFitness = 0,
+  }: {
+    rotate?: boolean;
+    /** Players below this fitness start only if nobody fitter can (D188). */
+    restBelowFitness?: number;
+  } = {},
 ): PickOptions {
   const byId = new Map(roster.map((p) => [p.id, p]));
   const emphasis = rotate ? ROTATION_FITNESS_EMPHASIS : 1;
@@ -23,6 +31,7 @@ export function pickOptions(
       const p = byId.get(id);
       return p ? isAvailable(p.condition) : false;
     },
+    rested: (id) => (byId.get(id)?.condition.fitness ?? 100) < restBelowFitness,
     weight: (id) => {
       const p = byId.get(id);
       return p ? pickWeight(p.condition.fitness, p.form, emphasis) : 1;

@@ -298,6 +298,13 @@ export const CONDITION_LIMITS: Record<keyof ConditionSettings, Limit> = {
     min: 0,
     max: 1,
   },
+  restBelowFitness: {
+    label: "Auto-pick rests players below",
+    help: "Fitness (0–100) below which auto-pick and AI clubs leave a player out of the starting 11 if anyone fitter can play, even out of position. 0 = off. Squad picking only; matches play the same. D188.",
+    min: 0,
+    max: 100,
+    integer: true,
+  },
 };
 
 const STAT_NAME: Record<FormStat, string> = {
