@@ -56,12 +56,13 @@ describe.runIf(sql)("admin soft reset (D142, ADR 0004)", () => {
     await tx`insert into players (team_id, sport, first_name, last_name, display_name,
         nationality, age, primary_position, attributes, overall, potential,
         potential_low, potential_high, worth, chemistry_color, fitness,
-        injured_weeks, suspended_weeks, yellow_cards, form, appearances, goals,
-        seasons, best_overall, wins, draws, losses, assists, tackles, saves,
-        stat_games, stat_goals, season_minutes)
+        injured_days, suspended_games, yellow_cards, form, appearances, goals,
+        seasons, best_overall, stats, season_minutes)
       values (${id}, 'soccer', 'A', 'B', 'A B', 'ENG', 25, 'CM',
         ${tx.json({ passing: 71 })}, 64, 70, 65, 75, 2000, 2, 55, 3, 1, 2, 0.8,
-        30, 9, 2, 68, 12, 8, 10, 4, 20, 0, 30, 9, 900)`;
+        30, 9, 2, 68,
+        ${tx.json({ games: 30, goals: 9, wins: 12, draws: 8, losses: 10, assists: 4, tackles: 20, saves: 0 })},
+        900)`;
     const [s] = await tx<{ id: string }[]>`
       insert into seasons (team_id, sport, number, seed, start_elo, config_version)
       values (${id}, 'soccer', ${n}, ${`seed${n}`}, 1500, 'defaults') returning id`;
@@ -82,9 +83,8 @@ describe.runIf(sql)("admin soft reset (D142, ADR 0004)", () => {
     tx`select
         (select row_to_json(t) from (select elo, funds, morale, energy from teams where id = ${id}) t) as club,
         (select row_to_json(p) from (select attributes, overall, potential, fitness,
-          injured_weeks, suspended_weeks, yellow_cards, form, appearances, goals,
-          seasons, best_overall, wins, draws, losses, assists, tackles, saves,
-          stat_games, stat_goals, season_minutes
+          injured_days, suspended_games, yellow_cards, form, appearances, goals,
+          seasons, best_overall, stats, season_minutes
           from players where team_id = ${id} and first_name = 'A') p) as player,
         (select count(*)::int from seasons where team_id = ${id}) as seasons,
         (select count(*)::int from season_records where team_id = ${id}) as records,
@@ -123,22 +123,15 @@ describe.runIf(sql)("admin soft reset (D142, ADR 0004)", () => {
         overall: 64,
         potential: 70,
         fitness: 100,
-        injured_weeks: 0,
-        suspended_weeks: 0,
+        injured_days: 0,
+        suspended_games: 0,
         yellow_cards: 0,
         form: 0,
         appearances: 0,
         goals: 0,
         seasons: 0,
         best_overall: 64,
-        wins: 0,
-        draws: 0,
-        losses: 0,
-        assists: 0,
-        tackles: 0,
-        saves: 0,
-        stat_games: 0,
-        stat_goals: 0,
+        stats: {},
         season_minutes: 0,
       },
       seasons: 0,

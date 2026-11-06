@@ -268,9 +268,8 @@ export const players = pgTable(
     /** Matches still to sit out. */
     suspendedWeeks: integer().notNull().default(0),
     /**
-     * Days still out injured and games still banned (ADR 0007 §5). For
-     * soccer a week is one day and one game, so these match the two columns
-     * above; a trigger keeps them in step until M17 drops those.
+     * Days still out injured and games still banned (ADR 0007 §5). The two
+     * week columns above are no longer written (M17) and are dropped next.
      */
     injuredDays: integer().notNull().default(0),
     suspendedGames: integer().notNull().default(0),
@@ -294,8 +293,8 @@ export const players = pgTable(
     assists: integer().notNull().default(0),
     tackles: integer().notNull().default(0),
     /**
-     * Career stats by key (ADR 0007 §2), e.g. {"goals": 12}. For soccer a
-     * trigger keeps it in step with the stat columns until M17 drops them.
+     * Career stats by key (ADR 0007 §2), e.g. {"goals": 12}. Soccer's old
+     * stat columns are no longer written (M17) and are dropped next.
      */
     stats: jsonb().notNull().default({}),
     saves: integer().notNull().default(0),
@@ -398,10 +397,11 @@ export const matchdaySquads = pgTable(
     teamId: uuid()
       .primaryKey()
       .references(() => teams.id, { onDelete: "cascade" }),
-    formation: text().notNull(),
-    lineup: jsonb().notNull(),
-    bench: jsonb().notNull(),
-    subPlan: jsonb().notNull().default([]),
+    /** Soccer's old squad columns: no longer written (M17), dropped next. */
+    formation: text(),
+    lineup: jsonb(),
+    bench: jsonb(),
+    subPlan: jsonb().default([]),
     /**
      * The formation this squad was moved off because an admin turned it off
      * (D140), until the manager saves the squad again.
@@ -409,8 +409,7 @@ export const matchdaySquads = pgTable(
     movedFrom: text(),
     /**
      * The squad as named groups the sport defines (ADR 0007 §3); soccer's
-     * are formation, starters, bench and subPlan. A trigger keeps it in step
-     * with the columns above until M17 drops them.
+     * are formation, starters, bench and subPlan.
      */
     lineupData: jsonb().notNull().default({}),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
@@ -543,7 +542,7 @@ export const playerCareers = pgTable(
     losses: integer().notNull().default(0),
     assists: integer().notNull().default(0),
     tackles: integer().notNull().default(0),
-    /** Career stats by key (ADR 0007 §2); kept in step as on `players`. */
+    /** Career stats by key (ADR 0007 §2), as on `players`. */
     stats: jsonb().notNull().default({}),
     saves: integer().notNull().default(0),
     bestOverall: integer().notNull(),

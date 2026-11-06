@@ -31,8 +31,8 @@ describe.runIf(sql)("leagues of copied clubs (D115)", () => {
       values (${ai}, 'soccer', 'Al', 'Y', 'Al Y', 'ENG', 24, 'ST', '{"finishing":70}', 66, 80, 70, 82, 2000, 1)
       returning id`;
     player = p?.id as string;
-    await db`insert into matchday_squads (team_id, formation, lineup, bench, sub_plan)
-      values (${ai}, '4-4-2', ${db.json([player])}, '[]', '[]')`;
+    await db`insert into matchday_squads (team_id, lineup_data)
+      values (${ai}, ${db.json({ formation: "4-4-2", starters: [player], bench: [], subPlan: [] })})`;
   });
 
   afterAll(async () => {

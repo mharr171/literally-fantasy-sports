@@ -30,40 +30,11 @@ describe.runIf(sql)("stats by key (ADR 0007 §2)", () => {
   >`
     insert into players (team_id, sport, first_name, last_name, display_name,
       nationality, age, primary_position, attributes, overall, potential,
-      potential_low, potential_high, worth, chemistry_color, stat_games,
-      stat_goals, wins, assists)
+      potential_low, potential_high, worth, chemistry_color, stats)
     values (${team}, 'soccer', ${name}, 'X', ${`${name} X`}, 'ENG', 25, 'ST',
-      '{}', 60, 60, 58, 62, 1000, 1, 10, ${goals}, 6, 2)
+      '{}', 60, 60, 58, 62, 1000, 1,
+      ${tx.json({ games: 10, goals, wins: 6, assists: 2 })})
     returning id`;
-
-  it("copies the stat columns into stats on insert and on every change", async () => {
-    const result = await asService(db, async (tx) => {
-      const [p] = await addPlayer(tx, "Ada", 4);
-      const id = p?.id as string;
-      const [inserted] = await tx`select stats from players where id = ${id}`;
-      // record_week adds to the columns; a key another sport keeps stays.
-      await tx`update players set stats = stats || '{"spare": 1}' where id = ${id}`;
-      await tx`update players set stat_goals = stat_goals + 2, stat_games = stat_games + 1
-        where id = ${id}`;
-      const [updated] = await tx`select stats from players where id = ${id}`;
-      return { inserted, updated };
-    });
-    expect(result.inserted?.stats).toEqual({
-      games: 10,
-      wins: 6,
-      draws: 0,
-      losses: 0,
-      goals: 4,
-      assists: 2,
-      tackles: 0,
-      saves: 0,
-    });
-    expect(result.updated?.stats).toMatchObject({
-      games: 11,
-      goals: 6,
-      spare: 1,
-    });
-  });
 
   it("ranks current and retired players together for the hall of fame", async () => {
     const result = await asService(db, async (tx) => {
@@ -72,10 +43,9 @@ describe.runIf(sql)("stats by key (ADR 0007 §2)", () => {
       await tx`
         insert into player_careers (team_id, sport, first_name, last_name,
           display_name, nationality, primary_position, retired_age, seasons,
-          appearances, goals, stat_games, stat_goals, best_overall, clubs,
-          retired_season)
+          appearances, goals, stats, best_overall, clubs, retired_season)
         values (${team}, 'soccer', 'Dov', 'X', 'Dov X', 'ENG', 'ST', 35, 10,
-          200, 50, 200, 7, 80, ${[`${tag} Rovers`]}, 3)`;
+          200, 50, ${tx.json({ games: 200, goals: 7 })}, 80, ${[`${tag} Rovers`]}, 3)`;
       const [r] = await tx<
         {
           list: {

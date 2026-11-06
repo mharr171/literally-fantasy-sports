@@ -11,8 +11,8 @@ const CONDITION = (id: string) => [
   {
     id,
     fitness: 72,
-    injured_weeks: 2,
-    suspended_weeks: 1,
+    injured_days: 2,
+    suspended_games: 1,
     yellow_cards: 3,
     form: 0.25,
   },
@@ -138,7 +138,7 @@ describe.runIf(sql)("seasons, league teams and fixtures (D16)", () => {
       const semis =
         await tx`select stage from fixtures where season_id = ${season} and week = 3`;
       const condition =
-        await tx`select fitness, injured_weeks, suspended_weeks, yellow_cards, form
+        await tx`select fitness, injured_days, suspended_games, yellow_cards, form
         from players where id = ${player}`;
       return {
         twice,
@@ -181,8 +181,8 @@ describe.runIf(sql)("seasons, league teams and fixtures (D16)", () => {
     expect(result.condition).toEqual([
       {
         fitness: 72,
-        injured_weeks: 2,
-        suspended_weeks: 1,
+        injured_days: 2,
+        suspended_games: 1,
         yellow_cards: 3,
         form: 0.25,
       },
