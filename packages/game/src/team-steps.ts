@@ -280,12 +280,7 @@ export async function saveSquadFor(
     .from("matchday_squads")
     .upsert({
       team_id: team.id,
-      formation: squad.formation,
-      lineup: squad.lineup,
-      bench: squad.bench,
-      sub_plan: squad.subPlan,
-      // The same squad as named groups (ADR 0007 §3); the database trigger
-      // also keeps this in step until M17 drops the columns.
+      // The squad as its sport's named groups (ADR 0007 §3).
       lineup_data: squadToGroups(squad),
       moved_from: null,
       updated_at: new Date().toISOString(),

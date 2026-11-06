@@ -221,8 +221,8 @@ export async function takeYouthFor(
 function conditionRow(c: PlayerCondition) {
   return {
     fitness: c.fitness,
-    injured_weeks: c.injuredDays,
-    suspended_weeks: c.suspendedGames,
+    injured_days: c.injuredDays,
+    suspended_games: c.suspendedGames,
     yellow_cards: c.yellowCards,
   };
 }

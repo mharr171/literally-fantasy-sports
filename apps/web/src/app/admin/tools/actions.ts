@@ -105,7 +105,7 @@ export async function healSquad(teamId: string): Promise<ToolResult> {
     const { adminId, team } = await adminTeam(teamId);
     const { error } = await createServiceClient()
       .from("players")
-      .update({ fitness: 100, injured_weeks: 0, suspended_weeks: 0 })
+      .update({ fitness: 100, injured_days: 0, suspended_games: 0 })
       .eq("team_id", team.id);
     if (error) throw new Error(error.message);
     await log(adminId, team, "heal_squad", {});

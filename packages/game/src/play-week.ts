@@ -183,8 +183,8 @@ export async function playOneWeek(
       return {
         id: p.id,
         fitness: next.fitness,
-        injured_weeks: next.injuredDays,
-        suspended_weeks: next.suspendedGames,
+        injured_days: next.injuredDays,
+        suspended_games: next.suspendedGames,
         yellow_cards: next.yellowCards,
         form: nextForm(
           p.form,
