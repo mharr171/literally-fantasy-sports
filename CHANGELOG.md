@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.9.0](https://github.com/mharr171/literally-fantasy-sports/compare/v1.8.0...v1.9.0) (2026-11-07)
+
+
+### Features
+
+* baseball game-day squad builder with batting order, rotation, bullpen and bench ([#185](https://github.com/mharr171/literally-fantasy-sports/issues/185)) ([c22673c](https://github.com/mharr171/literally-fantasy-sports/commit/c22673c1115801278cfbea771731b908f6e50a0f))
+* baseball league, schedule, standings and a week of series in the engine ([#186](https://github.com/mharr171/literally-fantasy-sports/issues/186)) ([8342f8d](https://github.com/mharr171/literally-fantasy-sports/commit/8342f8d3182b227f96962f411a7a6f9379fd4284))
+* baseball packs, starter squads, youth intake and aging in the engine ([#182](https://github.com/mharr171/literally-fantasy-sports/issues/182)) ([126c96e](https://github.com/mharr171/literally-fantasy-sports/commit/126c96ecab99f2d29e52b292d88a5e976bc210b2))
+* baseball payouts, pack prices, rest, form and new-player settings in Admin ([#183](https://github.com/mharr171/literally-fantasy-sports/issues/183)) ([e38ce83](https://github.com/mharr171/literally-fantasy-sports/commit/e38ce83bf7a5f8e44910856c2e36a470aad1cb1c))
+* baseball players bat and throw left or right, with platoon splits ([#176](https://github.com/mharr171/literally-fantasy-sports/issues/176)) ([e4e5a84](https://github.com/mharr171/literally-fantasy-sports/commit/e4e5a8496094b7849f5997fd51c0eba3ce9c4043))
+* baseball postseason in the engine: wildcard, best-of series and a champion ([#188](https://github.com/mharr171/literally-fantasy-sports/issues/188)) ([d46280d](https://github.com/mharr171/literally-fantasy-sports/commit/d46280d144283a45e101e8987192785f550f7cf3))
+* baseball postseason on the season page: wildcard, best-of series, bonuses ([#189](https://github.com/mharr171/literally-fantasy-sports/issues/189)) ([da69e2c](https://github.com/mharr171/literally-fantasy-sports/commit/da69e2c7835bd97f2e1aff02d9f137277867aa05))
+* database room for baseball players, rest days and best-of series ([#178](https://github.com/mharr171/literally-fantasy-sports/issues/178)) ([76f54e2](https://github.com/mharr171/literally-fantasy-sports/commit/76f54e285994902da4b328a74a7b60881140708c))
+* play a baseball season: 14 weeks of series, standings, Elo and pay ([#187](https://github.com/mharr171/literally-fantasy-sports/issues/187)) ([46aa6f4](https://github.com/mharr171/literally-fantasy-sports/commit/46aa6f4c5e1c63c5c3bd404de35e6f491e684ef0))
+* season database functions ready for baseball's series and stats ([#179](https://github.com/mharr171/literally-fantasy-sports/issues/179)) ([97d476c](https://github.com/mharr171/literally-fantasy-sports/commit/97d476c32ac2cb9d42dfd146d993b7c141b641cc))
+* start a baseball club, scout 16 starter packs and keep your first squad ([#184](https://github.com/mharr171/literally-fantasy-sports/issues/184)) ([f481ac2](https://github.com/mharr171/literally-fantasy-sports/commit/f481ac203531a9b333a2f36bf891e8142da3722b))
+* watch your baseball games: diamond view, box score, play-by-play and win probability ([#190](https://github.com/mharr171/literally-fantasy-sports/issues/190)) ([a7c0ff7](https://github.com/mharr171/literally-fantasy-sports/commit/a7c0ff7e37dc5296b087f297da76c1ffe4b148f9))
+
+
+### Documentation
+
+* plan the baseball game around the engine (ADR 0009) ([#174](https://github.com/mharr171/literally-fantasy-sports/issues/174)) ([02334d0](https://github.com/mharr171/literally-fantasy-sports/commit/02334d00657da31967385eb39b50489f9fb530b3))
+
 ## [1.8.0](https://github.com/mharr171/literally-fantasy-sports/compare/v1.7.0...v1.8.0) (2026-11-06)
 
 
