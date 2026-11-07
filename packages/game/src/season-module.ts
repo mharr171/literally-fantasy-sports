@@ -24,6 +24,8 @@ export interface NewSeason {
   fixtures: {
     week: number;
     stage: string;
+    /** A game's number in its series (ADR 0007 §4); 1 when left out. */
+    game_no?: number;
     home_slot: number;
     away_slot: number;
   }[];
@@ -40,6 +42,11 @@ export interface PlayedWeek {
  * back to `playWeek` so it isn't loaded twice.
  */
 export interface SeasonModule<Ready = unknown> {
+  /**
+   * The season's first week is the club's bye (baseball's week 0, ADR 0009
+   * §2): it's played as the season starts, so the club begins on week 1.
+   */
+  playsOpeningWeek?: boolean;
   /** Checks the club can play (squad picked and valid); throws a message for the manager. */
   readyToPlay(team: MyTeam): Promise<Ready>;
   /** The league of a new season: the clubs nearest the club's Elo (D115) and their fixtures. */

@@ -163,6 +163,12 @@ function Roster({ players }: { players: BaseballRosterPlayer[] }) {
       <div className="flex items-baseline justify-between gap-4">
         <h2 className="text-xl font-semibold">Your squad</h2>
         <Link
+          href="/baseball/season"
+          className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+        >
+          Season
+        </Link>
+        <Link
           href="/baseball/team/squad"
           className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
         >

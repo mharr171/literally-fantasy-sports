@@ -7,6 +7,7 @@ import type { MatchResult, SettingGroup, Sport, SportId } from "@lfs/core";
 import type { AiManager, AiTypes } from "./ai-manager";
 import type { SeasonModule } from "./season-module";
 import { BASEBALL_SETTING_GROUPS, baseball } from "./sports/baseball";
+import { baseballSeason } from "./sports/baseball-season";
 import { SOCCER_SETTING_GROUPS, soccer } from "./sports/soccer";
 import { type SoccerAiTypes, soccerAi } from "./sports/soccer-ai";
 import { soccerSeason } from "./sports/soccer-season";
@@ -24,7 +25,6 @@ export interface SportModule<TAi extends AiTypes = AiTypes> {
   settings: readonly SettingGroup[];
   /**
    * Its seasons (ADR 0009 §1): league, weeks, season end and youth.
-   * Baseball's comes later in M18.
    */
   // biome-ignore lint/suspicious/noExplicitAny: each sport finds its own squad before a week
   season?: SeasonModule<any>;
@@ -47,7 +47,11 @@ const MODULES: Modules = {
     settings: SOCCER_SETTING_GROUPS,
     season: soccerSeason,
   },
-  baseball: { engine: baseball, settings: BASEBALL_SETTING_GROUPS },
+  baseball: {
+    engine: baseball,
+    settings: BASEBALL_SETTING_GROUPS,
+    season: baseballSeason,
+  },
 };
 
 /** Soccer's id, for the code that is still soccer-only until M16 moves it. */

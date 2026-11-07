@@ -54,9 +54,10 @@ describe("the sport registry (ADR 0007 §1)", () => {
 });
 
 describe("season modules (ADR 0009 §1)", () => {
-  it("gives soccer its season part, and none to baseball yet", () => {
+  it("gives soccer and baseball each their season part", () => {
     expect(sportModule("soccer").season).toBeDefined();
-    expect(sportModule("baseball").season).toBeUndefined();
+    expect(sportModule("baseball").season?.playsOpeningWeek).toBe(true);
+    expect(sportModule("soccer").season?.playsOpeningWeek).toBeUndefined();
   });
 
   it("puts the club in the same league slot as soccer does", async () => {
