@@ -139,7 +139,14 @@ function Roster({ players }: { players: BaseballRosterPlayer[] }) {
                 key={p.id}
                 className="border-t border-zinc-100 dark:border-zinc-800"
               >
-                <td className="px-3 py-1.5">{p.displayName}</td>
+                <td className="px-3 py-1.5">
+                  <Link
+                    href={`/baseball/team/player/${p.id}`}
+                    className="hover:underline"
+                  >
+                    {p.displayName}
+                  </Link>
+                </td>
                 <td className="px-3 py-1.5">{roleOf(p)}</td>
                 <td className="px-3 py-1.5">
                   {p.traits.bats ?? "R"}/{p.traits.throws ?? "R"}
