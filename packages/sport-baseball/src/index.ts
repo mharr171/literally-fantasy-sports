@@ -45,6 +45,7 @@ export * from "./packs";
 export * from "./pitching";
 export * from "./player";
 export * from "./positions";
+export * from "./postseason";
 export * from "./profiles";
 export * from "./season";
 export * from "./season-end";

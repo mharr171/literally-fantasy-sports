@@ -37,8 +37,13 @@ export interface WeekGame {
   gameNo: number;
   homeSlot: number;
   awaySlot: number;
-  /** Knockout games can't end level; regular-season ones can't either in baseball. */
+  /** A postseason game: never level. */
   knockout?: boolean;
+  /**
+   * The best-of series it belongs to (ADR 0009 §2): once a club has won it,
+   * the series' later games are skipped, never played.
+   */
+  series?: { key: string; games: number };
 }
 
 export interface PlayedBaseballWeekGame {
@@ -66,6 +71,8 @@ export interface WeekClubResult {
 
 export interface BaseballWeekResult {
   played: PlayedBaseballWeekGame[];
+  /** Games their series didn't need, by id. */
+  skipped: string[];
   /** Elo after the week, by slot. */
   elo: Record<number, number>;
   clubs: Record<number, WeekClubResult>;
@@ -112,6 +119,9 @@ export function playBaseballWeek(input: {
     (a, b) => a - b,
   );
   const played: PlayedBaseballWeekGame[] = [];
+  const skipped: string[] = [];
+  /** Wins so far in each series this week, by slot. */
+  const seriesWins = new Map<string, Map<number, number>>();
 
   days.forEach((day, d) => {
     // A new day: rest and injuries count down one.
@@ -122,6 +132,14 @@ export function playBaseballWeek(input: {
       }
     const pitchedToday = new Map<number, Set<string>>();
     for (const game of input.games.filter((g) => g.gameNo === day)) {
+      if (game.series) {
+        const wins = seriesWins.get(game.series.key);
+        const need = Math.floor(game.series.games / 2) + 1;
+        if (wins && Math.max(...wins.values()) >= need) {
+          skipped.push(game.id);
+          continue;
+        }
+      }
       const side = (slot: number) => {
         const club = input.clubs.get(slot);
         const s = state.get(slot);
@@ -212,6 +230,13 @@ export function playBaseballWeek(input: {
       );
       elo[game.homeSlot] = change.rating;
       elo[game.awaySlot] = change.opponent;
+      if (game.series) {
+        const wins =
+          seriesWins.get(game.series.key) ?? new Map<number, number>();
+        const won = result.winner === "home" ? game.homeSlot : game.awaySlot;
+        wins.set(won, (wins.get(won) ?? 0) + 1);
+        seriesWins.set(game.series.key, wins);
+      }
       played.push({
         id: game.id,
         homeScore: result.score.home,
@@ -226,13 +251,14 @@ export function playBaseballWeek(input: {
       s.pitchedYesterday = pitchedToday.get(slot) ?? new Set();
   });
   // The rest of the week's days: the rest day, into next week's first game.
-  const left = DAYS_PER_WEEK - Math.max(0, days.length - 1);
+  const left = Math.max(2, DAYS_PER_WEEK - Math.max(0, days.length - 1));
   for (const s of state.values()) {
     countDown(s.rest, left);
     countDown(s.injured, left);
   }
   return {
     played,
+    skipped,
     elo,
     clubs: Object.fromEntries(
       [...state].map(([slot, { pitchedYesterday: _, ...s }]) => [slot, s]),
