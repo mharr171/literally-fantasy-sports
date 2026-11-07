@@ -23,17 +23,28 @@ import {
   type Attributes,
   aiBaseballClub,
   autoPickSquad,
+  type BaseballNewGame,
   type BaseballPlayer,
   type BaseballSquad,
   type BatterPosition,
+  baseballBracket,
   baseballLeague,
   baseballStandings,
   DEFAULT_SEASON_END_SETTINGS,
   endOfSeason,
   generationSettings,
+  nextPostseasonGames,
   type PitcherRole,
+  POSTSEASON_PLACES,
   type Position,
+  type PostseasonFinish,
+  type PostseasonFixture,
+  type PostseasonStage,
   playBaseballWeek,
+  postseasonBonus,
+  postseasonDone,
+  postseasonFinish,
+  SERIES_LENGTH,
   squadFromData,
   squadFromPicked,
   squadProblems,
@@ -124,6 +135,63 @@ export function lastStarters(season: LoadedSeason): Map<number, string> {
   return out;
 }
 
+/** A postseason series' key: its round and its two clubs. */
+const seriesKey = (g: { stage: string; homeSlot: number; awaySlot: number }) =>
+  `${g.stage}:${Math.min(g.homeSlot, g.awaySlot)}-${Math.max(g.homeSlot, g.awaySlot)}`;
+
+/**
+ * The season after a week (ADR 0009 §2): still in the regular season, in
+ * the postseason with its next round drawn, or finished once the final is
+ * decided. `managerReached` is the round the club has just reached (or
+ * "champion"), for its bonus; "none" otherwise.
+ */
+export function seasonAfterWeek(
+  slots: readonly number[],
+  fixtures: readonly PostseasonFixture[],
+  week: number,
+): {
+  status: "regular" | "playoffs" | "finished";
+  newGames: BaseballNewGame[];
+  nextWeek: number;
+  managerReached: PostseasonFinish;
+} {
+  const league = fixtures.filter((f) => f.stage === "league");
+  const leagueDone = league.every((f) => f.homeScore !== null);
+  if (!leagueDone)
+    return {
+      status: "regular",
+      newGames: [],
+      nextWeek: week + 1,
+      managerReached: "none",
+    };
+  const places = baseballStandings(
+    slots,
+    league.map((f) => ({
+      homeSlot: f.homeSlot,
+      awaySlot: f.awaySlot,
+      homeScore: f.homeScore as number,
+      awayScore: f.awayScore as number,
+    })),
+  ).map((r) => r.slot);
+  const newGames = nextPostseasonGames(places, fixtures, true);
+  const bracket = baseballBracket(places, fixtures, true);
+  // A league too small for a postseason ends with the regular season.
+  const done = slots.length < POSTSEASON_PLACES || postseasonDone(bracket);
+  const reached = newGames.find(
+    (g) => g.homeSlot === MANAGER_SLOT || g.awaySlot === MANAGER_SLOT,
+  );
+  return {
+    status: done ? "finished" : "playoffs",
+    newGames,
+    nextWeek: newGames[0]?.week ?? week,
+    managerReached: reached
+      ? (reached.stage as PostseasonFinish)
+      : done && postseasonFinish(MANAGER_SLOT, bracket) === "champion"
+        ? "champion"
+        : "none",
+  };
+}
+
 async function readyToPlay(team: MyTeam): Promise<BaseballReady> {
   const packs = await loadBaseballStarterPacks(team.id);
   if (packs.length === 0 || packs.some((p) => !p.resolved))
@@ -185,7 +253,7 @@ export const baseballSeason: SeasonModule<BaseballReady> = {
     const generation = generationSettings(config.balance);
     const starters = lastStarters(season);
     const games = season.fixtures.filter(
-      (f) => f.week === season.week && f.homeScore === null,
+      (f) => f.week === season.week && f.homeScore === null && !f.skipped,
     );
     const inWeek = new Set(games.flatMap((g) => [g.homeSlot, g.awaySlot]));
     const clubs = new Map<number, WeekClub>();
@@ -235,6 +303,15 @@ export const baseballSeason: SeasonModule<BaseballReady> = {
         gameNo: g.gameNo ?? 1,
         homeSlot: g.homeSlot,
         awaySlot: g.awaySlot,
+        ...(g.stage === "league"
+          ? {}
+          : {
+              knockout: true,
+              series: {
+                key: seriesKey(g),
+                games: SERIES_LENGTH[g.stage as PostseasonStage] ?? 1,
+              },
+            }),
       })),
       clubs,
       elo,
@@ -244,37 +321,76 @@ export const baseballSeason: SeasonModule<BaseballReady> = {
     const mine = (g: { homeSlot: number; awaySlot: number }) =>
       g.homeSlot === MANAGER_SLOT || g.awaySlot === MANAGER_SLOT;
     const me = week.clubs[MANAGER_SLOT];
-    const remaining = season.fixtures.some(
-      (f) => f.week > season.week && f.homeScore === null,
-    );
     const pay = config.balance.payouts;
+    // The season after this week: the next round, or the finish.
+    const after = seasonAfterWeek(
+      season.slots.map((s) => s.slot),
+      season.fixtures.map((f) => {
+        const p = week.played.find((x) => x.id === f.id);
+        return {
+          week: f.week,
+          stage: f.stage,
+          gameNo: f.gameNo ?? 1,
+          homeSlot: f.homeSlot,
+          awaySlot: f.awaySlot,
+          homeScore: p ? p.homeScore : f.homeScore,
+          awayScore: p ? p.awayScore : f.awayScore,
+          winner: p ? p.winner : f.winner,
+          skipped: f.skipped === true || week.skipped.includes(f.id),
+        };
+      }),
+      season.week,
+    );
     return {
-      status: remaining ? "regular" : "finished",
+      status: after.status,
       args: {
-        p_results: week.played.map((p) => {
-          const g = games.find((x) => x.id === p.id) as (typeof games)[number];
-          const own = mine(g);
-          return {
-            id: p.id,
-            home_score: p.homeScore,
-            away_score: p.awayScore,
+        p_results: [
+          ...week.skipped.map((id) => ({
+            id,
+            home_score: null,
+            away_score: null,
             winner: null,
-            summary: {
-              score: { home: p.homeScore, away: p.awayScore },
-              starters: p.starters,
-              // The club's own games keep their box score (D120).
-              ...(own ? { box: p.box } : {}),
-            },
-            // AI clubs never keep replay details (ADR 0002).
-            manager_team:
-              own && team.kind === "human" ? { teams: p.teams, names } : null,
-          };
-        }),
+            summary: null,
+            manager_team: null,
+            skipped: true,
+          })),
+          ...week.played.map((p) => {
+            const g = games.find(
+              (x) => x.id === p.id,
+            ) as (typeof games)[number];
+            const own = mine(g);
+            return {
+              id: p.id,
+              home_score: p.homeScore,
+              away_score: p.awayScore,
+              winner: g.stage === "league" ? null : p.winner,
+              summary: {
+                score: { home: p.homeScore, away: p.awayScore },
+                starters: p.starters,
+                // The club's own games keep their box score (D120).
+                ...(own ? { box: p.box } : {}),
+              },
+              // AI clubs never keep replay details (ADR 0002).
+              manager_team:
+                own && team.kind === "human" ? { teams: p.teams, names } : null,
+            };
+          }),
+        ],
         p_elo: week.elo,
-        p_funds: me ? (me.won + me.lost) * pay.perMatch + me.won * pay.win : 0,
-        p_new_fixtures: [],
-        p_status: remaining ? "regular" : "finished",
-        p_next_week: remaining ? season.week + 1 : season.week,
+        p_funds:
+          (me ? (me.won + me.lost) * pay.perMatch + me.won * pay.win : 0) +
+          // Reaching a round, or winning it all (D117).
+          postseasonBonus(after.managerReached, pay),
+        p_new_fixtures: after.newGames.map((g) => ({
+          week: g.week,
+          event: "main",
+          stage: g.stage,
+          game_no: g.gameNo,
+          home_slot: g.homeSlot,
+          away_slot: g.awaySlot,
+        })),
+        p_status: after.status,
+        p_next_week: after.nextWeek,
         p_morale: null,
         p_players: players.map((p) => {
           const stats = me?.stats[p.id];
@@ -324,7 +440,8 @@ export const baseballSeason: SeasonModule<BaseballReady> = {
     const byId = new Map(rows.map((r) => [r.id, r]));
     // The club's line: standings in the regular season (ADR 0009 §2).
     const games = season.fixtures.filter(
-      (f) => f.homeScore !== null && f.awayScore !== null,
+      (f) =>
+        f.stage === "league" && f.homeScore !== null && f.awayScore !== null,
     );
     const table = baseballStandings(
       season.slots.map((s) => s.slot),
@@ -399,7 +516,14 @@ export const baseballSeason: SeasonModule<BaseballReady> = {
           scored: line?.runsScored ?? 0,
           conceded: line?.runsAllowed ?? 0,
           points: line?.won ?? 0,
-          playoffs: "none",
+          playoffs: postseasonFinish(
+            MANAGER_SLOT,
+            baseballBracket(
+              table.map((r) => r.slot),
+              season.fixtures.map((f) => ({ ...f, gameNo: f.gameNo ?? 1 })),
+              true,
+            ),
+          ),
         },
         game_version: process.env.GAME_VERSION ?? "unknown",
       },

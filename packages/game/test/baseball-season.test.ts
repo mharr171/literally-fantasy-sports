@@ -49,3 +49,91 @@ describe("baseball's season in the game layer", () => {
     expect(starters.get(1)).toBe("o2");
   });
 });
+
+describe("the season after each week (ADR 0009 §2)", () => {
+  it("runs from the regular season through every round to the finish", async () => {
+    const { baseballSchedule } = await import("../src/sports/baseball");
+    const { seasonAfterWeek } = await import("../src/sports/baseball-season");
+    const slots = Array.from({ length: 15 }, (_, i) => i);
+    type F = Parameters<typeof seasonAfterWeek>[1][number] & { id: string };
+    let n = 0;
+    const fixtures: F[] = baseballSchedule("s", slots).map((g) => ({
+      ...g,
+      id: `g${n++}`,
+      homeScore: null,
+      awayScore: null,
+      winner: null,
+    }));
+    // The lower slot always wins: a predictable season.
+    const play = (week: number) => {
+      const wins = new Map<string, number>();
+      for (const f of fixtures
+        .filter((x) => x.week === week)
+        .sort((a, b) => (a.gameNo ?? 1) - (b.gameNo ?? 1))) {
+        const key = `${f.stage}:${Math.min(f.homeSlot, f.awaySlot)}`;
+        const need =
+          f.stage === "league"
+            ? 99
+            : f.stage === "wildcard"
+              ? 1
+              : f.stage === "quarter"
+                ? 2
+                : f.stage === "semi"
+                  ? 3
+                  : 4;
+        if ((wins.get(key) ?? 0) >= need) {
+          f.skipped = true;
+          continue;
+        }
+        const homeWins = f.homeSlot < f.awaySlot;
+        Object.assign(f, {
+          homeScore: homeWins ? 2 : 1,
+          awayScore: homeWins ? 1 : 2,
+          winner: homeWins ? "home" : "away",
+        });
+        wins.set(key, (wins.get(key) ?? 0) + 1);
+      }
+    };
+    const statuses: string[] = [];
+    const reached: string[] = [];
+    let week = 0;
+    for (let i = 0; i < 30; i++) {
+      play(week);
+      const after = seasonAfterWeek(slots, fixtures, week);
+      statuses.push(after.status);
+      reached.push(after.managerReached);
+      for (const g of after.newGames)
+        fixtures.push({
+          ...g,
+          id: `g${n++}`,
+          homeScore: null,
+          awayScore: null,
+          winner: null,
+        });
+      if (after.status === "finished") break;
+      week = after.nextWeek;
+    }
+    // 15 regular weeks (0–14), then wildcard, quarters, semis and the final.
+    expect(statuses.filter((s) => s === "regular")).toHaveLength(14);
+    expect(statuses.slice(14)).toEqual([
+      "playoffs",
+      "playoffs",
+      "playoffs",
+      "playoffs",
+      "finished",
+    ]);
+    expect(week).toBe(18);
+    // Slot 0 wins everything: it reaches the quarters, semis and final, then wins it.
+    expect(reached.filter((r) => r !== "none")).toEqual([
+      "quarter",
+      "semi",
+      "final",
+      "champion",
+    ]);
+    // The quarterfinals were all 2–0, so every game 3 was skipped.
+    const qf = fixtures.filter((f) => f.stage === "quarter");
+    expect(qf.filter((f) => f.skipped).map((f) => f.gameNo)).toEqual([
+      3, 3, 3, 3,
+    ]);
+  });
+});
