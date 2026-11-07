@@ -2,12 +2,13 @@
  * Baseball's season part behind the sport-neutral interface (ADR 0009 §1,
  * §2): a league of 15, the week-0 bye played as the season starts, a
  * 3-game series a week with rest days, injuries, Elo and pay per game, and
- * season end with aging and youth. The postseason comes in step 9; until
- * then a season finishes after week 14.
+ * season end with aging and youth; after week 14 the postseason, from a
+ * wildcard game to a best-of-7 final.
  */
 import { packEloShift, playerWorth, rosterWarning } from "@lfs/core";
 import {
   type BaseballSquadPlayer,
+  baseballConfigFor,
   liveBaseballConfig,
   loadBaseballSquad,
   loadBaseballSquadPlayers,
@@ -79,10 +80,14 @@ interface ClonePlayer {
   traits?: Partial<BaseballTraits>;
 }
 
-const fromClone = (p: ClonePlayer): BaseballPlayer => {
+const fromClone = (
+  p: ClonePlayer,
+): BaseballPlayer & { displayName: string } => {
   const t = p.traits ?? {};
   return {
     id: p.id,
+    // Kept with the player so a replay can name him.
+    displayName: p.displayName,
     attributes: p.attributes,
     primaryPosition: p.primaryPosition,
     secondaryPosition: p.secondaryPosition,
@@ -246,8 +251,9 @@ export const baseballSeason: SeasonModule<BaseballReady> = {
   },
 
   async playWeek(team, { players, squad }, season) {
-    const [{ config }, clones] = await Promise.all([
-      liveBaseballConfig(),
+    // The season plays by the settings version it started with.
+    const [config, clones] = await Promise.all([
+      baseballConfigFor(season.configVersion),
       loadClones(season.id),
     ]);
     const generation = generationSettings(config.balance);

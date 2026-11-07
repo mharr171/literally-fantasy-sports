@@ -72,6 +72,24 @@ export async function liveBaseballConfig(): Promise<{
   };
 }
 
+/** The settings a season was started with (e.g. "baseball:2"), so every week and replay plays the same way. */
+export async function baseballConfigFor(
+  label: string,
+): Promise<BaseballConfig> {
+  const version = Number(label.split(":")[1]);
+  if (label === "defaults" || !Number.isInteger(version))
+    return baseballConfigFromValues({});
+  const { data, error } = await createServiceClient()
+    .from("game_config")
+    .select("key, value")
+    .eq("scope", BASEBALL)
+    .eq("version", version);
+  if (error) throw new Error(error.message);
+  return baseballConfigFromValues(
+    Object.fromEntries((data ?? []).map((r) => [r.key as string, r.value])),
+  );
+}
+
 export interface BaseballStarterPack extends StarterPackState {
   focus: PackFocus;
   tier: string;
