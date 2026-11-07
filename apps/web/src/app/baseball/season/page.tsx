@@ -2,7 +2,9 @@ import { currentEnergy } from "@lfs/core";
 import {
   BASEBALL_STAGE_NAMES,
   type BaseballStage,
+  baseballBracket,
   baseballStandings,
+  SERIES_LENGTH,
 } from "@lfs/sport-baseball";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -83,7 +85,7 @@ async function Season() {
   const name = (slot: number) =>
     season.slots.find((s) => s.slot === slot)?.name ?? `Club ${slot}`;
   const played = season.fixtures.filter(
-    (f) => f.homeScore !== null && f.awayScore !== null,
+    (f) => f.stage === "league" && f.homeScore !== null && f.awayScore !== null,
   );
   const table = baseballStandings(
     season.slots.map((s) => s.slot),
@@ -98,6 +100,14 @@ async function Season() {
     (f) => f.homeSlot === MANAGER_SLOT || f.awaySlot === MANAGER_SLOT,
   );
   const weeks = [...new Set(mine.map((f) => f.week))].sort((a, b) => a - b);
+  const postseason = season.fixtures.some((f) => f.stage !== "league");
+  const bracket = postseason
+    ? baseballBracket(
+        table.map((r) => r.slot),
+        season.fixtures.map((f) => ({ ...f, gameNo: f.gameNo ?? 1 })),
+        true,
+      )
+    : null;
 
   return (
     <div className="flex flex-col gap-5">
@@ -107,7 +117,9 @@ async function Season() {
           Season <strong>{season.number}</strong> ·{" "}
           {season.status === "finished"
             ? "Finished"
-            : `Week ${season.week} of 14`}
+            : season.status === "playoffs"
+              ? `Postseason · week ${season.week}`
+              : `Week ${season.week} of 14`}
         </p>
         <span className="flex-1" />
         {season.status !== "finished" && (
@@ -129,6 +141,60 @@ async function Season() {
             scout&apos;s estimate.
           </p>
           <YouthIntake prospects={await loadBaseballYouth(season.seed)} />
+        </div>
+      )}
+
+      {bracket && (
+        <div className="flex flex-col gap-2">
+          <h2 className="text-xl font-semibold">Postseason</h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {bracket.rounds.map((round) => (
+              <div key={round.stage} className="flex flex-col gap-2">
+                <h3 className="text-sm font-semibold">
+                  {BASEBALL_STAGE_NAMES[round.stage]}
+                  {SERIES_LENGTH[round.stage] > 1 &&
+                    ` · best of ${SERIES_LENGTH[round.stage]}`}
+                </h3>
+                {round.matches.map((m) => {
+                  const wins = (slot: number | null) =>
+                    m.games.filter(
+                      (g) =>
+                        g.homeScore !== null &&
+                        g.awayScore !== null &&
+                        (g.homeScore > g.awayScore
+                          ? g.homeSlot
+                          : g.awaySlot) === slot,
+                    ).length;
+                  const row = (side: typeof m.home) => (
+                    <div
+                      className={`flex justify-between gap-2 ${side.slot !== null && side.slot === m.winner ? "font-semibold" : ""} ${side.slot === MANAGER_SLOT ? "text-sky-700 dark:text-sky-400" : ""}`}
+                    >
+                      <span className="truncate">
+                        {side.seed !== null && (
+                          <span className="text-xs text-zinc-500">
+                            {side.seed}{" "}
+                          </span>
+                        )}
+                        {side.slot === null
+                          ? side.placeholder
+                          : name(side.slot)}
+                      </span>
+                      {m.games.length > 0 && <span>{wins(side.slot)}</span>}
+                    </div>
+                  );
+                  return (
+                    <div
+                      key={`${m.home.placeholder}-${m.away.placeholder}`}
+                      className="rounded-md border border-zinc-200 p-2 text-sm dark:border-zinc-800"
+                    >
+                      {row(m.home)}
+                      {row(m.away)}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -209,6 +275,16 @@ async function Season() {
                 </span>
                 <span className="flex gap-3">
                   {games.map((g) => {
+                    if (g.skipped)
+                      return (
+                        <span
+                          key={g.id}
+                          className="text-zinc-300 dark:text-zinc-600"
+                          title="Not needed: the series was already decided"
+                        >
+                          G{g.gameNo ?? 1} –
+                        </span>
+                      );
                     if (g.homeScore === null || g.awayScore === null)
                       return (
                         <span key={g.id} className="text-zinc-400">

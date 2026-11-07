@@ -49,7 +49,11 @@ export interface LoadedSeason {
   review: SeasonReview | null;
   intakeResolved: boolean;
   slots: (LeagueSlot & { elo: number; colors: string[] })[];
-  fixtures: (SeasonFixture & { summary: MatchSummary | null })[];
+  fixtures: (SeasonFixture & {
+    summary: MatchSummary | null;
+    /** A best-of game its series didn't need (ADR 0009 §2): never played. */
+    skipped?: boolean;
+  })[];
 }
 
 /** The team's latest season (in progress or finished), or null. */
@@ -93,7 +97,7 @@ async function loadSeasonNumbered(
     db
       .from("fixtures")
       .select(
-        "id, week, event, stage, game_no, home_slot, away_slot, home_score, away_score, winner, summary",
+        "id, week, event, stage, game_no, home_slot, away_slot, home_score, away_score, winner, summary, skipped",
       )
       .eq("season_id", season.id)
       .order("week")
@@ -132,6 +136,7 @@ async function loadSeasonNumbered(
       awayScore: f.away_score,
       winner: f.winner as SeasonFixture["winner"],
       summary: f.summary as MatchSummary | null,
+      skipped: f.skipped === true,
     })),
   };
 }
