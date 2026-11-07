@@ -294,16 +294,18 @@ async function Season() {
                     const us = home ? g.homeScore : g.awayScore;
                     const them = home ? g.awayScore : g.homeScore;
                     return (
-                      <span
+                      <Link
                         key={g.id}
-                        className={
+                        href={`/baseball/season/match/${g.id}`}
+                        className={`hover:underline ${
                           us > them
                             ? "text-emerald-700 dark:text-emerald-400"
                             : "text-red-700 dark:text-red-400"
-                        }
+                        }`}
+                        title="Watch the game"
                       >
                         {us > them ? "W" : "L"} {us}–{them}
-                      </span>
+                      </Link>
                     );
                   })}
                 </span>

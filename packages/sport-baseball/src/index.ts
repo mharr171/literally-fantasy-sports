@@ -47,6 +47,7 @@ export * from "./player";
 export * from "./positions";
 export * from "./postseason";
 export * from "./profiles";
+export * from "./replay";
 export * from "./season";
 export * from "./season-end";
 export * from "./season-types";
